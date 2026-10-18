@@ -1,164 +1,184 @@
-# Agent Badges
+<p align="center">
+  <img src="assets/banner.png" alt="Agent Badges: 3D achievement badges for Claude Code and Codex" width="880" />
+</p>
 
-Apple Watch 运动徽章风格的 3D 成就徽章，用 three.js 程序化生成。目前有两个品牌：Claude Code（19 枚）和 Codex（20 枚），顶栏可以切换，也可以直接用 `?brand=codex` 打开。
+<p align="center">
+  <a href="https://www.npmjs.com/package/agent-badges"><img src="https://img.shields.io/npm/v/agent-badges?color=e8b45a&label=npm" alt="npm version" /></a>
+  <a href="https://github.com/Aryous/agent-badges/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Aryous/agent-badges/ci.yml?branch=main&label=CI" alt="CI status" /></a>
+  <img src="https://img.shields.io/node/v/agent-badges?color=5b8def" alt="Node.js version" />
+  <a href="LICENSE"><img src="https://img.shields.io/npm/l/agent-badges?color=8f8b82" alt="MIT license" /></a>
+  <a href="https://aryous.github.io/agent-badges/demo/"><img src="https://img.shields.io/badge/demo-live-e8b45a" alt="Live demo" /></a>
+  <a href="https://github.com/Aryous/agent-badges/stargazers"><img src="https://img.shields.io/github/stars/Aryous/agent-badges?style=flat&color=f0eee6" alt="GitHub stars" /></a>
+</p>
 
-## 运行
+<p align="center">
+  <b>English</b> · <a href="README.zh-CN.md">简体中文</a> · <a href="https://aryous.github.io/agent-badges/">Website</a> · <a href="https://aryous.github.io/agent-badges/demo/">Live demo</a>
+</p>
+
+Turn your Claude Code and Codex history into collectible 3D achievement badges, Apple Watch style. One command, entirely on your machine, nothing uploaded.
 
 ```bash
-npx agent-badges                 # 采集本机数据，打开徽章墙（全程离线，数据不出本机）
-npx agent-badges collect         # 只采集，在终端打印汇总（--json 输出结构化结果）
-npx agent-badges export ./out    # 导出可离线打开的静态网页（含你的统计数字）
-npx agent-badges --brand codex   # 只看某个工具；--no-open 不自动打开浏览器
+npx agent-badges
 ```
 
-数据保存在 `~/.agent-badges`，可以用 `AGENT_BADGES_HOME` 修改。工具目录可以用 `CLAUDE_CONFIG_DIR` 和 `CODEX_HOME` 指定。需要 Node.js 22.15 或更高版本。
+<p align="center">
+  <img src="assets/spin.gif" alt="Three badges spinning: Claude Code First Session, the Agent Badges logo, Codex First Thread" width="720" />
+</p>
 
-开发：
+## What you get
+
+- **39 badges across two tools.** 19 for Claude Code, 20 for Codex: milestones, streaks, features to discover, and a few hidden ones. Tiered badges level up from bronze to platinum.
+- **Real 3D.** Every badge is generated with three.js from a small config: enamel, polished and brushed metal, ceramic, holographic foil, crystal. Drag to spin it, flip it over to read the engraving on the back.
+- **A profile.** Unlock ring, total tokens, active days, longest streak, recently earned, and what you are closest to unlocking next.
+- **Your year as a heatmap.** Daily token usage on a calendar, both tools overlaid (a day you used both is split in two colors), with a dot on every day you unlocked a badge.
+- **Things to share.** Export any badge as a 2048 px PNG (transparent or ink background), generate a poster of your whole wall, or put an achievement card on your GitHub profile.
+- **English and Chinese.** The page follows your browser, with a switch in the top bar.
+
+![The badge wall: profile, annual heatmap and the first badges](assets/screenshot-wall.png)
+
+<details>
+<summary><b>All badges</b></summary>
+
+**Claude Code**
+
+![All Claude Code badges](assets/gallery-claude-code.png)
+
+**Codex**
+
+![All Codex badges](assets/gallery-codex.png)
+
+The two `???` in each row are hidden achievements. They reveal themselves when you earn them.
+
+</details>
+
+## Quick start
+
+Requires **Node.js 22.15 or later** (it uses Node's built-in zstd and SQLite). Developed on macOS and tested on Linux in CI; Windows should work but hasn't been tried yet.
+
+```bash
+npx agent-badges                    # collect local stats and open your badge wall
+npx agent-badges collect            # collect only, print a summary in the terminal
+npx agent-badges collect --json     # the same summary as JSON
+npx agent-badges export ./my-wall   # a static page you can open offline (contains your stats)
+npx agent-badges card               # an achievement card SVG for your GitHub profile
+```
+
+| Option | |
+| --- | --- |
+| `--brand claude-code\|codex` | Only one tool |
+| `--port <n>` | Local page port (default 4747; the next free one if taken) |
+| `--no-open` | Don't open the browser |
+| `--out`, `--theme dark\|light`, `--name`, `--lang en\|zh` | Card options |
+
+| Environment variable | Default |
+| --- | --- |
+| `AGENT_BADGES_HOME` | `~/.agent-badges` (where the ledger and cache live) |
+| `CLAUDE_CONFIG_DIR` | `~/.claude` |
+| `CODEX_HOME` | `~/.codex` |
+
+The first run reads every session log you have, which can take a while if you have gigabytes of Codex history. Later runs only read new or changed files.
+
+## Achievement card for your GitHub profile
+
+```bash
+npx agent-badges card --name "Your Name"
+```
+
+This writes `agent-badges-card.svg`: unlock counts, totals, streaks and a grid of recent activity. Commit it to your profile repository (`<you>/<you>`) and add it to the README:
+
+```markdown
+![Agent Badges](./agent-badges-card.svg)
+```
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="assets/card-light.svg" />
+    <img src="assets/card-dark.svg" alt="Example achievement card (sample data)" width="540" />
+  </picture>
+</p>
+
+The card contains numbers only. Re-run the command whenever you want to refresh it.
+
+## Privacy
+
+It reads the logs your tools already keep on your machine, so the rules are strict and covered by tests.
+
+- **Local only.** It reads `~/.claude` and `~/.codex` and writes to `~/.agent-badges`. The page is served on `127.0.0.1`, so nothing else on your network can reach it. There are no network calls and no analytics.
+- **Metadata only.** Each log line is reduced to an allowlist of fields the moment it is parsed: timestamps, token counts, tool names, mode values. Prompts, code, tool inputs and outputs are dropped immediately and never stored. Names that could hint at what you work on (MCP server names, Codex model names) are hashed; Claude model names are reduced to the family (opus, sonnet, haiku, fable).
+- **Files it never opens.** Claude Code: `settings.json`, `.credentials.json`, MCP configs, `history.jsonl`, `shell-snapshots`, `session-env`, `paste-cache`, `file-history`. Codex: `auth.json`, `config.toml`, `*.env`, `history.jsonl`, `transcription-history.jsonl`, `thread_history*.sqlite`, `logs*.sqlite`, `memories*`, `shell_snapshots`.
+- **Codex thread index.** `state_*.sqlite` is opened read-only and only six columns are selected (created time, source, thread type, model, reasoning effort, approval mode). Titles, first messages, previews, paths, git info and account ids are never read.
+- **What is saved.** `~/.agent-badges` holds a per-day ledger of numbers, dates and hashes, so badges you earned stay earned even after the tools clean up old logs.
+- **Tested.** The test suite plants fake secrets, prompts, paths and thread titles in fake `~/.claude` and `~/.codex` folders, runs the real collector and export, and checks none of them appear in any output.
+
+The public demo and the npm package contain no personal data. Only `export` and `card` write files with your numbers in them, and only where you tell them to.
+
+## How badges are counted
+
+| | Claude Code | Codex |
+| --- | --- | --- |
+| Sessions / threads | Sessions in your Claude Code logs (sub-agent logs excluded) | Threads you started (VS Code, CLI, `exec`); sub-agents and auto-review excluded |
+| Tokens | Input + output + cache writes (cache reads excluded), each message once | Uncached input + output, each response once |
+| Night Owl / Early Bird | Local time of the messages you send (00:00–05:00 / 05:00–07:00) | Local time of the turns you start |
+| Marathon | Active time in one session; gaps over 30 minutes don't count | Same |
+| Streaks | Consecutive days with any activity | Same |
+
+Badge definitions live in [`src/brands`](src/brands). Each tool's metrics are in `src/data/<tool>-metrics.js`.
+
+## Development
 
 ```bash
 npm install
-npm run collect        # 采集本机数据到 ~/.agent-badges，开发服务器会自动注入
-npm run dev            # http://localhost:5173
-npm run build          # 构建 dist/index.html（不含个人数据，没有注入时显示示例数据）
-npm test               # 单元测试 + CLI 端到端测试
-npm run check:browser  # 浏览器实测（需先 npm run dev -- --port 5199）
+npm run collect          # collect local data into ~/.agent-badges (the dev server injects it)
+npm run dev              # http://localhost:5173 (the badge wall)
+npm test                 # unit tests and CLI end-to-end tests
+npm run build            # dist/index.html, a single file with no personal data
+npm run build:site       # dist-site/: the landing page plus the demo (sample data)
+npm run check:pack       # pack, install into a temp folder, and run the CLI
 ```
 
-页面参数：
+Browser checks need a running dev server (`npx vite --port 5199`) and Google Chrome: `npm run check:browser` for the wall, `npm run check:site` for the built site. `node scripts/assets.mjs` regenerates the images in this README from sample data.
 
-- `#first-session`：打开后直接查看某一枚徽章。
-- `?preview=unlocked` / `?preview=locked`：临时把全部徽章显示为已解锁或未解锁，方便设计时预览。
-- `?preview=unlocked&tier=0`：分级徽章预览指定等级（0 铜、1 银、2 金、3 白金），不写 `tier` 时默认显示最高级。
-
-交互：拖动可以旋转，快速甩动会带惯性；按方向键也能转动，按 Esc 返回。
-
-导出：在单枚查看界面点「导出图片」打开面板，可以选择透明或墨色背景。面板打开时，徽章后面会显示导出的取景范围；导出的是徽章当前朝向（正面或背面）。
-
-## 陈列墙
-
-按系列分组：里程碑、连续与习惯、功能探索、限定与彩蛋，共 19 枚。
-
-- 墙上的徽章是页面加载时用同一个 3D 引擎渲染的静态图，悬停时用 CSS 做倾斜和高光。
-- 点开某一枚后才进入实时 3D，关闭后渲染循环会停下。
-
-## 结构
+Useful URL parameters on the wall: `?source=mock` (sample data), `?lang=en|zh`, `?brand=codex`, `#<badge-id>` (open a badge), `?preview=unlocked&tier=2` (preview every badge unlocked at a given tier).
 
 ```
 src/
-├─ engine/     徽章引擎：只认配置，不含任何品牌信息
-├─ brands/     品牌包：色板、刻字模板、徽章配置
-│  └─ claude-code/
-│     ├─ helpers.js     共用构图：文字环、中心圆盘、小怪物、配件定位
-│     ├─ pixel-art.js   小怪物等共用像素图
-│     └─ series/        每个系列一个文件
-├─ data/       进度数据接口（目前是模拟数据）
-└─ viewer/     场景、陈列墙、单枚查看、获得动画、PNG 导出
+├─ engine/    badge engine: shapes, materials, relief, text, tiers (no brand knowledge)
+├─ brands/    one folder per tool: palette, badge configs, English text
+├─ data/      metrics, daily series, mock data
+├─ collect/   local collectors, summary, achievement card (used by the CLI)
+├─ viewer/    stage, wall, inspector, heatmap, poster, export
+├─ site/      landing page
+└─ project/   the Agent Badges logo and the asset studio
+bin/          the CLI
 ```
 
-## 新增一枚徽章
+### Adding a badge
 
-在 `src/brands/<品牌>/series/` 下对应系列的文件里加一份配置即可，不用改引擎。
+Add a config to the right series file in `src/brands/<tool>/series/` and its English text to `src/brands/<tool>/en.js`. No engine changes needed.
 
-- **轮廓**：`circle`（可加 `reeded` 滚花边）、`polygon`（八边形、圆角方形等）、`starburst`、`shield`、`gear`
-- **材质**：`enamel`、`polished-metal`、`brushed-metal`、`ceramic`、`anodized`（阳极氧化铝）、`holographic`（全息镭射）、`crystal`（水晶宝石）
-- **浮雕基元**：
-  - `capsule`：胶囊形线条
-  - `circle`：圆片，可用作中心圆盘
-  - `ring`：圆环
-  - `pixels`：像素图，用字符画描述，`'#'` 为实心
-  - `text-arc`：沿上弧或下弧排布的立体文字
-  - `text`：水平排布的立体文字，用于中心的大数字
-  - `gem`：多面切割的宝石
-  - `path`：SVG 路径
-- **底纹**：在 `face` 层或浮雕上加 `pattern: 'sunburst' | 'rings'`，珐琅下面就会有放射纹或同心细纹。
-- **叠放**：浮雕上的 `z` 表示在正面板之上再抬高多少，用于把图案放在中心圆盘上。
-- **分级**：写 `tiers: [{ threshold, metal, label, accent? }]`。造型里用占位符：
-  - `'$metal'`：当前等级的金属色
-  - `'$accent'`：当前等级的珐琅色
-  - `'{label}'`：当前等级的文字
+- **Shapes:** `circle` (optionally with a reeded edge), `polygon`, `starburst`, `shield`, `gear`
+- **Materials:** `enamel`, `polished-metal`, `brushed-metal`, `ceramic`, `anodized`, `holographic`, `crystal`
+- **Relief:** `capsule`, `circle`, `ring`, `pixels` (ASCII art), `text-arc`, `text`, `gem`, `path` (SVG)
+- **Tiers:** `tiers: [{ threshold, metal, label, accent? }]`, then use `'$metal'`, `'$accent'` and `'{label}'` in the design
+- **Hidden:** `hidden: true` shows a pixel question mark until it is earned
 
-  引擎会按数据算出等级，并逐级校验配置。
-- **隐藏**：`hidden: true`。未解锁时正面只显示像素问号，标题显示为 `???`。
+Configs are validated at startup, and mistakes show up on the page in dev mode.
 
-设计时的截图工具：
+### Adding a tool
 
-```bash
-node scripts/peek.mjs "http://localhost:5199/?preview=unlocked" out.png <徽章id> [角度]
-```
+Create `src/brands/<id>/` (palette, helpers, badges, `en.js`), register it in `src/brands/index.js`, add a data source and sample data in `src/data/progress.js`, and write a collector in `src/collect/` with a leak test. Pull requests welcome.
 
-- 角度传 `3.14159` 截背面。
-- 角度传 `hold:0.6` 会把徽章钉在斜角，用来检查全息等材质的侧面效果。
-- **坐标**：以徽章中心为原点，外接半径约为 1。
-- **颜色**：写品牌色板里的键名，不要直接写色值。
+## Credits
 
-配置会在启动时校验，写错的字段会在开发模式下直接显示在页面上。
+- Ring lettering uses glyphs from [Outfit](https://fonts.google.com/specimen/Outfit) Bold (SIL Open Font License 1.1).
+- The Codex mark path comes from [LobeHub Icons](https://github.com/lobehub/lobe-icons) (MIT).
+- The Claude Code pixel mascot is redrawn cell by cell from the Claude Code icon in [Simple Icons](https://simpleicons.org/).
+- Rendering by [three.js](https://threejs.org/).
 
-## 新增一个品牌
+## Disclaimer
 
-1. 新建 `src/brands/<id>/`，包括：
-   - `brand.js`：色板和刻字模板。
-   - `helpers.js`：品牌锚点和配件工具。共用的奖章构图从 `../shared/medal.js` 引入。
-   - `badges.js` 和 `series/`：徽章配置。
-2. 在 `src/brands/index.js` 里登记。
-3. 在 `src/data/progress.js` 里登记数据源和示例数据。
-4. 如需本机数据，写一个 `scripts/collect-<id>.mjs`，统计逻辑放在 `src/data/<id>-metrics.js`，并为它写泄漏测试。
+Agent Badges is an unofficial, non-commercial hobby project. It is not affiliated with, endorsed by, or sponsored by Anthropic or OpenAI. Claude, Claude Code, Codex and related logos are trademarks of their respective owners and are used here only to identify which tool each badge is for. The MIT license covers this project's code and grants no rights to those trademarks.
 
-## 品牌素材
+## License
 
-- **Claude Code**：像素小怪物按 simple-icons 中的 Claude Code 图标逐格还原，见 `src/brands/claude-code/pixel-art.js`。
-- **Codex**：标志路径来自 [LobeHub Icons](https://github.com/lobehub/lobe-icons)（MIT），见 `src/brands/codex/icons.js`。
-
-两者的商标分别归 Anthropic 和 OpenAI 所有。本项目仅用于个人成就展示，公开发布前请先查看各自的品牌使用规范。
-
-## 文字环字体
-
-文字环的字形来自 [Outfit](https://fonts.google.com/specimen/Outfit) Bold（SIL Open Font License 1.1），由 `node scripts/build-font.mjs` 提取成 `src/engine/fonts/ring-font.json`。
-
-- 要换字体或补充字符，改这个脚本后重新运行即可。
-- 配置里用了字体里没有的字符时，校验会直接报错。
-
-## 本机真实数据
-
-用 `npx agent-badges` 或开发时的 `npm run collect` 采集。本机没装某个工具时会自动跳过。
-
-页面顶栏会标明数据来源：「本机数据 · 更新于 …」或「示例数据」。加 `?source=mock` 可以强制查看示例数据。
-
-**隐私边界**
-
-- **只读两类文件**：
-  - `~/.claude/stats-cache.json`：Claude Code 自己的汇总统计，只取数字字段。
-  - `~/.claude/projects/<项目>/<会话>.jsonl`：会话记录，每行只取白名单元数据，包括时间戳、会话 id、模型名（只保留 opus、sonnet、haiku、fable 这类家族名）、工具名、Token 计数、权限模式、附件和系统消息的类型值。
-- **当场丢弃**：对话正文、工具参数、工具结果、文件内容都不保存也不输出。MCP 服务名在读取时就转成哈希，只用来去重计数。
-- **不打开的文件**：`settings.json`、`.credentials.json`、MCP 配置、`history.jsonl`、`shell-snapshots`、`session-env`、`paste-cache`、`file-history`。
-- **输出位置**：`~/.agent-badges/`，不在项目目录里，不会被提交。输出文件里只有数字、日期、哈希和模型家族名，`tests/claude-code-metrics.test.js` 里有专门的测试验证正文不会泄漏。
-- **构建产物**：`npm run build` 生成的 `dist/index.html` 不含任何个人数据；只有 `export` 命令导出的网页会内嵌你的统计数字。
-- **增量缓存**：Codex 的会话记录可能有几 GB，首次采集需要一些时间；之后只处理新增或变化的文件。缓存同样只存按天汇总的数字，文件以路径哈希为键。
-
-**Codex 的隐私边界**
-
-- **只读两类数据**：
-  - `~/.codex/sessions/**/rollout-*.jsonl(.zst)`：会话记录。每行只取记录类型、时间戳、Token 计数、上下文压缩事件、推理强度和审批策略的取值。工具名只认 `apply_patch`、`update_plan`、`spawn_agent` 三个，其余一律记为 other；模型名在读取时就哈希。
-  - `~/.codex/state_5.sqlite` 的 `threads` 表：以只读方式打开，SQL 只 SELECT 六列，包括创建时间、来源、会话类型、模型、推理强度、审批策略。来源列里的子代理昵称、父会话 id 只用来分类，当场丢弃。
-- **不打开的文件**：`auth.json`、`config.toml`、`*.env`、`history.jsonl`、`transcription-history.jsonl`、`thread_history*.sqlite`、`logs*.sqlite`、`memories*`、`shell_snapshots`、`chatgpt-meetings`。
-- **不读的列**：`threads` 表里的标题、首条消息、预览、路径、git 信息、账号 id。
-- **验证**：`tests/codex-metrics.test.js` 里有泄漏测试。
-- **口径**：
-  - 线程只统计你自己发起的会话（VS Code / CLI / exec），自动审查和子代理不计。
-  - Token 是「未缓存输入 + 输出」，和 Claude Code 同口径。
-
-**累积账本**：Claude Code 会定期清理较早的会话记录，所以每次采集都会把结果并入 `claude-code.ledger.json`。账本按天汇总，已经拿到的徽章不会因为记录被清理而消失。
-
-**统计口径**
-
-| 徽章 | 口径 |
-| --- | --- |
-| Token 里程碑 | 输入 + 输出 + 缓存写入，不含缓存读取；同一条消息只计一次 |
-| 作息类（夜猫子、早起鸟） | 按你发出消息的本地时间判断 |
-| 马拉松 | 会话的活跃时长；两条记录间隔超过 30 分钟视为离开，不计入 |
-| 钩子匠人 | 会话记录里出现 hook 执行事件 |
-| 连接者 | 用过的 MCP 服务种类数 |
-| 深思熟虑 | 调用过进入或退出 Plan 模式的工具 |
-
-## 接入其他数据源
-
-只需实现一个返回 `ProgressMap` 的异步函数，并替换 `src/data/progress.js` 里对应品牌的 source。格式见该文件顶部的注释。
+[MIT](LICENSE) © 2026 Aryous

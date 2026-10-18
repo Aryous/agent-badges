@@ -23,7 +23,7 @@ const MOCKS = { 'claude-code': mockClaudeCode, codex: mockCodex };
  * @param {string} [o.lang]
  * @param {boolean} [o.unlocked] 覆盖解锁状态（默认用示例数据）
  */
-async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, lang = 'en', unlocked, tier, fill = 0.92, background = null }) {
+async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, lang = 'en', unlocked, tier, showcase = false, fill = 0.92, background = null }) {
   let brand, config, state;
   if (brandId === 'logo') {
     brand = logoBrand;
@@ -34,6 +34,12 @@ async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, la
     brand = b.brand;
     config = b.badges.find((x) => x.id === id);
     state = normalizeProgress(await MOCKS[brandId](), b.badges)[id];
+    // 展示用：分级徽章看最高级，隐藏徽章保持神秘，其余都已解锁
+    if (showcase) {
+      state = config.hidden
+        ? { ...state, unlocked: false, earnedAt: null, tier: null }
+        : { ...state, unlocked: true, earnedAt: state.earnedAt ?? '2026-10-24', tier: config.tiers ? config.tiers.length - 1 : null };
+    }
     if (unlocked !== undefined) state = { ...state, unlocked, earnedAt: state.earnedAt ?? '2026-05-02' };
     if (tier !== undefined) state = { ...state, unlocked: true, tier, earnedAt: state.earnedAt ?? '2026-05-02' };
   }

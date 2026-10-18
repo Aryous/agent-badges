@@ -7,6 +7,13 @@ import { spawn } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Node 22 读 SQLite 时会打印「实验特性」警告，对用户没有意义，只屏蔽这一条
+const emitWarning = process.emitWarning;
+process.emitWarning = (warning, ...rest) => {
+  if (String(warning?.message ?? warning).includes('SQLite is an experimental feature')) return;
+  return emitWarning.call(process, warning, ...rest);
+};
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const APP = join(ROOT, 'dist', 'index.html');
 const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));

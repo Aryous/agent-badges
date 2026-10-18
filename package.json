@@ -35,6 +35,15 @@
     "developer-tools",
     "ai-coding"
   ],
+  "homepage": "https://aryous.github.io/agent-badges/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aryous/agent-badges.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Aryous/agent-badges/issues"
+  },
+  "author": "Aryous",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
