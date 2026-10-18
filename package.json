@@ -16,6 +16,7 @@
     "src/data/claude-code-metrics.js",
     "src/data/codex-metrics.js",
     "src/data/daily.js",
+    "src/data/calendar.js",
     "src/data/highlights.js",
     "src/engine/tiers.js",
     "src/brands/",

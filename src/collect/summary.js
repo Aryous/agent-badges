@@ -7,7 +7,7 @@ import { normalizeProgress } from '../data/normalize.js';
 import { highlights } from '../data/highlights.js';
 import { badgeTitle } from '../brands/shared/text.js';
 
-const CATALOG = {
+export const BRAND_INFO = {
   'claude-code': { brand: claudeBrand, badges: claudeBadges },
   codex: { brand: codexBrand, badges: codexBadges },
 };
@@ -17,7 +17,7 @@ const label = (b, s, lang, { next = false } = {}) => badgeTitle(b, lang, next ? 
 
 /** 一个品牌的汇总数据（结构化，供 --json 输出）。 */
 export function summarize(brandId, rawProgress, { lang = 'en' } = {}) {
-  const { brand, badges } = CATALOG[brandId];
+  const { brand, badges } = BRAND_INFO[brandId];
   const p = normalizeProgress(rawProgress, badges);
   const h = highlights(badges, p);
   const unlocked = h.unlocked;

@@ -18,7 +18,12 @@ try {
   console.log(execFileSync(bin, ['--version'], { env, encoding: 'utf8' }).trim());
   const out = JSON.parse(execFileSync(bin, ['collect', '--json'], { env, encoding: 'utf8' }));
   execFileSync(bin, ['export', join(dir, 'out')], { env });
-  console.log(`pack OK: collect → ${out.brands.length} brand(s), export → out/index.html`);
+  // 卡片需要至少一个工具的数据：放一条最小的 Claude Code 会话记录
+  const proj = join(empty, 'claude', 'projects', 'p');
+  mkdirSync(proj, { recursive: true });
+  writeFileSync(join(proj, 's.jsonl'), JSON.stringify({ type: 'user', sessionId: 's', timestamp: new Date().toISOString(), message: { content: 'hi' } }) + '\n');
+  execFileSync(bin, ['card', '--out', join(dir, 'card.svg')], { env });
+  console.log(`pack OK: collect → ${out.brands.length} brand(s), export → out/index.html, card → card.svg`);
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }

@@ -20,12 +20,17 @@ const HELP = t(
   npx agent-badges                 采集本机数据，打开徽章墙
   npx agent-badges collect         只采集，在终端打印汇总
   npx agent-badges export <目录>   导出可离线打开的静态网页
+  npx agent-badges card            生成成就卡片 SVG（可放进 GitHub 个人主页）
 
 选项
   --brand <claude-code|codex>      只采集 / 只看某个工具
   --port <端口>                    本地页面端口（默认 4747）
   --no-open                        不自动打开浏览器
   --json                           以 JSON 输出汇总（collect）
+  --out <文件>                     卡片保存位置（默认 agent-badges-card.svg）
+  --theme <dark|light>             卡片配色（默认 dark）
+  --name <名字>                    卡片标题里的名字
+  --lang <en|zh>                   卡片语言（默认 en）
   -v, --version / -h, --help
 
 数据只读本机、只存 ~/.agent-badges（可用 AGENT_BADGES_HOME 修改），不上传任何内容。`,
@@ -35,12 +40,17 @@ Usage
   npx agent-badges                 collect local stats and open the badge wall
   npx agent-badges collect         collect only and print a summary
   npx agent-badges export <dir>    export a static page you can open offline
+  npx agent-badges card            write an achievement card SVG for your GitHub profile
 
 Options
   --brand <claude-code|codex>      only one tool
   --port <port>                    local page port (default 4747)
   --no-open                        don't open the browser
   --json                           print the summary as JSON (collect)
+  --out <file>                     where to save the card (default agent-badges-card.svg)
+  --theme <dark|light>             card colors (default dark)
+  --name <name>                    name shown on the card
+  --lang <en|zh>                   card language (default en)
   -v, --version / -h, --help
 
 Everything stays on this machine: data is read locally and stored in ~/.agent-badges
@@ -48,7 +58,7 @@ Everything stays on this machine: data is read locally and stored in ~/.agent-ba
 );
 
 export function parseArgs(argv) {
-  const opts = { command: 'open', dir: null, brand: null, port: 4747, open: true, json: false };
+  const opts = { command: 'open', dir: null, brand: null, port: 4747, open: true, json: false, out: null, theme: 'dark', name: '', cardLang: 'en' };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '-h' || a === '--help') opts.command = 'help';
@@ -57,11 +67,17 @@ export function parseArgs(argv) {
     else if (a === '--port') opts.port = Number(argv[++i]);
     else if (a === '--no-open') opts.open = false;
     else if (a === '--json') opts.json = true;
-    else if (a === 'collect' || a === 'export' || a === 'open') opts.command = a;
+    else if (a === '--out') opts.out = argv[++i];
+    else if (a === '--theme') opts.theme = argv[++i];
+    else if (a === '--name') opts.name = argv[++i] ?? '';
+    else if (a === '--lang') opts.cardLang = argv[++i];
+    else if (a === 'collect' || a === 'export' || a === 'open' || a === 'card') opts.command = a;
     else if (opts.command === 'export' && !opts.dir) opts.dir = a;
     else throw new Error(t(`不认识的参数：${a}`, `Unknown argument: ${a}`));
   }
   if (opts.brand && !['claude-code', 'codex'].includes(opts.brand)) throw new Error(t(`不支持的工具：${opts.brand}`, `Unsupported tool: ${opts.brand}`));
+  if (!['dark', 'light'].includes(opts.theme)) throw new Error(t(`不支持的配色：${opts.theme}`, `Unsupported theme: ${opts.theme}`));
+  if (!['en', 'zh'].includes(opts.cardLang)) throw new Error(t(`不支持的语言：${opts.cardLang}`, `Unsupported language: ${opts.cardLang}`));
   if (opts.command === 'export' && !opts.dir) throw new Error(t('export 需要一个目录', 'export needs a directory'));
   return opts;
 }
@@ -117,6 +133,22 @@ async function collectAndReport(opts) {
   return data;
 }
 
+/** 成就卡片：只含解锁数和几个总数，适合公开放在 GitHub 个人主页。 */
+async function writeCard(data, opts) {
+  const { renderCard } = await import('../src/collect/card.js');
+  const { BRAND_INFO, summarize } = await import('../src/collect/summary.js');
+  const brands = Object.entries(data).map(([id, d]) => {
+    const { brand } = BRAND_INFO[id];
+    const { unlocked, total } = summarize(id, d.progress);
+    return { id, name: brand.name, accent: brand.ui.accent, unlocked, total, daily: d.daily ?? {} };
+  });
+  if (!brands.length) throw new Error(t('没有可用的数据，无法生成卡片', 'No data found, so there is nothing to put on the card'));
+  const file = resolve(opts.out ?? 'agent-badges-card.svg');
+  writeFileSync(file, renderCard({ brands, name: opts.name, theme: opts.theme, lang: opts.cardLang }));
+  console.log(t(`\n成就卡片：${file}`, `\nCard saved to ${file}`));
+  console.log(t('放进 GitHub 个人主页 README：![Agent Badges](./agent-badges-card.svg)', 'Add it to your profile README: ![Agent Badges](./agent-badges-card.svg)'));
+}
+
 function appHtml(data) {
   if (!existsSync(APP)) throw new Error(t('没有找到页面文件，请先运行 npm run build', 'App not built. Run npm run build first.'));
   return import('../src/collect/inject.js').then(({ injectData }) => injectData(readFileSync(APP, 'utf8'), data));
@@ -155,6 +187,7 @@ async function main() {
 
   const data = await collectAndReport(opts);
   if (opts.command === 'collect') return;
+  if (opts.command === 'card') return writeCard(data, opts);
 
   const html = await appHtml(data);
   if (opts.command === 'export') {
