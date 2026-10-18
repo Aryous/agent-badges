@@ -192,6 +192,23 @@ export function aggregateCodexDays(sessions, threads) {
   return days;
 }
 
+/**
+ * 合并两份按天汇总（用于把各个会话文件的缓存结果加起来）：
+ * 计数相加，标记取或，最长会话取最大，模型取并集。
+ */
+export function mergeDays(a, b) {
+  const out = structuredClone(a);
+  for (const [date, d] of Object.entries(b)) {
+    const t = (out[date] ??= emptyDay());
+    for (const k of ['threads', 'turns', 'tokens', 'patches', 'compactions']) t[k] += d[k];
+    for (const k of ['spawn', 'plan', 'highEffort', 'fullAuto', 'review', 'vscode']) t[k] ||= d[k];
+    t.longestSessionMin = Math.max(t.longestSessionMin, d.longestSessionMin);
+    d.hours.forEach((h, i) => (t.hours[i] += h));
+    for (const m of d.models) if (!t.models.includes(m)) t.models.push(m);
+  }
+  return out;
+}
+
 /** 账本合并：本次能看到的日期以本次为准，看不到的日期保留旧值。 */
 export function mergeCodexLedger(ledger, freshDays) {
   const days = { ...(ledger?.days ?? {}) };

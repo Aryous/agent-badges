@@ -5,11 +5,23 @@ Apple Watch 运动徽章风格的 3D 成就徽章，用 three.js 程序化生成
 ## 运行
 
 ```bash
+npx agent-badges                 # 采集本机数据，打开徽章墙（全程离线，数据不出本机）
+npx agent-badges collect         # 只采集，在终端打印汇总（--json 输出结构化结果）
+npx agent-badges export ./out    # 导出可离线打开的静态网页（含你的统计数字）
+npx agent-badges --brand codex   # 只看某个工具；--no-open 不自动打开浏览器
+```
+
+数据保存在 `~/.agent-badges`，可以用 `AGENT_BADGES_HOME` 修改。工具目录可以用 `CLAUDE_CONFIG_DIR` 和 `CODEX_HOME` 指定。需要 Node.js 22.15 或更高版本。
+
+开发：
+
+```bash
 npm install
+npm run collect        # 采集本机数据到 ~/.agent-badges，开发服务器会自动注入
 npm run dev            # http://localhost:5173
-npm run build          # 输出单文件 dist/index.html，可直接双击打开
-npm test               # 单元测试
-npm run check:browser  # 浏览器实测（需先 npm run dev -- --port 5199），截图在 screenshots/
+npm run build          # 构建 dist/index.html（不含个人数据，没有注入时显示示例数据）
+npm test               # 单元测试 + CLI 端到端测试
+npm run check:browser  # 浏览器实测（需先 npm run dev -- --port 5199）
 ```
 
 页面参数：
@@ -107,13 +119,7 @@ node scripts/peek.mjs "http://localhost:5199/?preview=unlocked" out.png <徽章i
 
 ## 本机真实数据
 
-```bash
-npm run collect          # 依次采集 Claude Code 和 Codex，生成徽章进度；之后刷新页面即可
-npm run collect:claude   # 只采集 Claude Code
-npm run collect:codex    # 只采集 Codex
-```
-
-本机没装某个工具时会自动跳过。
+用 `npx agent-badges` 或开发时的 `npm run collect` 采集。本机没装某个工具时会自动跳过。
 
 页面顶栏会标明数据来源：「本机数据 · 更新于 …」或「示例数据」。加 `?source=mock` 可以强制查看示例数据。
 
@@ -124,8 +130,9 @@ npm run collect:codex    # 只采集 Codex
   - `~/.claude/projects/<项目>/<会话>.jsonl`：会话记录，每行只取白名单元数据，包括时间戳、会话 id、模型名（只保留 opus、sonnet、haiku、fable 这类家族名）、工具名、Token 计数、权限模式、附件和系统消息的类型值。
 - **当场丢弃**：对话正文、工具参数、工具结果、文件内容都不保存也不输出。MCP 服务名在读取时就转成哈希，只用来去重计数。
 - **不打开的文件**：`settings.json`、`.credentials.json`、MCP 配置、`history.jsonl`、`shell-snapshots`、`session-env`、`paste-cache`、`file-history`。
-- **输出位置**：`src/data/generated/`，已加入 `.gitignore`。输出文件里只有数字、日期、哈希和模型家族名，`tests/claude-code-metrics.test.js` 里有专门的测试验证正文不会泄漏。
-- **构建产物**：`npm run build` 会把这份统计打包进 `dist/index.html`。分享构建产物前请留意这一点，也可以用 `?source=mock` 的版本。
+- **输出位置**：`~/.agent-badges/`，不在项目目录里，不会被提交。输出文件里只有数字、日期、哈希和模型家族名，`tests/claude-code-metrics.test.js` 里有专门的测试验证正文不会泄漏。
+- **构建产物**：`npm run build` 生成的 `dist/index.html` 不含任何个人数据；只有 `export` 命令导出的网页会内嵌你的统计数字。
+- **增量缓存**：Codex 的会话记录可能有几 GB，首次采集需要一些时间；之后只处理新增或变化的文件。缓存同样只存按天汇总的数字，文件以路径哈希为键。
 
 **Codex 的隐私边界**
 

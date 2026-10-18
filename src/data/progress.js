@@ -13,11 +13,15 @@
 
 import mockClaudeCode from './mock-claude-code.js';
 import mockCodex from './mock-codex.js';
-import { tierIndexFor } from '../engine/tiers.js';
+import { normalizeProgress } from './normalize.js';
 
-// npm run collect 生成的本地数据（已 gitignore）。文件不存在时自动退回示例数据。
-const generated = import.meta.glob('./generated/*.json', { eager: true, import: 'default' });
-const local = (brandId) => generated[`./generated/${brandId}.json`] ?? null;
+export { normalizeProgress };
+
+// 本机数据由 CLI（npx agent-badges）或开发服务器注入页面：
+//   <script>window.__AGENT_BADGES_DATA__ = { 'claude-code': {...}, codex: {...} }</script>
+// 公开的在线演示不注入，自动退回示例数据。
+const injected = () => (typeof window !== 'undefined' && window.__AGENT_BADGES_DATA__) || {};
+const local = (brandId) => injected()[brandId] ?? null;
 const MOCKS = { 'claude-code': mockClaudeCode, codex: mockCodex };
 
 /** 数据来源说明，供页面展示。 */
@@ -36,38 +40,6 @@ const SOURCES = {
   'claude-code': source('claude-code'),
   codex: source('codex'),
 };
-
-/** 补齐缺失字段：没有数据的徽章按「未解锁、进度 0」处理。 */
-export function normalizeProgress(raw, badges) {
-  const out = {};
-  for (const b of badges) {
-    const r = raw?.[b.id] ?? {};
-    if (b.tiers) {
-      const value = r.value ?? 0;
-      const tier = tierIndexFor(b.tiers, value);
-      const next = b.tiers[tier + 1] ?? b.tiers[b.tiers.length - 1];
-      out[b.id] = {
-        unlocked: tier >= 0,
-        earnedAt: tier >= 0 ? r.earnedAt ?? null : null,
-        tier: tier >= 0 ? tier : null,
-        value,
-        progress: { current: value, target: next.threshold },
-      };
-      continue;
-    }
-    const target = r.progress?.target ?? b.criteria.target;
-    const current = Math.min(r.progress?.current ?? 0, target);
-    const unlocked = Boolean(r.unlocked ?? (r.value !== undefined && r.value >= target));
-    out[b.id] = {
-      unlocked,
-      earnedAt: unlocked ? r.earnedAt ?? null : null,
-      tier: null,
-      value: r.value ?? current,
-      progress: { current: r.value !== undefined ? Math.min(r.value, target) : current, target },
-    };
-  }
-  return out;
-}
 
 /**
  * 读取进度。数据源失败时不抛出，返回全部未解锁并带上 error。

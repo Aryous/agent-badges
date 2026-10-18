@@ -1,8 +1,32 @@
 import { defineConfig } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { dataHome } from './src/collect/common.js';
+import { injectData } from './src/collect/inject.js';
+
+/**
+ * 开发服务器：把 ~/.agent-badges 里的本机数据注入页面（npm run collect 生成）。
+ * 只在 dev 生效，构建产物不含任何个人数据。
+ */
+function localData() {
+  return {
+    name: 'agent-badges-local-data',
+    apply: 'serve',
+    transformIndexHtml(html) {
+      const home = dataHome();
+      const data = {};
+      for (const id of ['claude-code', 'codex']) {
+        const p = join(home, `${id}.json`);
+        if (existsSync(p)) data[id] = JSON.parse(readFileSync(p, 'utf8'));
+      }
+      return Object.keys(data).length ? injectData(html, data) : html;
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [viteSingleFile()],
+  plugins: [viteSingleFile(), localData()],
   build: { target: 'es2022', assetsInlineLimit: 100000000 },
   // 组装全部徽章的测试较重，机器负载高时可能超过默认的 5 秒
   test: { environment: 'node', include: ['tests/**/*.test.js'], testTimeout: 30000 },
