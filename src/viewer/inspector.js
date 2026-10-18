@@ -12,19 +12,30 @@ const SPRING_C = 9; // 略欠阻尼，吸附时会有一点回弹
 const MAX_TILT = (20 * Math.PI) / 180;
 const MAX_FLING = 24; // 松手时角速度上限（rad/s），避免一甩转太多圈
 
-export function computeFocusLayout(view) {
-  const { halfW, halfH, aspect } = view;
+/**
+ * 单枚查看时徽章的位置和大小。
+ * reserve.top / reserve.bottom 是顶栏和底部信息区占用的像素高度，
+ * 徽章放在两者之间的空白里，信息区变高（如分级阶梯）时自动缩小。
+ */
+export function computeFocusLayout(view, reserve = {}) {
+  const { halfW, halfH, aspect, height } = view;
   const narrow = aspect < 0.85;
+  const top = reserve.top ?? height * 0.1;
+  const bottom = reserve.bottom ?? height * 0.36;
+  const pxPerUnit = height / 2 / halfH;
+  const availPx = Math.max(height * 0.3, height - top - bottom);
   // 宽度上限要让导出预览框（r / 0.84）也留在屏幕内
-  const r = Math.min(halfH * (narrow ? 0.46 : 0.5), halfW * 0.76);
-  return { x: 0, y: halfH * (narrow ? 0.2 : 0.24), r, scale: r / 1.06 };
+  const r = Math.min((availPx / 2 / pxPerUnit) * 0.9, halfH * (narrow ? 0.46 : 0.5), halfW * 0.76);
+  const y = (height / 2 - (top + availPx / 2)) / pxPerUnit;
+  return { x: 0, y, r, scale: r / 1.06 };
 }
 
 export function createInspector({ stage, items }) {
   const { renderer, view } = stage;
   const el = renderer.domElement;
   let current = null;
-  let layout = computeFocusLayout(view);
+  let reserve = {};
+  let layout = computeFocusLayout(view, reserve);
   /** award 动画进行时由外部接管位置和角度 */
   const override = { active: false, z: 0, scaleMul: 1 };
   const spin = { angle: 0, vel: 0, tilt: 0, tiltVel: 0, dragging: false, snapping: false };
@@ -144,8 +155,9 @@ export function createInspector({ stage, items }) {
     onFaceChange(fn) {
       listeners.add(fn);
     },
-    layoutChanged() {
-      layout = computeFocusLayout(view);
+    layoutChanged(nextReserve) {
+      if (nextReserve) reserve = nextReserve;
+      layout = computeFocusLayout(view, reserve);
     },
     open(item) {
       current = item;

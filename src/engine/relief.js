@@ -1,6 +1,6 @@
 import { ExtrudeGeometry, Mesh, Shape } from 'three';
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
-import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
+import { smoothBevels } from './normals.js';
 import { pixelShapes } from './pixels.js';
 import { arcTextGeometry, textGeometry } from './text.js';
 import { BadgeUV } from './uv.js';
@@ -77,10 +77,10 @@ export function reliefShapes(item) {
 export function reliefGeometry(item) {
   const height = item.height ?? 0.04;
   if (item.kind === 'text-arc') {
-    return toCreasedNormals(arcTextGeometry({ ...item, height }), Math.PI / 5);
+    return smoothBevels(arcTextGeometry({ ...item, height }), Math.PI / 5);
   }
   if (item.kind === 'text') {
-    return toCreasedNormals(textGeometry({ ...item, height }), Math.PI / 5);
+    return smoothBevels(textGeometry({ ...item, height }), Math.PI / 5);
   }
   if (item.kind === 'gem') {
     // 八边形台面 + 一圈单段倒角 = 切割宝石的冠部刻面；不平滑法线，保留刻面的硬光
@@ -115,9 +115,8 @@ export function reliefGeometry(item) {
     curveSegments: 24,
     UVGenerator: BadgeUV,
   });
-  // 平滑倒角上的逐面法线，保留顶面与侧面之间的硬边
-  const geo = toCreasedNormals(raw, Math.PI / 6);
-  raw.dispose();
+  // 平滑倒角上的逐面法线，顶面保持纯平
+  const geo = smoothBevels(raw, Math.PI / 6);
   // ExtrudeGeometry 的 z 范围是 [-bevel, depth + bevel]，把底部对齐到 0
   geo.translate(0, 0, bevel);
   return geo;

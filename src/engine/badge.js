@@ -1,5 +1,5 @@
 import { Color, ExtrudeGeometry, Group, Mesh } from 'three';
-import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
+import { smoothBevels } from './normals.js';
 import { makeOutline, outlineSegments, reededOutline, withHole } from './shapes.js';
 import { resolveTier } from './tiers.js';
 import { BadgeUV } from './uv.js';
@@ -106,7 +106,7 @@ export function buildBadge(rawConfig, brand, state) {
   // 外圈
   const ringShape = withHole(makeOutline(shape, 0), makeOutline(shape, inset), segments);
   // ExtrudeGeometry 的法线是逐面的，倒角会一格一格地反光；平滑 30° 以内的折角
-  const ringGeo = toCreasedNormals(extrude(ringShape, depth, { bevel, segments }), SMOOTH_ANGLE);
+  const ringGeo = smoothBevels(extrude(ringShape, depth, { bevel, segments }), SMOOTH_ANGLE);
   const ring = new Mesh(ringGeo, mat(rimLayer.material, rimLayer.color));
   ring.geometry.translate(0, 0, -depth / 2);
   ring.name = 'rim';

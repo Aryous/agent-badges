@@ -1,4 +1,5 @@
-// 快速截图：node scripts/peek.mjs <url> <out.png> [badgeId] [angle] [w] [h]
+// 快速截图：node scripts/peek.mjs <url> <out.png> [badgeId] [angle | hold:angle] [w] [h]
+// angle 会吸附到正/背面；hold:0.5 把徽章钉在 0.5 弧度的斜角。
 // 不给 badgeId 时截陈列墙（整页）。
 import { chromium } from 'playwright-core';
 const [url, out, id, angle, w = 1440, h = 900] = process.argv.slice(2);
@@ -11,7 +12,8 @@ await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 6000
 if (id) {
   await page.evaluate((id) => window.__badgeApp.open(id, { award: false }), id);
   await page.waitForTimeout(1500);
-  if (angle) await page.evaluate((a) => window.__badgeApp.setAngle(+a), angle);
+  if (angle?.startsWith('hold:')) await page.evaluate((a) => window.__badgeApp.hold(+a), angle.slice(5));
+  else if (angle) await page.evaluate((a) => window.__badgeApp.setAngle(+a), angle);
   await page.waitForTimeout(1000);
   await page.screenshot({ path: out });
 } else {

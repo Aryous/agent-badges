@@ -122,7 +122,7 @@ function glyphGeometry(ch, em, height, bevel) {
  * 水平排布的立体文字（中心大数字等），以 center 为中心，大写字母高度为 size。
  * 底面在 z=0，向 +z 凸起 height。
  */
-export function textGeometry({ text, size, center = [0, 0], tracking = 0.04, height = 0.05, bevel = 0.01 }) {
+export function textGeometry({ text, size, center = [0, 0], tracking = 0.04, height = 0.05, bevel = size * 0.07 }) {
   const em = size / font.capHeight;
   const chars = [...text];
   chars.forEach((ch) => {

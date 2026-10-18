@@ -187,6 +187,13 @@ async function main() {
     $('[data-replay]').hidden = !state.unlocked;
   }
 
+  /** 顶栏 + 返回按钮、底部信息区各占多少像素，徽章放在中间。 */
+  function measureReserve() {
+    const info = inspectorEl.querySelector('.info').getBoundingClientRect();
+    const back = $('[data-close]').getBoundingClientRect();
+    return { top: back.bottom + 16, bottom: window.innerHeight - info.top + 20 };
+  }
+
   function open(item, { award = true, viaKeyboard = false } = {}) {
     if (mode === 'inspect' && inspector.current === item) return;
     clearTimeout(closeTimer);
@@ -195,8 +202,9 @@ async function main() {
     mode = 'inspect';
     document.body.classList.add('is-inspecting');
     overlay.hidden = false;
+    fillInfo(item);
     stage.resize();
-    inspector.layoutChanged();
+    inspector.layoutChanged(measureReserve());
 
     item.pivot.rotation.set(0, 0, 0);
     const { layout } = inspector;
@@ -204,7 +212,6 @@ async function main() {
     item.holder.scale.setScalar(layout.scale * 0.6);
     stage.scene.add(item.holder);
     inspector.open(item);
-    fillInfo(item);
     setExportPanel(false);
     startLoop();
     requestAnimationFrame(() => {
@@ -320,7 +327,7 @@ async function main() {
   window.addEventListener('resize', () => {
     if (mode !== 'inspect') return;
     stage.resize();
-    inspector.layoutChanged();
+    inspector.layoutChanged(measureReserve());
     if (!exportPanel.hidden) placeExportFrame();
   });
 
@@ -355,6 +362,14 @@ async function main() {
     setAngle(a) {
       inspector.spin.angle = a;
       inspector.spin.vel = 0;
+    },
+    /** 把徽章钉在某个角度（不吸附），用于检查斜角下的材质。 */
+    hold(angle, tilt = 0) {
+      inspector.override.active = true;
+      inspector.override.z = 0;
+      inspector.override.scaleMul = 1;
+      inspector.spin.angle = angle;
+      inspector.spin.tilt = tilt;
     },
     get face() {
       return inspector.face;

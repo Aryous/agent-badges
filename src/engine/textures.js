@@ -143,7 +143,8 @@ export function holoTexture(size = 512) {
       const y = (j + 0.5) / size * 2 - 1;
       const r = Math.hypot(x, y);
       const a = Math.atan2(y, x);
-      const v = 0.5 + 0.28 * Math.sin(r * 26 + a * 3) + 0.22 * Math.sin(a * 6 - r * 9);
+      // 低频、平滑：一圈圈宽的彩虹带 + 一点斜向渐变，避免细碎的油膜斑块
+      const v = 0.5 + 0.32 * Math.sin(r * 7.5) + 0.14 * (x * 0.8 + y * 0.5) + 0.04 * Math.sin(a * 2);
       const g = Math.round(Math.min(1, Math.max(0, v)) * 255);
       const k = (j * size + i) * 4;
       data[k] = g;
