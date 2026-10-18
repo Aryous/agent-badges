@@ -5,7 +5,7 @@ import badgeConfigs, { SERIES } from './brands/claude-code/badges.js';
 import { buildBadge } from './engine/badge.js';
 import { partitionBadges, validateBrand } from './engine/validate.js';
 import { TIER_NAMES } from './engine/tiers.js';
-import { loadProgress } from './data/progress.js';
+import { loadProgress, sourceInfo } from './data/progress.js';
 import { createStage, supportsWebGL } from './viewer/scene.js';
 import { createGrid, describeState, formatCount } from './viewer/grid.js';
 import { createInspector } from './viewer/inspector.js';
@@ -69,7 +69,9 @@ async function main() {
     if (import.meta.env.DEV) notices.push(...errors.map((e) => e.message));
   }
 
-  const { progress, error } = await loadProgress(brand.id, valid);
+  const forceMock = new URLSearchParams(location.search).get('source') === 'mock';
+  const { progress, error } = await loadProgress(brand.id, valid, undefined, { forceMock });
+  const source = sourceInfo(brand.id, { forceMock });
   applyPreview(valid, progress);
   if (error) {
     console.error(error);
@@ -81,6 +83,14 @@ async function main() {
   document.title = `${brand.name} 成就徽章`;
   const unlockedCount = valid.filter((c) => progress[c.id].unlocked).length;
   $('[data-tally]').innerHTML = `<b>${unlockedCount}</b> / ${valid.length} 已解锁`;
+  const sourceEl = $('[data-source]');
+  if (source.kind === 'local') {
+    const t = new Date(source.generatedAt);
+    sourceEl.textContent = `本机数据 · 更新于 ${t.getMonth() + 1} 月 ${t.getDate()} 日 ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+  } else {
+    sourceEl.textContent = '示例数据';
+    sourceEl.title = '运行 npm run collect 生成本机数据';
+  }
 
   const stage = createStage($('#stage'));
   const tweens = new Tweens();

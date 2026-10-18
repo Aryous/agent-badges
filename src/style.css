@@ -338,6 +338,23 @@ button {
   color: var(--muted);
 }
 
+.topbar-right {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.source {
+  font-size: 12px;
+  color: var(--faint);
+}
+
+@media (max-width: 640px) {
+  .source {
+    display: none;
+  }
+}
+
 .tally {
   font-size: 13px;
   color: var(--muted);

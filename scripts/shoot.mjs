@@ -3,7 +3,9 @@
 import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const url = process.argv[2] ?? 'http://localhost:5199/';
+// 固定使用示例数据，检查结果不随本机真实数据变化
+const withMock = (u) => u + (u.includes('?') ? '&' : '?') + 'source=mock';
+const url = withMock(process.argv[2] ?? 'http://localhost:5199/');
 const out = process.argv[3] ?? 'screenshots';
 mkdirSync(out, { recursive: true });
 

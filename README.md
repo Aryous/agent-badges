@@ -98,6 +98,37 @@ node scripts/peek.mjs "http://localhost:5199/?preview=unlocked" out.png <徽章i
 
 Claude Code 像素小怪物按 [simple-icons](https://simpleicons.org/) 中的 Claude Code 图标逐格还原（`src/brands/claude-code/pixel-art.js`）。商标归 Anthropic 所有，本项目仅用于个人成就展示；公开发布前请先查看品牌使用规范。
 
-## 接入真实数据
+## 本机真实数据
+
+```bash
+npm run collect   # 读取本机 Claude Code 统计，生成徽章进度；之后刷新页面即可
+```
+
+页面顶栏会标明数据来源：「本机数据 · 更新于 …」或「示例数据」。加 `?source=mock` 可以强制查看示例数据。
+
+**隐私边界**
+
+- **只读两类文件**：
+  - `~/.claude/stats-cache.json`：Claude Code 自己的汇总统计，只取数字字段。
+  - `~/.claude/projects/<项目>/<会话>.jsonl`：会话记录，每行只取白名单元数据，包括时间戳、会话 id、模型名（只保留 opus、sonnet、haiku、fable 这类家族名）、工具名、Token 计数、权限模式、附件和系统消息的类型值。
+- **当场丢弃**：对话正文、工具参数、工具结果、文件内容都不保存也不输出。MCP 服务名在读取时就转成哈希，只用来去重计数。
+- **不打开的文件**：`settings.json`、`.credentials.json`、MCP 配置、`history.jsonl`、`shell-snapshots`、`session-env`、`paste-cache`、`file-history`。
+- **输出位置**：`src/data/generated/`，已加入 `.gitignore`。输出文件里只有数字、日期、哈希和模型家族名，`tests/claude-code-metrics.test.js` 里有专门的测试验证正文不会泄漏。
+- **构建产物**：`npm run build` 会把这份统计打包进 `dist/index.html`。分享构建产物前请留意这一点，也可以用 `?source=mock` 的版本。
+
+**累积账本**：Claude Code 会定期清理较早的会话记录，所以每次采集都会把结果并入 `claude-code.ledger.json`。账本按天汇总，已经拿到的徽章不会因为记录被清理而消失。
+
+**统计口径**
+
+| 徽章 | 口径 |
+| --- | --- |
+| Token 里程碑 | 输入 + 输出 + 缓存写入，不含缓存读取；同一条消息只计一次 |
+| 作息类（夜猫子、早起鸟） | 按你发出消息的本地时间判断 |
+| 马拉松 | 会话的活跃时长；两条记录间隔超过 30 分钟视为离开，不计入 |
+| 钩子匠人 | 会话记录里出现 hook 执行事件 |
+| 连接者 | 用过的 MCP 服务种类数 |
+| 深思熟虑 | 调用过进入或退出 Plan 模式的工具 |
+
+## 接入其他数据源
 
 只需实现一个返回 `ProgressMap` 的异步函数，并替换 `src/data/progress.js` 里对应品牌的 source。格式见该文件顶部的注释。

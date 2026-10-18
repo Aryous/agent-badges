@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "collect": "node scripts/collect-claude-code.mjs",
     "check:browser": "node scripts/shoot.mjs"
   },
   "dependencies": {
