@@ -8,6 +8,7 @@
     <title>Claude Code 成就徽章</title>
   </head>
   <body>
+    <div class="export-frame" id="export-frame" data-bg="transparent" aria-hidden="true"></div>
     <canvas id="stage" aria-label="3D 徽章展示区"></canvas>
 
     <header class="topbar">
@@ -40,8 +41,8 @@
           <button class="btn" data-replay type="button">重播动画</button>
           <div class="export">
             <div class="seg" role="radiogroup" aria-label="导出背景">
-              <button type="button" role="radio" aria-checked="true" data-bg="transparent">透明</button>
-              <button type="button" role="radio" aria-checked="false" data-bg="ink">墨色</button>
+              <button type="button" role="radio" aria-checked="true" data-bg="transparent"><span class="swatch" aria-hidden="true"></span>透明</button>
+              <button type="button" role="radio" aria-checked="false" data-bg="ink"><span class="swatch" aria-hidden="true"></span>墨色</button>
             </div>
             <button class="btn btn-primary" data-export type="button">导出 PNG</button>
           </div>

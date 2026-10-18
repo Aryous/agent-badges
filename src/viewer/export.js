@@ -5,7 +5,10 @@ import { FOV } from './scene.js';
 // 直接用主画布而不是离屏 render target，是因为 three 只在画到屏幕时
 // 做色调映射和 sRGB 转换，离屏渲染出来的颜色会和屏幕上不一致。
 
-export function renderBadgePNG({ stage, items, item, background = null, size = 2048, fill = 0.84 }) {
+/** 徽章占导出画面的比例；页面上的导出预览框也按这个比例绘制。 */
+export const EXPORT_FILL = 0.84;
+
+export function renderBadgePNG({ stage, items, item, background = null, size = 2048, fill = EXPORT_FILL }) {
   const { renderer, scene, camera } = stage;
   const canvas = renderer.domElement;
 

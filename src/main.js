@@ -9,7 +9,7 @@ import { createStage, supportsWebGL } from './viewer/scene.js';
 import { createWall } from './viewer/wall.js';
 import { createInspector } from './viewer/inspector.js';
 import { playAward } from './viewer/award-animation.js';
-import { downloadDataURL, renderBadgePNG } from './viewer/export.js';
+import { EXPORT_FILL, downloadDataURL, renderBadgePNG } from './viewer/export.js';
 import { Tweens } from './viewer/anim.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -140,7 +140,11 @@ async function main() {
     inspector.open(item);
     fillInfo(item);
     inspectorEl.hidden = false;
-    requestAnimationFrame(() => inspectorEl.classList.add('is-open'));
+    placeExportFrame();
+    requestAnimationFrame(() => {
+      inspectorEl.classList.add('is-open');
+      exportFrame.classList.add('is-visible');
+    });
     history.replaceState(null, '', `#${item.config.id}`);
     $('[data-close]').focus({ preventScroll: true });
     if (award && item.state.unlocked) runAward();
@@ -156,6 +160,7 @@ async function main() {
     mode = 'wall';
     inspectorEl.classList.remove('is-open');
     inspectorEl.hidden = true;
+    exportFrame.classList.remove('is-visible');
     wall.setActive(true);
     history.replaceState(null, '', location.pathname + location.search);
     item?.label.focus({ preventScroll: true });
@@ -165,11 +170,27 @@ async function main() {
 
   $('[data-close]').addEventListener('click', close);
   $('[data-replay]').addEventListener('click', runAward);
+  // 导出背景切换：预览框立即换底，让选择在屏幕上看得见
+  const exportFrame = $('#export-frame');
   for (const b of inspectorEl.querySelectorAll('[data-bg]')) {
     b.addEventListener('click', () => {
       exportBg = b.dataset.bg;
+      exportFrame.dataset.bg = exportBg;
       inspectorEl.querySelectorAll('[data-bg]').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
     });
+  }
+
+  /** 把预览框放到导出 PNG 的取景范围上（以单枚查看的最终位置为准）。 */
+  function placeExportFrame() {
+    const { layout } = inspector;
+    const { view } = stage;
+    const pxPerUnit = view.height / 2 / view.halfH;
+    const half = (layout.r / EXPORT_FILL) * pxPerUnit;
+    const cx = view.width / 2 + layout.x * pxPerUnit;
+    const cy = view.height / 2 - layout.y * pxPerUnit;
+    exportFrame.style.width = exportFrame.style.height = `${half * 2}px`;
+    exportFrame.style.transform = `translate(${cx - half}px, ${cy - half}px)`;
+    exportFrame.style.borderRadius = `${Math.round(half * 0.12)}px`;
   }
   $('[data-export]').addEventListener('click', () => exportCurrent(exportBg));
 
@@ -200,6 +221,7 @@ async function main() {
     stage.resize();
     wall.layout();
     inspector.layoutChanged();
+    placeExportFrame();
   });
 
   // ---------- 渲染循环 ----------

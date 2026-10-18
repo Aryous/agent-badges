@@ -15,7 +15,8 @@ const MAX_FLING = 24; // 松手时角速度上限（rad/s），避免一甩转�
 export function computeFocusLayout(view) {
   const { halfW, halfH, aspect } = view;
   const narrow = aspect < 0.85;
-  const r = Math.min(halfH * (narrow ? 0.46 : 0.5), halfW * 0.86);
+  // 宽度上限要让导出预览框（r / 0.84）也留在屏幕内
+  const r = Math.min(halfH * (narrow ? 0.46 : 0.5), halfW * 0.76);
   return { x: 0, y: halfH * (narrow ? 0.2 : 0.24), r, scale: r / 1.06 };
 }
 

@@ -86,6 +86,25 @@ async function session(viewport, tag) {
       check('惯性结束后吸附', Math.abs(Math.sin(settled.angle)) < 0.02 && Math.abs(settled.vel) < 0.05,
         `转过 ${(settled.angle / Math.PI).toFixed(2)}π`);
 
+      // 切换导出背景：预览框要立即跟着变化
+      const frameState = () =>
+        page.evaluate(() => {
+          const f = document.querySelector('#export-frame');
+          if (!f) return null;
+          const cs = getComputedStyle(f);
+          return { bg: f.dataset.bg, visible: cs.opacity !== '0' && cs.display !== 'none', image: cs.backgroundImage !== 'none' };
+        });
+      await page.locator('[data-bg="ink"]').click();
+      await page.waitForTimeout(500);
+      const inkFrame = await frameState();
+      await page.screenshot({ path: `${out}/desktop-export-frame-ink.png` });
+      await page.locator('[data-bg="transparent"]').click();
+      await page.waitForTimeout(500);
+      const tFrame = await frameState();
+      await page.screenshot({ path: `${out}/desktop-export-frame-transparent.png` });
+      check('选墨色时预览框显示墨色底', inkFrame?.visible && inkFrame.bg === 'ink' && !inkFrame.image, JSON.stringify(inkFrame));
+      check('选透明时预览框显示棋盘格', tFrame?.visible && tFrame.bg === 'transparent' && tFrame.image, JSON.stringify(tFrame));
+
       for (const bg of ['transparent', 'ink']) {
         const res = await page.evaluate((bg) => window.__badgeApp.exportPNG(bg), bg);
         const buf = Buffer.from(res.dataURL.split(',')[1], 'base64');

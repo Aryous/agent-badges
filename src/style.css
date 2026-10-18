@@ -351,6 +351,9 @@ button {
 }
 
 .seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 0 10px;
   border: 0;
   border-radius: 5px;
@@ -358,11 +361,63 @@ button {
   font-size: 12px;
   color: var(--muted);
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.seg button:hover {
+  color: var(--text);
 }
 
 .seg button[aria-checked='true'] {
-  background: rgba(240, 238, 230, 0.1);
+  background: rgba(240, 238, 230, 0.16);
   color: var(--text);
+  font-weight: 600;
+}
+
+/* 按钮里的小色块：棋盘格 = 透明，墨色方块 = 墨色 */
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(240, 238, 230, 0.35);
+}
+
+[data-bg='transparent'] > .swatch {
+  background: conic-gradient(#8f8b82 0 25%, #f0eee6 0 50%, #8f8b82 0 75%, #f0eee6 0) 0 0 / 5px 5px;
+}
+
+[data-bg='ink'] > .swatch {
+  background: var(--bg);
+}
+
+/* ---------- 导出范围预览 ---------- */
+
+.export-frame {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-radius: 28px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.export-frame.is-visible {
+  opacity: 1;
+}
+
+.export-frame[data-bg='transparent'] {
+  background-color: #1d1c1a;
+  background-image: conic-gradient(#272522 0 25%, transparent 0 50%, #272522 0 75%, transparent 0);
+  background-size: 28px 28px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.export-frame[data-bg='ink'] {
+  background-color: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .btn:focus-visible,
@@ -437,6 +492,7 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .export-frame,
   .inspector .info,
   .inspector .btn-back,
   .labels {
