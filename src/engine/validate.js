@@ -1,4 +1,5 @@
-import { LAYER_KINDS, MATERIAL_TYPES, RELIEF_EFFECTS, RELIEF_KINDS, SHAPE_TYPES } from './registry.js';
+import { LAYER_KINDS, MATERIAL_TYPES, PATTERNS, RELIEF_EFFECTS, RELIEF_KINDS, SHAPE_TYPES } from './registry.js';
+import { hasGlyph } from './text.js';
 
 // 配置校验：在构建 3D 对象之前发现拼写错误和缺失字段。
 
@@ -48,6 +49,7 @@ export function validateBadge(config, brand) {
     if (!LAYER_KINDS.includes(l.kind)) fail(`layers[${i}] 的类型「${l.kind}」未注册`);
     checkMaterial(`layers[${i}]`, l.material);
     checkColor(`layers[${i}]`, l.color);
+    if (l.pattern && !PATTERNS.includes(l.pattern)) fail(`layers[${i}] 的底纹「${l.pattern}」未注册`);
   }
   if (layers.filter((l) => l.kind === 'rim').length !== 1) fail('layers 需要恰好一个 rim');
   const face = layers.filter((l) => l.kind === 'face');
@@ -61,7 +63,17 @@ export function validateBadge(config, brand) {
     if (!RELIEF_KINDS.includes(r.kind)) fail(`relief[${i}] 的类型「${r.kind}」未注册`);
     checkMaterial(`relief[${i}]`, r.material);
     checkColor(`relief[${i}]`, r.color);
+    if (r.pattern && !PATTERNS.includes(r.pattern)) fail(`relief[${i}] 的底纹「${r.pattern}」未注册`);
     if (r.effect && !RELIEF_EFFECTS.includes(r.effect)) fail(`relief[${i}] 的效果「${r.effect}」未注册`);
+    if (r.kind === 'text-arc') {
+      const missing = [...new Set([...(r.text ?? '')].filter((ch) => !hasGlyph(ch)))];
+      if (!r.text) fail(`relief[${i}] 文字环缺少 text`);
+      if (missing.length) fail(`relief[${i}] 文字环字体不支持：${missing.join(' ')}（可在 scripts/build-font.mjs 中补充）`);
+      if (!['top', 'bottom'].includes(r.arc ?? 'top')) fail(`relief[${i}] 的 arc 只能是 top 或 bottom`);
+    }
+    if (r.kind === 'pixels' && !(Array.isArray(r.rows) && r.rows.some((row) => row.includes('#')))) {
+      fail(`relief[${i}] 像素图 rows 为空`);
+    }
   }
 
   if (!config.back) fail('缺少 back');

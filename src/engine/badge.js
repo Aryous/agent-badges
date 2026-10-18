@@ -1,9 +1,17 @@
-import { Color, ExtrudeGeometry, Group, Mesh, Vector2 } from 'three';
+import { Color, ExtrudeGeometry, Group, Mesh } from 'three';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import { makeOutline, outlineSegments, withHole } from './shapes.js';
+import { BadgeUV } from './uv.js';
 import { createMaterial } from './materials.js';
 import { buildRelief } from './relief.js';
 import { createEngraving } from './engraving.js';
+import { patternTexture } from './textures.js';
+
+/** 珐琅底纹：只改底层的凹凸，清漆层仍是光滑的，像透明珐琅盖在雕花底纹上。 */
+function patternOverrides(pattern) {
+  if (!pattern || typeof document === 'undefined') return {};
+  return { bumpMap: patternTexture(pattern), bumpScale: 0.6 };
+}
 
 // 把「徽章配置 + 品牌主题 + 进度状态」组装成一枚 3D 徽章。
 //
@@ -15,18 +23,7 @@ import { createEngraving } from './engraving.js';
 
 const SMOOTH_ANGLE = Math.PI / 6;
 
-/** 端面 UV：把 [-1, 1] 映射到 [0, 1]，让程序化贴图覆盖整枚徽章。 */
-const BadgeUV = {
-  generateTopUV(geometry, v, a, b, c) {
-    const uv = (i) => new Vector2((v[i * 3] + 1) / 2, (v[i * 3 + 1] + 1) / 2);
-    return [uv(a), uv(b), uv(c)];
-  },
-  generateSideWallUV(geometry, v, a, b, c, d) {
-    const pick = (i, useX) => new Vector2(useX ? v[i * 3] : v[i * 3 + 1], 1 - v[i * 3 + 2]);
-    const useX = Math.abs(v[a * 3 + 1] - v[b * 3 + 1]) < Math.abs(v[a * 3] - v[b * 3]);
-    return [pick(a, useX), pick(b, useX), pick(c, useX), pick(d, useX)];
-  },
-};
+
 
 /** 挤出并把 z 范围规整到 [0, depth]。 */
 function extrude(shape, depth, { bevel = 0, segments = 12 } = {}) {
@@ -101,7 +98,7 @@ export function buildBadge(config, brand, state) {
   // 正面板
   const plate = depth / 2 - recess;
   const coreShape = makeOutline(shape, inset);
-  const front = new Mesh(extrude(coreShape, plate, { segments }), mat(faceLayer.material, faceLayer.color));
+  const front = new Mesh(extrude(coreShape, plate, { segments }), mat(faceLayer.material, faceLayer.color, patternOverrides(faceLayer.pattern)));
   front.name = 'face';
   group.add(front);
 
@@ -139,16 +136,17 @@ export function buildBadge(config, brand, state) {
   for (const item of config.relief ?? []) {
     let m;
     if (locked) {
-      m = shared.get('locked') ?? createMaterial('locked', reliefLocked);
-      shared.set('locked', m);
+      const key = `locked:${item.pattern ?? ''}`;
+      m = shared.get(key) ?? createMaterial('locked', reliefLocked, patternOverrides(item.pattern));
+      shared.set(key, m);
     } else if (item.effect) {
       m = createMaterial(item.material, palette[item.color], {
         emissive: new Color(palette[item.color]),
         emissiveIntensity: 0,
       });
     } else {
-      const key = `${item.material}:${item.color}`;
-      m = shared.get(key) ?? createMaterial(item.material, palette[item.color]);
+      const key = `${item.material}:${item.color}:${item.pattern ?? ''}`;
+      m = shared.get(key) ?? createMaterial(item.material, palette[item.color], patternOverrides(item.pattern));
       shared.set(key, m);
     }
     group.add(buildRelief(item, m, plate));

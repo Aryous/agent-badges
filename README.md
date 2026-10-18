@@ -19,6 +19,8 @@ npm run check:browser  # 浏览器实测（需先 npm run dev -- --port 5199）�
 
 交互：拖动可以旋转，快速甩动会带惯性；按方向键也能转动，按 Esc 返回。
 
+导出：在单枚查看界面点「导出图片」打开面板，可以选择透明或墨色背景。面板打开时，徽章后面会显示导出的取景范围；导出的是徽章当前朝向（正面或背面）。
+
 ## 结构
 
 ```
@@ -35,7 +37,15 @@ src/
 
 - **轮廓**：`circle` / `polygon` / `starburst`
 - **材质**：`enamel` / `polished-metal` / `brushed-metal` / `ceramic`
-- **浮雕基元**：`capsule` / `circle` / `ring` / `path`（SVG 路径）
+- **浮雕基元**：
+  - `capsule`：胶囊形线条
+  - `circle`：圆片，可用作中心圆盘
+  - `ring`：圆环
+  - `pixels`：像素图，用字符画描述，`'#'` 为实心
+  - `text-arc`：沿上弧或下弧排布的立体文字
+  - `path`：SVG 路径
+- **底纹**：在 `face` 层或浮雕上加 `pattern: 'sunburst' | 'rings'`，珐琅下面就会有放射纹或同心细纹。
+- **叠放**：浮雕上的 `z` 表示在正面板之上再抬高多少，用于把图案放在中心圆盘上。
 - **坐标**：以徽章中心为原点，外接半径约为 1。
 - **颜色**：写品牌色板里的键名，不要直接写色值。
 
@@ -46,6 +56,17 @@ src/
 1. 新建 `src/brands/codex/brand.js`（色板和刻字模板），以及 `badges.js`。
 2. 在 `src/data/progress.js` 的 `SOURCES` 里注册它的数据源。
 3. 在 `src/main.js` 里切换要加载的品牌。
+
+## 文字环字体
+
+文字环的字形来自 [Outfit](https://fonts.google.com/specimen/Outfit) Bold（SIL Open Font License 1.1），由 `node scripts/build-font.mjs` 提取成 `src/engine/fonts/ring-font.json`。
+
+- 要换字体或补充字符，改这个脚本后重新运行即可。
+- 配置里用了字体里没有的字符时，校验会直接报错。
+
+## 品牌素材
+
+Claude Code 像素小怪物按 [simple-icons](https://simpleicons.org/) 中的 Claude Code 图标逐格还原（`src/brands/claude-code/pixel-art.js`）。商标归 Anthropic 所有，本项目仅用于个人成就展示；公开发布前请先查看品牌使用规范。
 
 ## 接入真实数据
 

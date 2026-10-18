@@ -80,6 +80,55 @@ export function radialAnisotropyTexture(size = 256) {
   return tex;
 }
 
+/**
+ * 珐琅底纹（灰度凹凸贴图），以徽章中心为圆心：
+ *   sunburst  放射纹，像表盘的太阳纹
+ *   rings     同心细纹
+ */
+export function patternTexture(name, size = 1024) {
+  const key = `pattern-${name}-${size}`;
+  if (cache.has(key)) return cache.get(key);
+  const canvas = makeCanvas(size);
+  const ctx = canvas.getContext('2d');
+  const c = size / 2;
+  ctx.fillStyle = 'rgb(128,128,128)';
+  ctx.fillRect(0, 0, size, size);
+  if (name === 'sunburst') {
+    const rays = 144;
+    for (let i = 0; i < rays; i++) {
+      const a0 = (i / rays) * Math.PI * 2;
+      const a1 = ((i + 0.5) / rays) * Math.PI * 2;
+      ctx.fillStyle = 'rgb(200,200,200)';
+      ctx.beginPath();
+      ctx.moveTo(c, c);
+      ctx.arc(c, c, size, a0, a1);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // 中心收成平面，避免射线在圆心挤成噪点
+    const g = ctx.createRadialGradient(c, c, 0, c, c, size * 0.06);
+    g.addColorStop(0, 'rgb(164,164,164)');
+    g.addColorStop(1, 'rgba(164,164,164,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+  } else if (name === 'rings') {
+    ctx.lineWidth = size / 640;
+    for (let r = size / 320; r < size * 0.72; r += size / 320) {
+      ctx.strokeStyle = 'rgb(196,196,196)';
+      ctx.beginPath();
+      ctx.arc(c, c, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  } else {
+    throw new Error(`未知底纹：${name}`);
+  }
+  const tex = new CanvasTexture(canvas);
+  tex.colorSpace = NoColorSpace;
+  tex.anisotropy = 8;
+  cache.set(key, tex);
+  return tex;
+}
+
 export function canvasTexture(canvas, { srgb = false } = {}) {
   const tex = new CanvasTexture(canvas);
   tex.colorSpace = srgb ? SRGBColorSpace : NoColorSpace;

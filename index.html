@@ -40,11 +40,25 @@
         <div class="actions">
           <button class="btn" data-replay type="button">重播动画</button>
           <div class="export">
-            <div class="seg" role="radiogroup" aria-label="导出背景">
-              <button type="button" role="radio" aria-checked="true" data-bg="transparent"><span class="swatch" aria-hidden="true"></span>透明</button>
-              <button type="button" role="radio" aria-checked="false" data-bg="ink"><span class="swatch" aria-hidden="true"></span>墨色</button>
+            <button class="btn btn-primary" data-export-toggle type="button" aria-expanded="false" aria-controls="export-panel">导出图片</button>
+            <div class="export-panel" id="export-panel" role="dialog" aria-label="导出图片" hidden>
+              <div class="panel-row">
+                <span class="panel-label">背景</span>
+                <div class="seg" role="radiogroup" aria-label="导出背景">
+                  <button type="button" role="radio" aria-checked="true" data-bg="transparent"><span class="swatch" aria-hidden="true"></span>透明</button>
+                  <button type="button" role="radio" aria-checked="false" data-bg="ink"><span class="swatch" aria-hidden="true"></span>墨色</button>
+                </div>
+              </div>
+              <div class="panel-row">
+                <span class="panel-label">朝向</span>
+                <span class="panel-value" data-export-face>正面</span>
+              </div>
+              <div class="panel-row">
+                <span class="panel-label">尺寸</span>
+                <span class="panel-value">2048 × 2048 PNG</span>
+              </div>
+              <button class="btn btn-primary btn-block" data-export type="button">下载 PNG</button>
             </div>
-            <button class="btn btn-primary" data-export type="button">导出 PNG</button>
           </div>
         </div>
         <p class="hint" data-hint>左右拖动旋转 · 翻到背面看刻字</p>

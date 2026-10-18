@@ -41,9 +41,11 @@ describe('buildBadge', () => {
     expect(g.userData.pulses).toHaveLength(0);
   });
 
-  it('已解锁的初次相遇有一个呼吸发光的光标', () => {
-    const g = buildBadge(badges[0], brand, unlocked);
-    expect(g.userData.pulses).toHaveLength(1);
+  it('三枚徽章都有上下两段文字环', () => {
+    for (const cfg of badges) {
+      const arcs = cfg.relief.filter((r) => r.kind === 'text-arc').map((r) => r.arc);
+      expect(arcs.sort()).toEqual(['bottom', 'top']);
+    }
   });
 });
 

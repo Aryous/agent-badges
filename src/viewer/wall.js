@@ -38,7 +38,8 @@ export function createWall({ stage, items, labelsEl, onSelect }) {
   items.forEach((item, i) => {
     item.phase = i * 1.7;
     item.tilt = new Vector2();
-    item.label.addEventListener('click', () => active && onSelect(item));
+    // detail 为 0 表示由键盘（回车/空格）触发
+    item.label.addEventListener('click', (e) => active && onSelect(item, e.detail === 0));
     item.label.addEventListener('pointerenter', () => (hovered = item));
     item.label.addEventListener('pointerleave', () => hovered === item && (hovered = null));
   });

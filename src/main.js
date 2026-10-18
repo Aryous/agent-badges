@@ -133,20 +133,18 @@ async function main() {
     $('[data-replay]').hidden = !state.unlocked;
   }
 
-  function open(item, { award = true } = {}) {
+  function open(item, { award = true, viaKeyboard = false } = {}) {
     if (mode === 'inspect' && inspector.current === item) return;
     mode = 'inspect';
     wall.setActive(false);
     inspector.open(item);
     fillInfo(item);
     inspectorEl.hidden = false;
-    placeExportFrame();
-    requestAnimationFrame(() => {
-      inspectorEl.classList.add('is-open');
-      exportFrame.classList.add('is-visible');
-    });
+    setExportPanel(false);
+    requestAnimationFrame(() => inspectorEl.classList.add('is-open'));
     history.replaceState(null, '', `#${item.config.id}`);
-    $('[data-close]').focus({ preventScroll: true });
+    // 只有用键盘打开时才把焦点移进来，避免鼠标用户看到焦点框
+    if (viaKeyboard) $('[data-close]').focus({ preventScroll: true });
     if (award && item.state.unlocked) runAward();
   }
 
@@ -160,18 +158,40 @@ async function main() {
     mode = 'wall';
     inspectorEl.classList.remove('is-open');
     inspectorEl.hidden = true;
-    exportFrame.classList.remove('is-visible');
+    setExportPanel(false);
     wall.setActive(true);
     history.replaceState(null, '', location.pathname + location.search);
     item?.label.focus({ preventScroll: true });
   }
 
-  const wall = createWall({ stage, items, labelsEl, onSelect: (item) => open(item) });
+  const wall = createWall({ stage, items, labelsEl, onSelect: (item, viaKeyboard) => open(item, { viaKeyboard }) });
 
   $('[data-close]').addEventListener('click', close);
   $('[data-replay]').addEventListener('click', runAward);
-  // 导出背景切换：预览框立即换底，让选择在屏幕上看得见
+  // ---------- 导出面板 ----------
+  // 背景选项只影响导出文件，所以收在面板里；面板打开时才显示导出取景框。
   const exportFrame = $('#export-frame');
+  const exportPanel = $('#export-panel');
+  const exportToggle = $('[data-export-toggle]');
+  const FACE_LABEL = { front: '正面', back: '背面' };
+
+  function setExportPanel(open) {
+    exportPanel.hidden = !open;
+    exportToggle.setAttribute('aria-expanded', String(open));
+    exportFrame.classList.toggle('is-visible', open);
+    if (open) {
+      placeExportFrame();
+      $('[data-export-face]').textContent = FACE_LABEL[inspector.face];
+    }
+  }
+  exportToggle.addEventListener('click', () => setExportPanel(exportPanel.hidden));
+  inspector.onFaceChange((face) => ($('[data-export-face]').textContent = FACE_LABEL[face]));
+  // 点面板以外的界面元素时收起；拖动画布旋转徽章不收起，方便转到背面再导出
+  document.addEventListener('pointerdown', (e) => {
+    if (exportPanel.hidden || e.target.closest('.export') || e.target.id === 'stage') return;
+    setExportPanel(false);
+  });
+
   for (const b of inspectorEl.querySelectorAll('[data-bg]')) {
     b.addEventListener('click', () => {
       exportBg = b.dataset.bg;
@@ -192,7 +212,10 @@ async function main() {
     exportFrame.style.transform = `translate(${cx - half}px, ${cy - half}px)`;
     exportFrame.style.borderRadius = `${Math.round(half * 0.12)}px`;
   }
-  $('[data-export]').addEventListener('click', () => exportCurrent(exportBg));
+  $('[data-export]').addEventListener('click', () => {
+    exportCurrent(exportBg);
+    setExportPanel(false);
+  });
 
   function exportCurrent(bg = 'transparent', { download = true } = {}) {
     const item = inspector.current;
@@ -210,7 +233,10 @@ async function main() {
 
   window.addEventListener('keydown', (e) => {
     if (mode !== 'inspect') return;
-    if (e.key === 'Escape') close();
+    if (e.key === 'Escape') {
+      if (!exportPanel.hidden) setExportPanel(false);
+      else close();
+    }
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       inspector.spin.snapping = false;
       inspector.spin.vel += e.key === 'ArrowRight' ? 7 : -7;
@@ -221,7 +247,7 @@ async function main() {
     stage.resize();
     wall.layout();
     inspector.layoutChanged();
-    placeExportFrame();
+    if (!exportPanel.hidden) placeExportFrame();
   });
 
   // ---------- 渲染循环 ----------

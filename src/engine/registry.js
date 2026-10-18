@@ -10,8 +10,10 @@ export const MATERIAL_TYPES = [
   'locked',          // 未解锁剪影
 ];
 
-export const RELIEF_KINDS = ['capsule', 'circle', 'ring', 'path'];
+export const RELIEF_KINDS = ['capsule', 'circle', 'ring', 'pixels', 'text-arc', 'path'];
 
 export const LAYER_KINDS = ['rim', 'face'];
 
 export const RELIEF_EFFECTS = ['pulse'];
+
+export const PATTERNS = ['sunburst', 'rings'];

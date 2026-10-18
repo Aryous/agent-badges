@@ -94,6 +94,10 @@ async function session(viewport, tag) {
           const cs = getComputedStyle(f);
           return { bg: f.dataset.bg, visible: cs.opacity !== '0' && cs.display !== 'none', image: cs.backgroundImage !== 'none' };
         });
+      const hiddenBefore = await page.evaluate(() => getComputedStyle(document.querySelector('#export-frame')).opacity === '0');
+      check('导出面板关闭时不显示取景框、不显示背景选项', hiddenBefore && !(await page.locator('[data-bg="ink"]').isVisible()));
+      await page.locator('[data-export-toggle]').click();
+      await page.waitForTimeout(400);
       await page.locator('[data-bg="ink"]').click();
       await page.waitForTimeout(500);
       const inkFrame = await frameState();
@@ -102,6 +106,16 @@ async function session(viewport, tag) {
       await page.waitForTimeout(500);
       const tFrame = await frameState();
       await page.screenshot({ path: `${out}/desktop-export-frame-transparent.png` });
+      // 面板打开时拖动旋转徽章，面板应保持打开，朝向跟着变
+      await page.evaluate(() => window.__badgeApp.setAngle(Math.PI));
+      await page.waitForTimeout(500);
+      const faceText = await page.locator('[data-export-face]').textContent();
+      check('面板打开时转到背面，朝向显示「背面」', faceText === '背面', faceText);
+      await page.screenshot({ path: `${out}/desktop-export-panel.png` });
+      await page.evaluate(() => window.__badgeApp.setAngle(0));
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(400);
+      check('Esc 先收起导出面板，不退出单枚查看', !(await page.locator('#export-panel').isVisible()) && (await page.locator('#inspector').isVisible()));
       check('选墨色时预览框显示墨色底', inkFrame?.visible && inkFrame.bg === 'ink' && !inkFrame.image, JSON.stringify(inkFrame));
       check('选透明时预览框显示棋盘格', tFrame?.visible && tFrame.bg === 'transparent' && tFrame.image, JSON.stringify(tFrame));
 
