@@ -54,7 +54,22 @@ async function session(viewport, tag) {
   const overlayClosed = !(await page.locator('#overlay').isVisible());
   check('点击网格打开单枚查看，Esc 回到陈列墙', overlayOpen && overlayClosed);
 
-  for (const id of ids) {
+  // 隐藏徽章和分级徽章在墙上的表现
+  const wallInfo = await page.evaluate(() =>
+    [...document.querySelectorAll('.tile')].map((t) => ({
+      id: t.dataset.id,
+      title: t.querySelector('.tile-title').textContent,
+      metal: t.dataset.metal ?? null,
+    })),
+  );
+  const masked = wallInfo.filter((t) => t.id === 'model-collector');
+  if (masked.length) check('未解锁的隐藏徽章在墙上显示 ???', masked[0].title === '???', masked[0].title);
+  const tieredTile = wallInfo.find((t) => t.id === 'sessions');
+  if (tieredTile) check('分级徽章在墙上显示等级', Boolean(tieredTile.metal), tieredTile.metal ?? '无');
+
+  // 交互抽查 3 枚代表：圆形、六边形、星芒（覆盖已解锁和未解锁）
+  const sample = ['first-session', 'seven-day-streak', 'subagent-commander'].filter((id) => ids.includes(id));
+  for (const id of sample) {
     await page.evaluate((id) => window.__badgeApp.open(id), id);
     await page.waitForTimeout(400);
     await page.screenshot({ path: `${out}/desktop-${id}-award-mid.png` });
@@ -81,7 +96,7 @@ async function session(viewport, tag) {
     await page.waitForTimeout(800);
     await page.screenshot({ path: `${out}/desktop-${id}-back.png` });
 
-    if (id === ids[0]) {
+    if (id === sample[0]) {
       // 快速甩动：松手后应继续惯性转动，最终仍吸附到正/背面
       await page.evaluate(() => window.__badgeApp.setAngle(0));
       await page.waitForTimeout(300);

@@ -3,6 +3,8 @@ import brand from '../src/brands/claude-code/brand.js';
 import badges from '../src/brands/claude-code/badges.js';
 import { partitionBadges, validateBadge, validateBrand } from '../src/engine/validate.js';
 
+const byId = (id) => badges.find((b) => b.id === id);
+
 const clone = (o) => structuredClone(o);
 
 describe('validateBrand', () => {
@@ -22,38 +24,38 @@ describe('validateBadge', () => {
   });
 
   it('缺少 title 时报错并带上徽章 id', () => {
-    const b = clone(badges[0]);
+    const b = clone(byId('first-session'));
     delete b.title;
     expect(() => validateBadge(b, brand)).toThrow(/first-session.*title/);
   });
 
   it('未知材质报错', () => {
-    const b = clone(badges[0]);
+    const b = clone(byId('first-session'));
     b.layers[1].material = 'velvet';
     expect(() => validateBadge(b, brand)).toThrow(/velvet/);
   });
 
   it('未知色键报错', () => {
-    const b = clone(badges[0]);
+    const b = clone(byId('first-session'));
     b.relief[0].color = 'neon';
     expect(() => validateBadge(b, brand)).toThrow(/neon/);
   });
 
   it('未知轮廓报错', () => {
-    const b = clone(badges[0]);
+    const b = clone(byId('first-session'));
     b.shape.type = 'heart';
     expect(() => validateBadge(b, brand)).toThrow(/heart/);
   });
 
   it('外圈太窄（小于倒角 × 2 + 0.01）报错', () => {
-    const b = clone(badges[2]);
+    const b = clone(byId('subagent-commander'));
     b.layers[1].inset = 0.07;
     b.shape.bevel = 0.04;
     expect(() => validateBadge(b, brand)).toThrow(/bevel × 2/);
   });
 
   it('缺少 rim 层报错', () => {
-    const b = clone(badges[0]);
+    const b = clone(byId('first-session'));
     b.layers = b.layers.filter((l) => l.kind !== 'rim');
     expect(() => validateBadge(b, brand)).toThrow(/rim/);
   });
@@ -61,9 +63,9 @@ describe('validateBadge', () => {
 
 describe('partitionBadges', () => {
   it('跳过出错的徽章，保留其余', () => {
-    const bad = clone(badges[1]);
+    const bad = clone(byId('seven-day-streak'));
     bad.back.color = 'nope';
-    const { valid, errors } = partitionBadges([badges[0], bad, badges[2]], brand);
+    const { valid, errors } = partitionBadges([byId('first-session'), bad, byId('subagent-commander')], brand);
     expect(valid.map((b) => b.id)).toEqual(['first-session', 'subagent-commander']);
     expect(errors).toHaveLength(1);
     expect(errors[0].badgeId).toBe('seven-day-streak');
