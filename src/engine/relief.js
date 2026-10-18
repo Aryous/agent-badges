@@ -1,9 +1,9 @@
 import { ExtrudeGeometry, Mesh, Shape } from 'three';
-import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 import { smoothBevels } from './normals.js';
 import { pixelShapes } from './pixels.js';
 import { arcTextGeometry, textGeometry } from './text.js';
 import { BadgeUV } from './uv.js';
+import { svgShapes } from './svgpath.js';
 
 // 正面浮雕：用几何基元拼出图案和文字。
 // 坐标与徽章轮廓同一套单位：中心为原点，外接半径约 1。
@@ -50,19 +50,12 @@ function pixels({ rows, cell, center = [0, 0] }) {
   return pixelShapes(rows, { cell, center });
 }
 
-/** SVG 路径：d 以 viewBox（默认 100×100）描述，y 轴向下；scale 为图案半宽。 */
-function path({ d, scale = 1, viewBox = 100, center = [0, 0] }) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewBox} ${viewBox}"><path d="${d}"/></svg>`;
-  const data = new SVGLoader().parse(svg);
-  const shapes = data.paths.flatMap((p) => SVGLoader.createShapes(p));
-  const half = viewBox / 2;
-  const k = scale / half;
-  const map = (pts) => pts.map((p) => p.set(center[0] + (p.x - half) * k, center[1] + (half - p.y) * k));
-  return shapes.map((sh) => {
-    const out = new Shape(map(sh.getPoints(12)));
-    out.holes = sh.holes.map((h) => new Shape(map(h.getPoints(12))));
-    return out;
-  });
+/**
+ * SVG 路径（evenodd）：d 以正方形 viewBox 描述（默认 24，y 轴向下）；
+ * scale 为图案半宽（徽章单位），center 为图案中心。
+ */
+function path({ d, scale = 0.5, viewBox = 24, center = [0, 0] }) {
+  return svgShapes(d, { viewBox, scale, center, steps: 10 });
 }
 
 const PRIMITIVES = { capsule, circle, ring, pixels, path };

@@ -85,6 +85,10 @@ export function validateBadge(config, brand) {
     if (!RELIEF_KINDS.includes(r.kind)) fail(`relief[${i}] 的类型「${r.kind}」未注册`);
     checkMaterial(`relief[${i}]`, r.material);
     checkColor(`relief[${i}]`, r.color);
+    if (r.gradient) {
+      if (!Array.isArray(r.gradient) || r.gradient.length < 2) fail(`relief[${i}] 的 gradient 至少需要两个颜色`);
+      r.gradient.forEach((k) => checkColor(`relief[${i}].gradient`, k));
+    }
     if (r.pattern && !PATTERNS.includes(r.pattern)) fail(`relief[${i}] 的底纹「${r.pattern}」未注册`);
     if (r.effect && !RELIEF_EFFECTS.includes(r.effect)) fail(`relief[${i}] 的效果「${r.effect}」未注册`);
     if (r.kind === 'text') {

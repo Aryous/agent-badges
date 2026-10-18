@@ -1,4 +1,4 @@
-import { Color, ExtrudeGeometry, Group, Mesh } from 'three';
+import { BufferAttribute, Color, ExtrudeGeometry, Group, Mesh } from 'three';
 import { smoothBevels } from './normals.js';
 import { makeOutline, outlineSegments, reededOutline, withHole } from './shapes.js';
 import { resolveTier } from './tiers.js';
@@ -23,6 +23,27 @@ function patternOverrides(pattern) {
 //   └──
 
 const SMOOTH_ANGLE = Math.PI / 6;
+
+/**
+ * 竖向渐变：按顶点高度在几个颜色之间插值（顶部 → 底部），
+ * 用于 Codex 标志这类官方带渐变的图形。
+ */
+function paintGradient(geometry, hexes) {
+  geometry.computeBoundingBox();
+  const { min, max } = geometry.boundingBox;
+  const stops = hexes.map((h) => new Color(h));
+  const pos = geometry.attributes.position;
+  const colors = new Float32Array(pos.count * 3);
+  const c = new Color();
+  for (let i = 0; i < pos.count; i++) {
+    const t = 1 - (pos.getY(i) - min.y) / Math.max(1e-6, max.y - min.y); // 0 顶部 → 1 底部
+    const f = t * (stops.length - 1);
+    const k = Math.min(stops.length - 2, Math.floor(f));
+    c.copy(stops[k]).lerp(stops[k + 1], f - k);
+    colors.set([c.r, c.g, c.b], i * 3);
+  }
+  geometry.setAttribute('color', new BufferAttribute(colors, 3));
+}
 
 /** 隐藏成就未解锁时，正面只显示一个像素问号。 */
 const QUESTION = ['.####.', '##..##', '....##', '...##.', '..##..', '..##..', '......', '..##..'];
@@ -169,6 +190,8 @@ export function buildBadge(rawConfig, brand, state) {
       const key = `locked:${item.pattern ?? ''}`;
       m = shared.get(key) ?? createMaterial('locked', reliefLocked, patternOverrides(item.pattern));
       shared.set(key, m);
+    } else if (item.gradient) {
+      m = createMaterial(item.material, '#ffffff', { vertexColors: true });
     } else if (item.effect) {
       m = createMaterial(item.material, palette[item.color], {
         emissive: new Color(palette[item.color]),
@@ -179,7 +202,9 @@ export function buildBadge(rawConfig, brand, state) {
       m = shared.get(key) ?? createMaterial(item.material, palette[item.color], patternOverrides(item.pattern));
       shared.set(key, m);
     }
-    group.add(buildRelief(item, m, plate));
+    const mesh = buildRelief(item, m, plate);
+    if (item.gradient && !locked) paintGradient(mesh.geometry, item.gradient.map((k) => palette[k]));
+    group.add(mesh);
   }
 
   group.userData = {
