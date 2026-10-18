@@ -1,5 +1,6 @@
 import { LAYER_KINDS, MATERIAL_TYPES, PATTERNS, RELIEF_EFFECTS, RELIEF_KINDS, SHAPE_TYPES } from './registry.js';
 import { hasGlyph } from './text.js';
+import { resolveTier } from './tiers.js';
 
 // 配置校验：在构建 3D 对象之前发现拼写错误和缺失字段。
 
@@ -31,6 +32,27 @@ export function validateBadge(config, brand) {
   const fail = (msg) => {
     throw new BadgeConfigError(id, msg);
   };
+
+  // 分级徽章：先检查门槛，再把每一级展开成普通配置分别校验
+  if (config?.tiers) {
+    const tiers = config.tiers;
+    if (!Array.isArray(tiers) || !tiers.length) fail('tiers 不能为空');
+    tiers.forEach((t, i) => {
+      if (!(t.threshold > 0)) fail(`tiers[${i}] 需要大于 0 的 threshold`);
+      if (i > 0 && t.threshold <= tiers[i - 1].threshold) fail(`tiers[${i}] 的 threshold 必须递增`);
+      if (!brand.palette[t.metal]) fail(`tiers[${i}] 的金属「${t.metal}」不在品牌色板中`);
+      if (t.accent && !brand.palette[t.accent]) fail(`tiers[${i}] 的 accent「${t.accent}」不在品牌色板中`);
+    });
+    tiers.forEach((_, i) => {
+      const { tiers: _omit, tier: _t, ...plain } = resolveTier(config, i);
+      try {
+        validateBadge({ ...plain, criteria: { ...plain.criteria, target: plain.criteria?.target ?? tiers[0].threshold } }, brand);
+      } catch (e) {
+        fail(`第 ${i + 1} 级：${e.message.replace(/^\[徽章 [^\]]+\] /, '')}`);
+      }
+    });
+    return true;
+  }
   const checkMaterial = (where, m) => {
     if (!MATERIAL_TYPES.includes(m)) fail(`${where} 的材质「${m}」未注册`);
   };
@@ -65,6 +87,11 @@ export function validateBadge(config, brand) {
     checkColor(`relief[${i}]`, r.color);
     if (r.pattern && !PATTERNS.includes(r.pattern)) fail(`relief[${i}] 的底纹「${r.pattern}」未注册`);
     if (r.effect && !RELIEF_EFFECTS.includes(r.effect)) fail(`relief[${i}] 的效果「${r.effect}」未注册`);
+    if (r.kind === 'text') {
+      const missing = [...new Set([...(r.text ?? '')].filter((ch) => !hasGlyph(ch)))];
+      if (!r.text) fail(`relief[${i}] 文字缺少 text`);
+      if (missing.length) fail(`relief[${i}] 文字字体不支持：${missing.join(' ')}`);
+    }
     if (r.kind === 'text-arc') {
       const missing = [...new Set([...(r.text ?? '')].filter((ch) => !hasGlyph(ch)))];
       if (!r.text) fail(`relief[${i}] 文字环缺少 text`);

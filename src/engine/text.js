@@ -99,3 +99,50 @@ export function arcTextGeometry({ text, radius, size, tracking, arc = 'top', hei
   parts.forEach((p) => p.dispose());
   return merged;
 }
+
+/** 单个字形挤出，原点在字形左下（基线），单位：徽章单位。 */
+function glyphGeometry(ch, em, height, bevel) {
+  const g = font.glyphs[ch];
+  const b = Math.min(bevel, height * 0.4);
+  const geo = new ExtrudeGeometry(glyphShapes(ch), {
+    depth: Math.max(0.001, height / em - (2 * b) / em),
+    bevelEnabled: true,
+    bevelThickness: b / em,
+    bevelSize: (b * 0.7) / em,
+    bevelOffset: (-b * 0.7) / em,
+    bevelSegments: 2,
+    curveSegments: 8,
+  });
+  geo.translate(0, 0, b / em);
+  geo.scale(em, em, em);
+  return { geo, advance: g.advance * em };
+}
+
+/**
+ * 水平排布的立体文字（中心大数字等），以 center 为中心，大写字母高度为 size。
+ * 底面在 z=0，向 +z 凸起 height。
+ */
+export function textGeometry({ text, size, center = [0, 0], tracking = 0.04, height = 0.05, bevel = 0.01 }) {
+  const em = size / font.capHeight;
+  const chars = [...text];
+  chars.forEach((ch) => {
+    if (!hasGlyph(ch)) throw new Error(`文字环字体缺少字符「${ch}」`);
+  });
+  const total =
+    chars.reduce((w, ch) => w + font.glyphs[ch].advance * em + tracking * size, 0) - tracking * size;
+  let x = center[0] - total / 2;
+  const parts = [];
+  for (const ch of chars) {
+    const { geo, advance } = glyphGeometry(ch, em, height, bevel);
+    if (font.glyphs[ch].cmds.length) {
+      geo.translate(x, center[1] - size / 2, 0);
+      parts.push(geo);
+    } else {
+      geo.dispose();
+    }
+    x += advance + tracking * size;
+  }
+  const merged = mergeGeometries(parts);
+  parts.forEach((p) => p.dispose());
+  return merged;
+}

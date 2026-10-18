@@ -1,6 +1,7 @@
 import { Color, ExtrudeGeometry, Group, Mesh } from 'three';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
-import { makeOutline, outlineSegments, withHole } from './shapes.js';
+import { makeOutline, outlineSegments, reededOutline, withHole } from './shapes.js';
+import { resolveTier } from './tiers.js';
 import { BadgeUV } from './uv.js';
 import { createMaterial } from './materials.js';
 import { buildRelief } from './relief.js';
@@ -23,7 +24,8 @@ function patternOverrides(pattern) {
 
 const SMOOTH_ANGLE = Math.PI / 6;
 
-
+/** 隐藏成就未解锁时，正面只显示一个像素问号。 */
+const QUESTION = ['.####.', '##..##', '....##', '...##.', '..##..', '..##..', '......', '..##..'];
 
 /** 挤出并把 z 范围规整到 [0, depth]。 */
 function extrude(shape, depth, { bevel = 0, segments = 12 } = {}) {
@@ -50,6 +52,10 @@ function safeRadius(shape, inset) {
       return ((shape.radius ?? 1) - inset) * Math.cos(Math.PI / (shape.sides ?? 6)) - 0.1;
     case 'starburst':
       return (shape.innerRadius ?? 0.72) - inset - 0.04;
+    case 'gear':
+      return (shape.rootRadius ?? 0.84) - inset - 0.08;
+    case 'shield':
+      return ((shape.width ?? 0.86) - inset) * 0.86;
     default:
       return 0.6;
   }
@@ -62,12 +68,23 @@ function formatDate(iso) {
 /**
  * @param {object} config  徽章配置（见 brands/<id>/badges.js）
  * @param {object} brand   品牌主题（见 brands/<id>/brand.js）
- * @param {object} state   { unlocked, earnedAt, progress: { current, target } }
+ * @param {object} state   { unlocked, earnedAt, tier?, progress: { current, target } }
  * @returns {Group}
  */
-export function buildBadge(config, brand, state) {
+export function buildBadge(rawConfig, brand, state) {
   const { palette } = brand;
   const locked = !state.unlocked;
+  let config = resolveTier(rawConfig, state.tier ?? 0);
+  // 隐藏成就：未解锁前不透露图案和名字
+  const masked = locked && config.hidden;
+  if (masked) {
+    config = {
+      ...config,
+      title: '???',
+      titleEn: '???',
+      relief: [{ kind: 'pixels', rows: QUESTION, cell: 0.075, center: [0, 0], material: 'enamel', color: 'graphite', height: 0.06 }],
+    };
+  }
   const shape = config.shape;
   const depth = shape.depth ?? 0.2;
   const bevel = shape.bevel ?? 0.04;
@@ -95,6 +112,17 @@ export function buildBadge(config, brand, state) {
   ring.name = 'rim';
   group.add(ring);
 
+  // 钱币边缘滚花：一圈细齿套在外圈侧壁中段
+  if (shape.reeded && shape.type === 'circle') {
+    const R = shape.radius ?? 1;
+    const band = withHole(reededOutline(R, shape.reeded), makeOutline(shape, 0.06), 64);
+    const bandDepth = depth - 2 * bevel - 0.012;
+    const reed = new Mesh(extrude(band, bandDepth, { segments: 64 }), ring.material);
+    reed.geometry.translate(0, 0, -bandDepth / 2);
+    reed.name = 'reeding';
+    group.add(reed);
+  }
+
   // 正面板
   const plate = depth / 2 - recess;
   const coreShape = makeOutline(shape, inset);
@@ -110,6 +138,8 @@ export function buildBadge(config, brand, state) {
     earnedAt: formatDate(state.earnedAt),
     unlocked: state.unlocked,
     progress: state.progress,
+    tier: config.tier,
+    hidden: masked,
   });
   const backType = config.back.material;
   const engraving =
@@ -155,6 +185,8 @@ export function buildBadge(config, brand, state) {
   group.userData = {
     id: config.id,
     locked,
+    masked,
+    tier: config.tier ?? null,
     pulses: locked ? [] : group.children.filter((c) => c.userData.pulse).map((c) => c.material),
     dispose() {
       group.traverse((o) => {

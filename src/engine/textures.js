@@ -129,6 +129,39 @@ export function patternTexture(name, size = 1024) {
   return tex;
 }
 
+/**
+ * 全息镭射的薄膜厚度贴图：同心波纹叠加角度变化，
+ * 配合 iridescence 让彩虹色随位置和视角流动。
+ */
+export function holoTexture(size = 512) {
+  const key = `holo-${size}`;
+  if (cache.has(key)) return cache.get(key);
+  const data = new Uint8Array(size * size * 4);
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      const x = (i + 0.5) / size * 2 - 1;
+      const y = (j + 0.5) / size * 2 - 1;
+      const r = Math.hypot(x, y);
+      const a = Math.atan2(y, x);
+      const v = 0.5 + 0.28 * Math.sin(r * 26 + a * 3) + 0.22 * Math.sin(a * 6 - r * 9);
+      const g = Math.round(Math.min(1, Math.max(0, v)) * 255);
+      const k = (j * size + i) * 4;
+      data[k] = g;
+      data[k + 1] = g;
+      data[k + 2] = g;
+      data[k + 3] = 255;
+    }
+  }
+  const tex = new DataTexture(data, size, size, RGBAFormat);
+  tex.colorSpace = NoColorSpace;
+  tex.magFilter = LinearFilter;
+  tex.minFilter = LinearMipmapLinearFilter;
+  tex.generateMipmaps = true;
+  tex.needsUpdate = true;
+  cache.set(key, tex);
+  return tex;
+}
+
 export function canvasTexture(canvas, { srgb = false } = {}) {
   const tex = new CanvasTexture(canvas);
   tex.colorSpace = srgb ? SRGBColorSpace : NoColorSpace;

@@ -19,6 +19,9 @@ export default {
     gold: '#D9B061',
     silver: '#C9CED6',
     rose: '#E0A68F',
+    // 分级金属
+    bronze: '#C0825A',
+    platinum: '#E4E7EC',
     graphite: '#3A3936', // 未解锁剪影
   },
   ui: {
@@ -28,11 +31,14 @@ export default {
   },
   engraving: {
     fontFamily: '"PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif',
-    lines: ({ brandName, title, titleEn, earnedAt, unlocked, progress }) => [
-      brandName.toUpperCase(),
-      title,
-      titleEn,
-      unlocked ? earnedAt : `未解锁 · ${progress.current} / ${progress.target}`,
-    ],
+    lines: ({ brandName, title, titleEn, earnedAt, unlocked, progress, tier, hidden }) => {
+      if (hidden) return [brandName.toUpperCase(), '???', 'HIDDEN ACHIEVEMENT', '继续探索'];
+      const footer = unlocked
+        ? tier
+          ? `${tier.name}级 · ${earnedAt}`
+          : earnedAt
+        : `未解锁 · ${progress.current} / ${progress.target}`;
+      return [brandName.toUpperCase(), title, titleEn, footer];
+    },
   },
 };

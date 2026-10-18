@@ -63,7 +63,44 @@ function starburst(
   return roundedPolygon(verts, radii);
 }
 
-const BUILDERS = { circle, polygon, starburst };
+/**
+ * 盾牌：平顶圆角，两侧竖直，下半部收成尖底。
+ * 内缩按比例缩放（盾牌近似凸形，效果接近等距内缩）。
+ */
+function shield({ radius = 1, width = 0.86, top = 0.9, shoulder = 0.12, bottom = -1.02, cornerRadius = 0.14 }, inset) {
+  const k = (radius - inset) / radius;
+  const w = width * radius * k;
+  const t = top * radius * k;
+  const y1 = shoulder * radius * k;
+  const b = bottom * radius * k;
+  const r = cornerRadius * radius * k;
+  const s = new Shape();
+  s.moveTo(-w + r, t);
+  s.lineTo(w - r, t);
+  s.quadraticCurveTo(w, t, w, t - r);
+  s.lineTo(w, y1);
+  s.bezierCurveTo(w, y1 + (b - y1) * 0.5, w * 0.45, b + (y1 - b) * 0.12, 0, b);
+  s.bezierCurveTo(-w * 0.45, b + (y1 - b) * 0.12, -w, y1 + (b - y1) * 0.5, -w, y1);
+  s.lineTo(-w, t - r);
+  s.quadraticCurveTo(-w, t, -w + r, t);
+  return s;
+}
+
+/** 齿轮：梯形齿，齿根之间留一段圆弧。 */
+function gear({ teeth = 12, radius = 1, rootRadius = 0.84, roundness = 0.025, rotation = Math.PI / 2 }, inset) {
+  const R = radius - inset;
+  const r = rootRadius - inset;
+  const p = (Math.PI * 2) / teeth;
+  const verts = [];
+  const at = (rad, t) => new Vector2(Math.cos(t) * rad, Math.sin(t) * rad);
+  for (let i = 0; i < teeth; i++) {
+    const c = rotation + i * p;
+    verts.push(at(r, c - p * 0.3), at(R, c - p * 0.19), at(R, c + p * 0.19), at(r, c + p * 0.3), at(r, c + p * 0.5));
+  }
+  return roundedPolygon(verts, Math.max(0.005, roundness - inset * 0.2));
+}
+
+const BUILDERS = { circle, polygon, starburst, shield, gear };
 
 /**
  * 根据轮廓配置生成 Shape。inset 为向内收缩的距离，用于生成内层。
@@ -76,7 +113,23 @@ export function makeOutline(shapeCfg, inset = 0) {
 
 /** 不同轮廓推荐的曲线细分数：圆形整条是一段弧，需要更多细分。 */
 export function outlineSegments(shapeCfg) {
-  return shapeCfg.type === 'circle' ? 64 : 10;
+  if (shapeCfg.type === 'circle') return 64;
+  if (shapeCfg.type === 'shield') return 24;
+  return 10;
+}
+
+/**
+ * 钱币边缘的竖纹（滚花）：一圈交替凸凹的细齿，套在外圈侧壁的中段。
+ * 只用于圆形轮廓。
+ */
+export function reededOutline(radius, { count = 160, depth = 0.012 } = {}) {
+  const verts = [];
+  for (let i = 0; i < count * 2; i++) {
+    const t = (i / (count * 2)) * Math.PI * 2;
+    const rr = i % 2 === 0 ? radius + depth * 0.4 : radius - depth * 0.6;
+    verts.push(new Vector2(Math.cos(t) * rr, Math.sin(t) * rr));
+  }
+  return new Shape(verts);
 }
 
 /** 用另一条轮廓在 shape 上挖洞（返回新的 Shape）。 */

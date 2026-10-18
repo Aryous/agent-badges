@@ -2,7 +2,7 @@ import { ExtrudeGeometry, Mesh, Shape } from 'three';
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import { pixelShapes } from './pixels.js';
-import { arcTextGeometry } from './text.js';
+import { arcTextGeometry, textGeometry } from './text.js';
 import { BadgeUV } from './uv.js';
 
 // 正面浮雕：用几何基元拼出图案和文字。
@@ -13,6 +13,8 @@ import { BadgeUV } from './uv.js';
 //   ring      圆环（细线装饰、圆盘描边）
 //   pixels    像素图（Claude Code 小怪物、像素数字）
 //   text-arc  沿圆弧排布的立体文字
+//   text      水平排布的立体文字（中心大数字）
+//   gem       多面切割的宝石
 //   path      SVG 路径
 //
 // 每个基元都可以带 z：在正面板之上再抬高多少（用于叠在圆盘上的图案）。
@@ -76,6 +78,31 @@ export function reliefGeometry(item) {
   const height = item.height ?? 0.04;
   if (item.kind === 'text-arc') {
     return toCreasedNormals(arcTextGeometry({ ...item, height }), Math.PI / 5);
+  }
+  if (item.kind === 'text') {
+    return toCreasedNormals(textGeometry({ ...item, height }), Math.PI / 5);
+  }
+  if (item.kind === 'gem') {
+    // 八边形台面 + 一圈单段倒角 = 切割宝石的冠部刻面；不平滑法线，保留刻面的硬光
+    const { center = [0, 0], radius, sides = 8 } = item;
+    const s = new Shape();
+    for (let i = 0; i < sides; i++) {
+      const t = Math.PI / 2 + (i / sides) * Math.PI * 2;
+      const fn = i === 0 ? 'moveTo' : 'lineTo';
+      s[fn](center[0] + Math.cos(t) * radius, center[1] + Math.sin(t) * radius);
+    }
+    s.closePath();
+    const geo = new ExtrudeGeometry(s, {
+      depth: height * 0.3,
+      bevelEnabled: true,
+      bevelThickness: height * 0.35,
+      bevelSize: radius * 0.38,
+      bevelOffset: -radius * 0.38,
+      bevelSegments: 1,
+      UVGenerator: BadgeUV,
+    });
+    geo.translate(0, 0, height * 0.35);
+    return geo;
   }
   const bevel = Math.min(height * 0.45, item.bevel ?? 0.014);
   const raw = new ExtrudeGeometry(reliefShapes(item), {
