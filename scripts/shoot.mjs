@@ -22,9 +22,9 @@ async function session(viewport, tag) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(url);
-  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 20000 });
-  await page.waitForTimeout(1500);
-  await page.screenshot({ path: `${out}/${tag}-wall.png` });
+  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 60000 });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: `${out}/${tag}-wall.png`, fullPage: true });
   return { page, errors };
 }
 
@@ -32,13 +32,27 @@ async function session(viewport, tag) {
 {
   const { page, errors } = await session({ width: 1440, height: 900 }, 'desktop');
   const ids = await page.evaluate(() => window.__badgeApp.ids);
-  check('陈列墙显示 3 枚徽章', ids.length === 3, ids.join(', '));
+  const tiles = await page.locator('.tile').count();
+  const loaded = await page.locator('.tile:not(.is-loading) img[src^="data:image/png"]').count();
+  check('陈列墙每枚徽章都有一张缩略图', tiles === ids.length && loaded === ids.length, `${loaded}/${tiles} 张，共 ${ids.length} 枚`);
 
-  // 悬停
-  const box = await page.locator('.label').first().boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y - 120);
-  await page.waitForTimeout(600);
+  // 悬停倾斜
+  const firstTile = page.locator('.tile').first();
+  const box = await firstTile.boundingBox();
+  await page.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.25);
+  await page.waitForTimeout(400);
+  const tilt = await page.evaluate(() => getComputedStyle(document.querySelector('.tile .tile-art')).transform);
+  check('悬停时徽章倾斜', tilt !== 'none' && tilt !== 'matrix(1, 0, 0, 1, 0, 0)', tilt.slice(0, 40));
   await page.screenshot({ path: `${out}/desktop-wall-hover.png` });
+
+  // 真实点击网格打开，Esc 返回
+  await firstTile.click();
+  await page.waitForTimeout(800);
+  const overlayOpen = await page.locator('#overlay').isVisible();
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(600);
+  const overlayClosed = !(await page.locator('#overlay').isVisible());
+  check('点击网格打开单枚查看，Esc 回到陈列墙', overlayOpen && overlayClosed);
 
   for (const id of ids) {
     await page.evaluate((id) => window.__badgeApp.open(id), id);

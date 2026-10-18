@@ -1,12 +1,13 @@
 import './style.css';
 import { Group } from 'three';
 import brand from './brands/claude-code/brand.js';
-import badgeConfigs from './brands/claude-code/badges.js';
+import badgeConfigs, { SERIES } from './brands/claude-code/badges.js';
 import { buildBadge } from './engine/badge.js';
 import { partitionBadges, validateBrand } from './engine/validate.js';
+import { TIER_NAMES } from './engine/tiers.js';
 import { loadProgress } from './data/progress.js';
 import { createStage, supportsWebGL } from './viewer/scene.js';
-import { createWall } from './viewer/wall.js';
+import { createGrid, describeState, formatCount } from './viewer/grid.js';
 import { createInspector } from './viewer/inspector.js';
 import { playAward } from './viewer/award-animation.js';
 import { EXPORT_FILL, downloadDataURL, renderBadgePNG } from './viewer/export.js';
@@ -15,6 +16,8 @@ import { Tweens } from './viewer/anim.js';
 const $ = (sel, root = document) => root.querySelector(sel);
 const fmtDate = (iso) => (iso ? iso.replaceAll('-', '.') : '');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+const THUMB_SIZE = 480;
 
 function showNotice(text) {
   const el = $('#notice');
@@ -26,19 +29,30 @@ function fatal(text) {
   document.body.innerHTML = `<div class="fatal">${text}</div>`;
 }
 
-function makeLabel(cfg, state) {
-  const el = document.createElement('button');
-  el.type = 'button';
-  el.className = 'label' + (state.unlocked ? '' : ' is-locked');
-  el.setAttribute('aria-label', `${cfg.title}，${state.unlocked ? '已获得' : '未解锁'}，查看详情`);
-  const { current, target } = state.progress;
-  el.innerHTML = state.unlocked
-    ? `<span class="label-title"></span><span class="label-meta">${fmtDate(state.earnedAt)}</span>`
-    : `<span class="label-title"></span>
-       <span class="mini-meter"><span class="meter-track"><span class="meter-fill" style="display:block;width:${(current / target) * 100}%"></span></span>
-       <span class="label-meta">${current} / ${target}</span></span>`;
-  el.querySelector('.label-title').textContent = cfg.title;
-  return el;
+/**
+ * 设计预览：?preview=unlocked / locked 临时覆盖全部状态；
+ * 分级徽章可再加 &tier=0..3 预览某一级（默认最高级）。
+ */
+function applyPreview(configs, progress) {
+  const params = new URLSearchParams(location.search);
+  const preview = params.get('preview');
+  if (preview !== 'unlocked' && preview !== 'locked') return;
+  const today = new Date().toISOString().slice(0, 10);
+  for (const c of configs) {
+    const p = progress[c.id];
+    p.unlocked = preview === 'unlocked';
+    p.earnedAt = p.unlocked ? p.earnedAt ?? today : null;
+    if (c.tiers) {
+      const want = params.has('tier') ? Number(params.get('tier')) : c.tiers.length - 1;
+      const idx = Math.min(Math.max(want, 0), c.tiers.length - 1);
+      p.tier = p.unlocked ? idx : null;
+      p.value = p.unlocked ? c.tiers[idx].threshold : Math.floor(c.tiers[0].threshold / 2);
+      const next = c.tiers[Math.min(idx + 1, c.tiers.length - 1)];
+      p.progress = { current: p.value, target: p.unlocked ? next.threshold : c.tiers[0].threshold };
+    } else {
+      p.progress.current = p.unlocked ? p.progress.target : Math.min(p.progress.current, p.progress.target - 1);
+    }
+  }
 }
 
 async function main() {
@@ -56,17 +70,7 @@ async function main() {
   }
 
   const { progress, error } = await loadProgress(brand.id, valid);
-
-  // 设计预览：?preview=unlocked 或 ?preview=locked 临时覆盖全部状态
-  const preview = new URLSearchParams(location.search).get('preview');
-  if (preview === 'unlocked' || preview === 'locked') {
-    for (const c of valid) {
-      const p = progress[c.id];
-      p.unlocked = preview === 'unlocked';
-      p.earnedAt = p.unlocked ? p.earnedAt ?? new Date().toISOString().slice(0, 10) : null;
-      p.progress.current = p.unlocked ? p.progress.target : Math.min(p.progress.current, p.progress.target - 1);
-    }
-  }
+  applyPreview(valid, progress);
   if (error) {
     console.error(error);
     notices.push('进度数据加载失败，徽章暂按未解锁展示。');
@@ -79,30 +83,57 @@ async function main() {
   $('[data-tally]').innerHTML = `<b>${unlockedCount}</b> / ${valid.length} 已解锁`;
 
   const stage = createStage($('#stage'));
-  const labelsEl = $('#labels');
   const tweens = new Tweens();
+  const items = valid.map((config) => ({ config, state: progress[config.id], badge: null, pivot: null, holder: null }));
 
-  const items = valid.map((config) => {
-    const state = progress[config.id];
-    const badge = buildBadge(config, brand, state);
-    stage.applyEnvironment(badge);
-    const pivot = new Group();
-    const holder = new Group();
-    pivot.add(badge);
-    holder.add(pivot);
-    holder.scale.setScalar(0.001);
-    stage.scene.add(holder);
-    const label = makeLabel(config, state);
-    labelsEl.appendChild(label);
-    return { config, state, badge, pivot, holder, label };
+  /** 按需组装 3D 徽章；缩略图和单枚查看共用同一份。 */
+  function ensureBuilt(item) {
+    if (item.holder) return item;
+    item.badge = buildBadge(item.config, brand, item.state);
+    stage.applyEnvironment(item.badge);
+    item.pivot = new Group();
+    item.holder = new Group();
+    item.pivot.add(item.badge);
+    item.holder.add(item.pivot);
+    return item;
+  }
+
+  // ---------- 陈列墙 ----------
+  const grid = createGrid({
+    root: $('#wall'),
+    series: SERIES,
+    items,
+    onSelect: (item, viaKeyboard) => open(item, { viaKeyboard }),
   });
 
+  /** 逐枚渲染缩略图，每枚之间让出一帧，页面不会卡住。 */
+  async function renderThumbnails() {
+    for (const item of items) {
+      ensureBuilt(item);
+      if (mode === 'inspect' && inspector.current === item) continue;
+      item.holder.position.set(0, 0, 0);
+      item.holder.scale.setScalar(1);
+      item.pivot.rotation.set(0, 0, 0);
+      // 正在单枚查看的徽章也在场景里，渲染缩略图时先藏起来
+      const live = inspector.current?.holder;
+      if (live) live.visible = false;
+      stage.scene.add(item.holder);
+      const src = renderBadgePNG({ stage, items: [item], item, size: THUMB_SIZE, fill: 0.92 });
+      stage.scene.remove(item.holder);
+      if (live) live.visible = true;
+      grid.setThumbnail(item, src);
+      await nextFrame();
+    }
+  }
+
   // ---------- 单枚查看 ----------
+  const overlay = $('#overlay');
   const inspectorEl = $('#inspector');
-  const inspector = createInspector({ stage, items });
+  const inspector = createInspector({ stage, items: [] });
   let mode = 'wall';
   let exportBg = 'transparent';
   let awardRunning = false;
+  let closeTimer = null;
 
   async function runAward() {
     if (awardRunning || !inspector.current?.state.unlocked) return;
@@ -118,30 +149,68 @@ async function main() {
 
   function fillInfo(item) {
     const { config, state } = item;
-    $('[data-kicker]').textContent = state.unlocked ? `已获得 · ${fmtDate(state.earnedAt)}` : '未解锁';
-    $('[data-kicker]').style.color = state.unlocked ? '' : 'var(--muted)';
-    $('[data-title]').textContent = config.title;
-    $('[data-title-en]').textContent = config.titleEn;
-    $('[data-desc]').textContent = config.description;
+    const d = describeState(config, state);
+    const kicker = $('[data-kicker]');
+    if (d.masked) kicker.textContent = '隐藏成就';
+    else if (state.unlocked) kicker.textContent = d.tier ? `${d.meta} · ${fmtDate(state.earnedAt)}` : `已获得 · ${fmtDate(state.earnedAt)}`;
+    else kicker.textContent = '未解锁';
+    kicker.style.color = state.unlocked ? '' : 'var(--muted)';
+    $('[data-title]').textContent = d.title;
+    $('[data-title-en]').textContent = d.masked ? 'HIDDEN ACHIEVEMENT' : config.titleEn.replaceAll('{label}', d.tier?.label ?? config.tiers?.[0].label ?? '');
+    $('[data-desc]').textContent = d.masked
+      ? '这是一枚隐藏成就。继续探索 Claude Code，它会在某个时刻揭晓。'
+      : config.description;
+
+    // 等级阶梯
+    const ladder = $('[data-tiers]');
+    ladder.hidden = !config.tiers || d.masked;
+    ladder.innerHTML = '';
+    for (const [i, t] of (config.tiers ?? []).entries()) {
+      const li = document.createElement('li');
+      li.dataset.metal = t.metal;
+      const earned = state.tier !== null && i <= state.tier;
+      li.className = (earned ? 'is-earned' : '') + (i === state.tier ? ' is-current' : '');
+      li.innerHTML = `<span class="dot"></span><span>${TIER_NAMES[t.metal] ?? t.metal}</span><span>${t.label}</span>`;
+      ladder.appendChild(li);
+    }
+
+    // 进度条：未解锁的普通徽章，或还没满级的分级徽章
+    const maxed = config.tiers && state.tier === config.tiers.length - 1;
+    const showMeter = !d.masked && (config.tiers ? !maxed : !state.unlocked);
     const meter = $('[data-meter]');
-    meter.hidden = state.unlocked;
-    if (!state.unlocked) {
+    meter.hidden = !showMeter;
+    if (showMeter) {
       const { current, target } = state.progress;
-      $('[data-meter-fill]').style.width = `${(current / target) * 100}%`;
-      $('[data-meter-text]').textContent = `${current} / ${target}`;
+      $('[data-meter-fill]').style.width = `${Math.min(100, (current / target) * 100)}%`;
+      $('[data-meter-text]').textContent = `${formatCount(current)} / ${formatCount(target)}${config.tiers && state.unlocked ? ' 距下一级' : ''}`;
     }
     $('[data-replay]').hidden = !state.unlocked;
   }
 
   function open(item, { award = true, viaKeyboard = false } = {}) {
     if (mode === 'inspect' && inspector.current === item) return;
+    clearTimeout(closeTimer);
+    if (inspector.current && inspector.current !== item) stage.scene.remove(inspector.current.holder);
+    ensureBuilt(item);
     mode = 'inspect';
-    wall.setActive(false);
+    document.body.classList.add('is-inspecting');
+    overlay.hidden = false;
+    stage.resize();
+    inspector.layoutChanged();
+
+    item.pivot.rotation.set(0, 0, 0);
+    const { layout } = inspector;
+    item.holder.position.set(layout.x, layout.y, 0);
+    item.holder.scale.setScalar(layout.scale * 0.6);
+    stage.scene.add(item.holder);
     inspector.open(item);
     fillInfo(item);
-    inspectorEl.hidden = false;
     setExportPanel(false);
-    requestAnimationFrame(() => inspectorEl.classList.add('is-open'));
+    startLoop();
+    requestAnimationFrame(() => {
+      overlay.classList.add('is-open');
+      inspectorEl.classList.add('is-open');
+    });
     history.replaceState(null, '', `#${item.config.id}`);
     // 只有用键盘打开时才把焦点移进来，避免鼠标用户看到焦点框
     if (viaKeyboard) $('[data-close]').focus({ preventScroll: true });
@@ -156,18 +225,22 @@ async function main() {
     const item = inspector.current;
     inspector.close();
     mode = 'wall';
+    overlay.classList.remove('is-open');
     inspectorEl.classList.remove('is-open');
-    inspectorEl.hidden = true;
     setExportPanel(false);
-    wall.setActive(true);
+    document.body.classList.remove('is-inspecting');
     history.replaceState(null, '', location.pathname + location.search);
-    item?.label.focus({ preventScroll: true });
+    closeTimer = setTimeout(() => {
+      overlay.hidden = true;
+      if (item) stage.scene.remove(item.holder);
+      stopLoop();
+    }, 320);
+    item?.tile.focus({ preventScroll: true });
   }
-
-  const wall = createWall({ stage, items, labelsEl, onSelect: (item, viaKeyboard) => open(item, { viaKeyboard }) });
 
   $('[data-close]').addEventListener('click', close);
   $('[data-replay]').addEventListener('click', runAward);
+
   // ---------- 导出面板 ----------
   // 背景选项只影响导出文件，所以收在面板里；面板打开时才显示导出取景框。
   const exportFrame = $('#export-frame');
@@ -222,11 +295,12 @@ async function main() {
     if (!item) return null;
     const dataURL = renderBadgePNG({
       stage,
-      items,
+      items: [item],
       item,
       background: bg === 'ink' ? brand.palette.background : null,
     });
-    const filename = `${brand.id}-${item.config.id}-${inspector.face}.png`;
+    const tier = item.config.tiers && item.state.tier !== null ? `-${item.config.tiers[item.state.tier].metal}` : '';
+    const filename = `${brand.id}-${item.config.id}${tier}-${inspector.face}.png`;
     if (download) downloadDataURL(dataURL, filename);
     return { dataURL, filename };
   }
@@ -244,36 +318,37 @@ async function main() {
   });
 
   window.addEventListener('resize', () => {
+    if (mode !== 'inspect') return;
     stage.resize();
-    wall.layout();
     inspector.layoutChanged();
     if (!exportPanel.hidden) placeExportFrame();
   });
 
-  // ---------- 渲染循环 ----------
+  // ---------- 渲染循环：只在单枚查看时运行 ----------
   let lastT = performance.now();
-  stage.renderer.setAnimationLoop((now) => {
+  function loop(now) {
     const dt = Math.min(0.1, (now - lastT) / 1000);
     lastT = now;
-    const t = now / 1000;
     tweens.step(dt);
-    if (mode === 'wall') wall.update(dt, t);
-    else inspector.update(dt);
-    for (const item of items) {
-      for (const m of item.badge.userData.pulses) {
-        m.emissiveIntensity = 0.06 + 0.3 * (0.5 + 0.5 * Math.sin(t * 3.4));
-      }
+    inspector.update(dt);
+    const t = now / 1000;
+    for (const m of inspector.current?.badge.userData.pulses ?? []) {
+      m.emissiveIntensity = 0.06 + 0.3 * (0.5 + 0.5 * Math.sin(t * 3.4));
     }
     stage.renderer.render(stage.scene, stage.camera);
-  });
-
-  // 支持通过 #徽章id 直接打开某一枚
-  const fromHash = items.find((it) => `#${it.config.id}` === location.hash);
-  if (fromHash) setTimeout(() => open(fromHash), 400);
+  }
+  function startLoop() {
+    lastT = performance.now();
+    stage.renderer.setAnimationLoop(loop);
+  }
+  function stopLoop() {
+    stage.renderer.setAnimationLoop(null);
+  }
 
   // 供自动化验证使用的小接口
+  const thumbsDone = renderThumbnails();
   window.__badgeApp = {
-    ready: true,
+    ready: false,
     ids: items.map((it) => it.config.id),
     open: (id, opts) => open(items.find((it) => it.config.id === id), opts),
     close,
@@ -289,6 +364,13 @@ async function main() {
     },
     exportPNG: (bg) => exportCurrent(bg, { download: false }),
   };
+
+  // 支持通过 #徽章id 直接打开某一枚
+  const fromHash = items.find((it) => `#${it.config.id}` === location.hash);
+  if (fromHash) open(fromHash);
+
+  await thumbsDone;
+  window.__badgeApp.ready = true;
 }
 
 main().catch((e) => {

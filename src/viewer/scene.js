@@ -67,6 +67,7 @@ export function createStage(canvas) {
   function resize() {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
+    if (!w || !h) return; // 画布隐藏时（陈列墙模式）不改尺寸
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
