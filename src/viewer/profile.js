@@ -1,7 +1,8 @@
 // 成就档案：解锁进度环 + 三个关键数字，旁边是「最近获得」和「即将解锁」。
 import { highlights } from '../data/highlights.js';
 import { dailyStats } from '../data/daily.js';
-import { formatBig, t } from '../i18n.js';
+import { formatBig, lang, t } from '../i18n.js';
+import { badgeTitle } from '../brands/shared/text.js';
 import { describeState } from './grid.js';
 
 const fmtDate = (iso) => (iso ? iso.replaceAll('-', '.') : '');
@@ -74,7 +75,9 @@ export function createProfile({ root, items, daily, onSelect, onShare }) {
         : `<span class="profile-item-meter"><span class="meter-track"><span class="meter-fill" style="width:${Math.round(entry.ratio * 100)}%"></span></span>
            <span class="profile-item-meta">${formatBig(entry.state.progress.current)} / ${formatBig(entry.state.progress.target)}</span></span>`;
     btn.innerHTML = `<img alt="" draggable="false" /><span class="profile-item-text"><span class="profile-item-title"></span>${meta}</span>`;
-    btn.querySelector('.profile-item-title').textContent = d.title;
+    // 即将解锁说的是下一级：已是 10M、正在冲 100M，就写 100M Tokens
+    const title = kind === 'next' && !d.masked && item.config.tiers ? badgeTitle(item.config, lang, (item.state.tier ?? -1) + 1) : d.title;
+    btn.querySelector('.profile-item-title').textContent = title;
     btn.addEventListener('click', (e) => onSelect(item, e.detail === 0));
     li.appendChild(btn);
     return li;

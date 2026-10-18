@@ -3,14 +3,14 @@ import { Group } from 'three';
 import { BRANDS, getBrand } from './brands/index.js';
 import { buildBadge } from './engine/badge.js';
 import { partitionBadges, validateBrand } from './engine/validate.js';
-import { TIER_NAMES } from './engine/tiers.js';
 import { loadDaily, loadProgress, sourceInfo } from './data/progress.js';
 import { createHeatmap } from './viewer/heatmap.js';
 import { createProfile } from './viewer/profile.js';
 import { renderPoster } from './viewer/poster.js';
-import { t } from './i18n.js';
+import { applyStatic, formatBig, lang, t } from './i18n.js';
+import { badgeDescription, badgeTitle, tierName } from './brands/shared/text.js';
 import { createStage, supportsWebGL } from './viewer/scene.js';
-import { createGrid, describeState, formatCount } from './viewer/grid.js';
+import { createGrid, describeState } from './viewer/grid.js';
 import { createInspector } from './viewer/inspector.js';
 import { playAward } from './viewer/award-animation.js';
 import { EXPORT_FILL, downloadDataURL, renderBadgePNG } from './viewer/export.js';
@@ -67,20 +67,30 @@ function renderBrandSwitch() {
     const a = document.createElement('a');
     const p = new URLSearchParams(location.search);
     p.set('brand', b.brand.id);
+    p.set('lang', lang);
     a.href = `?${p}`;
     a.textContent = b.brand.name;
     a.className = 'brand-tab' + (b.brand.id === brand.id ? ' is-active' : '');
     if (b.brand.id === brand.id) a.setAttribute('aria-current', 'page');
     nav.appendChild(a);
   }
+  // 语言切换：链接到同一页面的另一种语言
+  const sw = $('[data-lang-switch]');
+  const other = lang === 'zh' ? 'en' : 'zh';
+  const q = new URLSearchParams(location.search);
+  q.set('lang', other);
+  sw.href = `?${q}${location.hash}`;
+  sw.textContent = other === 'zh' ? '中文' : 'EN';
+  sw.lang = other === 'zh' ? 'zh-CN' : 'en';
   document.documentElement.style.setProperty('--accent', brand.ui.accent);
   document.documentElement.dataset.brand = brand.id;
 }
 
 async function main() {
+  applyStatic();
   renderBrandSwitch();
   if (!supportsWebGL()) {
-    fatal('当前浏览器不支持 WebGL，无法显示 3D 徽章。');
+    fatal(t('app.noWebGL'));
     return;
   }
 
@@ -98,18 +108,24 @@ async function main() {
   applyPreview(valid, progress);
   if (error) {
     console.error(error);
-    notices.push('进度数据加载失败，徽章暂按未解锁展示。');
+    notices.push(t('app.progressFailed'));
   }
   if (notices.length) showNotice(notices.join('\n'));
 
-  document.title = `${brand.name} 成就徽章`;
+  document.title = t('app.title', { brand: brand.name });
   const sourceEl = $('[data-source]');
   if (source.kind === 'local') {
-    const t = new Date(source.generatedAt);
-    sourceEl.textContent = `本机数据 · 更新于 ${t.getMonth() + 1} 月 ${t.getDate()} 日 ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+    const at = new Date(source.generatedAt);
+    const time = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
+    sourceEl.textContent = t('source.local', {
+      m: at.getMonth() + 1,
+      d: at.getDate(),
+      date: at.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      time,
+    });
   } else {
-    sourceEl.textContent = '示例数据';
-    sourceEl.title = `运行 npm run collect 生成本机数据`;
+    sourceEl.textContent = t('source.mock');
+    sourceEl.title = t('source.mockHint');
   }
 
   const stage = createStage($('#stage'));
@@ -119,7 +135,7 @@ async function main() {
   /** 按需组装 3D 徽章；缩略图和单枚查看共用同一份。 */
   function ensureBuilt(item) {
     if (item.holder) return item;
-    item.badge = buildBadge(item.config, brand, item.state);
+    item.badge = buildBadge(item.config, brand, item.state, { lang });
     stage.applyEnvironment(item.badge);
     item.pivot = new Group();
     item.holder = new Group();
@@ -310,26 +326,27 @@ async function main() {
     const { config, state } = item;
     const d = describeState(config, state);
     const kicker = $('[data-kicker]');
-    if (d.masked) kicker.textContent = '隐藏成就';
-    else if (state.unlocked) kicker.textContent = d.tier ? `${d.meta} · ${fmtDate(state.earnedAt)}` : `已获得 · ${fmtDate(state.earnedAt)}`;
-    else kicker.textContent = '未解锁';
+    if (d.masked) kicker.textContent = t('state.hidden');
+    else if (state.unlocked) kicker.textContent = `${d.tier ? d.meta : t('state.earned')} · ${fmtDate(state.earnedAt)}`;
+    else kicker.textContent = t('state.locked');
     kicker.style.color = state.unlocked ? '' : 'var(--muted)';
     $('[data-title]').textContent = d.title;
-    $('[data-title-en]').textContent = d.masked ? 'HIDDEN ACHIEVEMENT' : config.titleEn.replaceAll('{label}', d.tier?.label ?? config.tiers?.[0].label ?? '');
-    $('[data-desc]').textContent = d.masked
-      ? `这是一枚隐藏成就。继续探索 ${brand.name}，它会在某个时刻揭晓。`
-      : config.description;
+    // 中文界面在标题下面再写一行英文；英文界面不需要
+    const titleEn = $('[data-title-en]');
+    titleEn.hidden = lang !== 'zh';
+    titleEn.textContent = d.masked ? 'HIDDEN ACHIEVEMENT' : config.titleEn.replaceAll('{label}', d.tier?.label ?? config.tiers?.[0].label ?? '');
+    $('[data-desc]').textContent = d.masked ? t('inspect.hiddenDesc', { brand: brand.name }) : badgeDescription(config, lang);
 
     // 等级阶梯
     const ladder = $('[data-tiers]');
     ladder.hidden = !config.tiers || d.masked;
     ladder.innerHTML = '';
-    for (const [i, t] of (config.tiers ?? []).entries()) {
+    for (const [i, tier] of (config.tiers ?? []).entries()) {
       const li = document.createElement('li');
-      li.dataset.metal = t.metal;
+      li.dataset.metal = tier.metal;
       const earned = state.tier !== null && i <= state.tier;
       li.className = (earned ? 'is-earned' : '') + (i === state.tier ? ' is-current' : '');
-      li.innerHTML = `<span class="dot"></span><span>${TIER_NAMES[t.metal] ?? t.metal}</span><span>${t.label}</span>`;
+      li.innerHTML = `<span class="dot"></span><span>${tierName(tier.metal, lang).replace(/级$/, '')}</span><span>${tier.label}</span>`;
       ladder.appendChild(li);
     }
 
@@ -341,7 +358,7 @@ async function main() {
     if (showMeter) {
       const { current, target } = state.progress;
       $('[data-meter-fill]').style.width = `${Math.min(100, (current / target) * 100)}%`;
-      $('[data-meter-text]').textContent = `${formatCount(current)} / ${formatCount(target)}${config.tiers && state.unlocked ? ' 距下一级' : ''}`;
+      $('[data-meter-text]').textContent = `${formatBig(current)} / ${formatBig(target)}${config.tiers && state.unlocked ? t('inspect.toNext') : ''}`;
     }
     $('[data-replay]').hidden = !state.unlocked;
   }
@@ -412,7 +429,7 @@ async function main() {
   const exportFrame = $('#export-frame');
   const exportPanel = $('#export-panel');
   const exportToggle = $('[data-export-toggle]');
-  const FACE_LABEL = { front: '正面', back: '背面' };
+  const FACE_LABEL = { front: t('export.front'), back: t('export.back') };
 
   function setExportPanel(open) {
     exportPanel.hidden = !open;
@@ -555,5 +572,5 @@ async function main() {
 
 main().catch((e) => {
   console.error(e);
-  fatal(`加载失败：${e.message}`);
+  fatal(t('app.loadFailed', { msg: e.message }));
 });

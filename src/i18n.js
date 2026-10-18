@@ -9,6 +9,36 @@ export const lang = pick();
 
 const STRINGS = {
   zh: {
+    'app.sub': '成就徽章',
+    'app.title': '{brand} 成就徽章',
+    'nav.brands': '切换工具',
+    'app.noWebGL': '当前浏览器不支持 WebGL，无法显示 3D 徽章。',
+    'app.loadFailed': '加载失败：{msg}',
+    'app.progressFailed': '进度数据加载失败，徽章暂按未解锁展示。',
+    'source.local': '本机数据 · 更新于 {m} 月 {d} 日 {time}',
+    'source.mock': '示例数据',
+    'source.mockHint': '运行 npx agent-badges 查看你自己的徽章',
+    'state.hidden': '隐藏成就',
+    'state.earned': '已获得',
+    'state.locked': '未解锁',
+    'tile.aria': '{title}，{state}，查看详情',
+    'inspect.back': '全部徽章',
+    'inspect.backAria': '返回陈列墙',
+    'inspect.stage': '3D 徽章，可拖动旋转',
+    'inspect.replay': '重播动画',
+    'inspect.hint': '左右拖动旋转 · 翻到背面看刻字',
+    'inspect.hiddenDesc': '这是一枚隐藏成就。继续探索 {brand}，它会在某个时刻揭晓。',
+    'inspect.toNext': ' 距下一级',
+    'export.open': '导出图片',
+    'export.bg': '背景',
+    'export.bgAria': '导出背景',
+    'export.transparent': '透明',
+    'export.ink': '墨色',
+    'export.face': '朝向',
+    'export.front': '正面',
+    'export.back': '背面',
+    'export.size': '尺寸',
+    'export.download': '下载 PNG',
     'profile.unlocked': '已解锁徽章',
     'profile.tokens': '累计 Token',
     'profile.activeDays': '活跃天数',
@@ -46,6 +76,36 @@ const STRINGS = {
     months: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
   },
   en: {
+    'app.sub': 'Achievements',
+    'app.title': '{brand} Achievements',
+    'nav.brands': 'Switch tool',
+    'app.noWebGL': 'This browser does not support WebGL, so the 3D badges cannot be shown.',
+    'app.loadFailed': 'Failed to load: {msg}',
+    'app.progressFailed': 'Could not load progress data. Badges are shown as locked for now.',
+    'source.local': 'Local data · updated {date} {time}',
+    'source.mock': 'Sample data',
+    'source.mockHint': 'Run npx agent-badges to see your own badges',
+    'state.hidden': 'Hidden achievement',
+    'state.earned': 'Earned',
+    'state.locked': 'Locked',
+    'tile.aria': '{title}, {state}, view details',
+    'inspect.back': 'All badges',
+    'inspect.backAria': 'Back to the badge wall',
+    'inspect.stage': '3D badge, drag to rotate',
+    'inspect.replay': 'Replay',
+    'inspect.hint': 'Drag to rotate · flip it over to read the engraving',
+    'inspect.hiddenDesc': 'This is a hidden achievement. Keep exploring {brand} and it will reveal itself.',
+    'inspect.toNext': ' to next tier',
+    'export.open': 'Export image',
+    'export.bg': 'Background',
+    'export.bgAria': 'Export background',
+    'export.transparent': 'Transparent',
+    'export.ink': 'Ink',
+    'export.face': 'Side',
+    'export.front': 'Front',
+    'export.back': 'Back',
+    'export.size': 'Size',
+    'export.download': 'Download PNG',
     'profile.unlocked': 'badges unlocked',
     'profile.tokens': 'Tokens',
     'profile.activeDays': 'Active days',
@@ -108,4 +168,11 @@ export function formatDay(date, l = lang) {
   const d = new Date(`${date}T00:00:00`);
   if (l === 'zh') return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 周${STRINGS.zh.weekdays[d.getDay()]}`;
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/** 给页面里带 data-i18n / data-i18n-aria 的元素填上文字。 */
+export function applyStatic(root = document) {
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  root.querySelectorAll('[data-i18n]').forEach((el) => (el.textContent = t(el.dataset.i18n)));
+  root.querySelectorAll('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
 }

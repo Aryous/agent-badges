@@ -1,0 +1,31 @@
+// English text for Codex badges. {label} is replaced with the tier label (e.g. 100, 10M).
+export default {
+  series: {
+    milestones: { title: 'Milestones', subtitle: 'First steps and running totals' },
+    habits: { title: 'Streaks & Habits', subtitle: 'Consistency and rhythm' },
+    features: { title: 'Features', subtitle: 'Unlock every capability' },
+    limited: { title: 'Limited & Secret', subtitle: 'Special days, hidden surprises' },
+  },
+  badges: {
+    'first-thread': { title: 'First Thread', description: 'Started your first Codex thread. The cursor blinked inside the cloud, and the story began.' },
+    threads: { title: '{label} Threads', description: 'Codex threads started. A cloud spins out a thread; enough threads weave a net.' },
+    tokens: { title: '{label} Tokens', description: 'Tokens used. It never stops raining in the cloud, and every drop is a word.' },
+    patches: { title: '{label} Patches', description: 'Patches applied. Delete a line, add two, and the code is stitched together one stitch at a time.' },
+    'seven-day-streak': { title: '7-Day Streak', description: 'Opened Codex seven days in a row. Seven boxes in a week, every one lit up.' },
+    'streak-days': { title: '{label}-Day Streak', description: 'Consecutive days with Codex. Link by link, once the chain starts turning it does not stop.' },
+    'night-owl': { title: 'Night Owl', description: 'Still talking to Codex between midnight and 5 a.m. The moon is hanging on the cloud.' },
+    'early-bird': { title: 'Early Bird', description: 'Started work between 5 and 7 a.m. The sun just peeked out from behind the cloud, and Codex is already running tests.' },
+    'weekend-warrior': { title: 'Weekend Warrior', description: 'Used Codex on both Saturday and Sunday. Sunglasses on, patches still flowing.' },
+    marathon: { title: 'Marathon', description: 'One session active for over 4 hours. The clock hand moved four ticks and Codex still is not tired.' },
+    'multi-agent': { title: 'Multi-Agent', description: 'Spawned subagents and sent little clouds off to work in parallel. One person, one team.' },
+    'plan-tracker': { title: 'Plan Tracker', description: 'Made a plan with update_plan. Write the list first, then check things off one by one.' },
+    'deep-thinker': { title: 'Deep Thinker', description: 'Turned reasoning effort up to xhigh or ultra. Think a little longer, get a better answer.' },
+    'full-auto': { title: 'Full Auto', description: 'Let Codex work with no approvals needed. Seatbelt on, ignition.' },
+    reviewer: { title: 'Reviewer', description: 'Used automatic code review. No issue is too small for this magnifying glass.' },
+    'ide-buddy': { title: 'IDE Buddy', description: 'Used Codex inside VS Code. Code on the left, partner on the right, perfectly in sync.' },
+    'programmers-day': { title: "Programmers' Day", description: 'Coded with Codex on October 24. Two to the tenth power: a holiday for everyone who hits Enter.' },
+    anniversary: { title: 'One Year', description: 'One year with Codex. The cloud puts on a party hat: here is to another year of turning ideas into code.' },
+    'model-collector': { title: 'Model Collector', description: 'Used 4 different models in Codex. Each one has its own temper, and you have figured them all out.' },
+    compactor: { title: 'Context Compactor', description: 'Context compacted 20 times. Even the longest conversation can be squeezed down to just the right size.' },
+  },
+};

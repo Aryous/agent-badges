@@ -1,0 +1,30 @@
+// English text for Claude Code badges. {label} is replaced with the tier label (e.g. 100, 10M).
+export default {
+  series: {
+    milestones: { title: 'Milestones', subtitle: 'First steps and running totals' },
+    habits: { title: 'Streaks & Habits', subtitle: 'Consistency and rhythm' },
+    features: { title: 'Features', subtitle: 'Unlock every capability' },
+    limited: { title: 'Limited & Secret', subtitle: 'Special days, hidden surprises' },
+  },
+  badges: {
+    'first-session': { title: 'First Session', description: 'Your first Claude Code session. The little guy pokes its head out of the terminal for the first time.' },
+    sessions: { title: '{label} Sessions', description: 'Claude Code sessions started. Every claude + Enter is a new trip together.' },
+    tokens: { title: '{label} Tokens', description: 'Tokens processed. Coin by coin, they pile up into a small mountain of gold.' },
+    'tool-calls': { title: '{label} Tool Calls', description: 'Tool calls made. Reading files, running commands, editing code: the little guy never minds more work.' },
+    'seven-day-streak': { title: '7-Day Streak', description: 'Used Claude Code seven days in a row. The habit is formed.' },
+    'streak-days': { title: '{label}-Day Streak', description: 'Consecutive days with Claude Code. Page after page off the calendar, and not a single day missed.' },
+    'night-owl': { title: 'Night Owl', description: 'Still coding with Claude Code between midnight and 5 a.m. Nightcap on, still not going to bed.' },
+    'early-bird': { title: 'Early Bird', description: 'Started work between 5 and 7 a.m. The sun is barely up, the coffee is still steaming, and the first prompt is already sent.' },
+    'weekend-warrior': { title: 'Weekend Warrior', description: 'Coded with Claude Code on both Saturday and Sunday. Headband on, the weekend is home turf.' },
+    marathon: { title: 'Marathon', description: 'A single session over 4 hours. Fueled by coffee, paced by Claude, the finish line is the next commit.' },
+    'subagent-commander': { title: 'Subagent Commander', description: 'Ran 5 subagents in parallel in a single session.' },
+    'hooks-smith': { title: 'Hooks Smith', description: 'Set up your first hook. From now on, something checks your work before every commit.' },
+    connector: { title: 'MCP Connector', description: 'Connected 3 MCP servers. The little guy keeps growing more sockets.' },
+    'skill-master': { title: 'Skill Master', description: 'Invoked Skills 50 times. The more moves you know, the faster you strike.' },
+    'plan-mode': { title: 'Plan Mode', description: 'Used Plan mode. Think it through, then build.' },
+    'programmers-day': { title: "Programmers' Day", description: 'Coded with Claude Code on October 24. Two to the tenth power: a holiday that belongs to us.' },
+    anniversary: { title: 'One Year', description: 'One year with Claude Code. Before blowing out the candles, wish for all-green tests.' },
+    'model-collector': { title: 'Model Collector', description: 'Opus, Sonnet, Haiku and Fable have all clocked in. Every gem collected, the cabinet is full.' },
+    'bash-maniac': { title: 'Bash Maniac', description: 'Had Claude Code run Bash 500 times in one day. The keyboard is smoking and the terminal is still scrolling.' },
+  },
+};

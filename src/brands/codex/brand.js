@@ -1,3 +1,5 @@
+import { engravingLines } from '../shared/text.js';
+
 // Codex 品牌主题。与 Claude Code 同一个家族：同样的结构和多彩珐琅色板，
 // 锚点换成 Codex 标志，品牌色换成标志的淡紫 → 蓝渐变。徽章配置里的 color 字段引用这里的键名。
 
@@ -58,14 +60,6 @@ export default {
   },
   engraving: {
     fontFamily: '"PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif',
-    lines: ({ brandName, title, titleEn, earnedAt, unlocked, progress, tier, hidden }) => {
-      if (hidden) return [brandName.toUpperCase(), '???', 'HIDDEN ACHIEVEMENT', '继续探索'];
-      const footer = unlocked
-        ? tier
-          ? `${tier.name}级 · ${earnedAt}`
-          : earnedAt
-        : `未解锁 · ${progress.current} / ${progress.target}`;
-      return [brandName.toUpperCase(), title, titleEn, footer];
-    },
+    lines: engravingLines,
   },
 };

@@ -90,9 +90,11 @@ function formatDate(iso) {
  * @param {object} config  徽章配置（见 brands/<id>/badges.js）
  * @param {object} brand   品牌主题（见 brands/<id>/brand.js）
  * @param {object} state   { unlocked, earnedAt, tier?, progress: { current, target } }
+ * @param {object} [options]
+ * @param {'zh'|'en'} [options.lang]  背面刻字的语言
  * @returns {Group}
  */
-export function buildBadge(rawConfig, brand, state) {
+export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
   const { palette } = brand;
   const locked = !state.unlocked;
   let config = resolveTier(rawConfig, state.tier ?? 0);
@@ -154,6 +156,8 @@ export function buildBadge(rawConfig, brand, state) {
   // 背面板 + 刻字
   const lines = brand.engraving.lines({
     brandName: brand.name,
+    config,
+    lang,
     title: config.title,
     titleEn: config.titleEn,
     earnedAt: formatDate(state.earnedAt),

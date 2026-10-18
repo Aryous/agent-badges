@@ -5,21 +5,15 @@ import codexBrand from '../brands/codex/brand.js';
 import codexBadges from '../brands/codex/badges.js';
 import { normalizeProgress } from '../data/normalize.js';
 import { highlights } from '../data/highlights.js';
+import { badgeTitle } from '../brands/shared/text.js';
 
 const CATALOG = {
   'claude-code': { brand: claudeBrand, badges: claudeBadges },
   codex: { brand: codexBrand, badges: codexBadges },
 };
 
-/** 徽章名：中文用 title；英文用 titleEn，分级徽章把 {label} 换成当前（或第一级）的数值。 */
-const label = (b, s, lang, { next = false } = {}) => {
-  if (lang === 'zh') return b.title;
-  // 即将解锁时说的是「下一级」：已是 1K 级、正在冲 10K，就叫 10K Tool Calls
-  const idx = next ? (s?.tier ?? -1) + 1 : s?.tier ?? 0;
-  const tier = b.tiers?.[Math.min(idx, (b.tiers?.length ?? 1) - 1)] ?? b.tiers?.[0];
-  return titleCase(b.titleEn.replaceAll('{label}', tier?.label ?? '').trim());
-};
-const titleCase = (s) => s.toLowerCase().replace(/(^|[\s-])[a-z]/g, (m) => m.toUpperCase()).replace(/\b(\d+)(k|m|b)\b/gi, (_, n, u) => n + u.toUpperCase());
+/** 徽章名；即将解锁时用「下一级」的名字（已是 1K 级、正在冲 10K，就叫 10K Tool Calls）。 */
+const label = (b, s, lang, { next = false } = {}) => badgeTitle(b, lang, next ? (s?.tier ?? -1) + 1 : s?.tier ?? 0);
 
 /** 一个品牌的汇总数据（结构化，供 --json 输出）。 */
 export function summarize(brandId, rawProgress, { lang = 'en' } = {}) {

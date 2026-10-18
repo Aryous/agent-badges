@@ -1,25 +1,21 @@
-import { TIER_NAMES } from '../engine/tiers.js';
+import { badgeTitle, seriesSubtitle, seriesTitle, tierName } from '../brands/shared/text.js';
+import { formatBig, lang, t } from '../i18n.js';
 
 // 陈列墙：按系列分组的网格。徽章是预先渲染好的静态图，
 // 悬停时用 CSS 3D 倾斜 + 高光模拟立体感；点开后才进入实时 3D。
 
 const fmtDate = (iso) => (iso ? iso.replaceAll('-', '.') : '');
 
-/** 大数字缩写：12400 → 1.2 万，48000000 → 4800 万 */
-export function formatCount(n) {
-  if (n >= 1e8) return `${+(n / 1e8).toFixed(n >= 1e9 ? 0 : 1)} 亿`;
-  if (n >= 1e4) return `${+(n / 1e4).toFixed(n >= 1e5 ? 0 : 1)} 万`;
-  return String(n);
-}
-
 /** 陈列墙和详情里共用的状态文字。 */
 export function describeState(config, state) {
   const masked = config.hidden && !state.unlocked;
-  const title = masked ? '???' : config.title;
-  if (masked) return { title, meta: '隐藏成就', masked };
+  if (masked) return { title: '???', meta: t('state.hidden'), masked };
+  const title = badgeTitle(config, lang, state.tier);
   if (config.tiers && state.unlocked) {
-    const t = config.tiers[state.tier];
-    return { title, meta: `${TIER_NAMES[t.metal] ?? t.metal}级 · ${t.label}`, tier: t, masked };
+    const tier = config.tiers[state.tier];
+    // 英文标题里已经带着数值（100 Sessions），只写等级名
+    const meta = lang === 'zh' ? `${tierName(tier.metal, 'zh')} · ${tier.label}` : tierName(tier.metal, 'en');
+    return { title, meta, tier, masked };
   }
   if (state.unlocked) return { title, meta: fmtDate(state.earnedAt), masked };
   return { title, meta: null, masked };
@@ -42,8 +38,8 @@ export function createGrid({ root, series, items, onSelect }) {
         <span class="series-count"><b>${unlocked}</b> / ${members.length}</span>
       </header>
       <div class="tiles"></div>`;
-    section.querySelector('.series-title').textContent = s.title;
-    section.querySelector('.series-sub').textContent = s.subtitle ?? '';
+    section.querySelector('.series-title').textContent = seriesTitle(s, lang);
+    section.querySelector('.series-sub').textContent = seriesSubtitle(s, lang) ?? '';
     const tiles = section.querySelector('.tiles');
     for (const item of members) tiles.appendChild(makeTile(item));
     root.appendChild(section);
@@ -57,13 +53,13 @@ export function createGrid({ root, series, items, onSelect }) {
     el.type = 'button';
     el.className = 'tile is-loading' + (state.unlocked ? '' : ' is-locked');
     el.dataset.id = config.id;
-    el.setAttribute('aria-label', `${d.title}，${state.unlocked ? '已获得' : '未解锁'}，查看详情`);
+    el.setAttribute('aria-label', t('tile.aria', { title: d.title, state: t(state.unlocked ? 'state.earned' : 'state.locked') }));
     const { current, target } = state.progress;
     const pct = Math.min(100, (current / target) * 100);
     const meta = d.meta
       ? `<span class="tile-meta"></span>`
       : `<span class="mini-meter"><span class="meter-track"><span class="meter-fill" style="width:${pct}%"></span></span>
-         <span class="tile-meta">${formatCount(current)} / ${formatCount(target)}</span></span>`;
+         <span class="tile-meta">${formatBig(current)} / ${formatBig(target)}</span></span>`;
     el.innerHTML = `
       <span class="tile-art"><img alt="" draggable="false" /><span class="tile-glare"></span></span>
       <span class="tile-title"></span>
