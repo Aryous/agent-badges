@@ -1,6 +1,6 @@
 # Agent Badges
 
-Apple Watch 运动徽章风格的 3D 成就徽章，用 three.js 程序化生成。首个品牌是 Claude Code。
+Apple Watch 运动徽章风格的 3D 成就徽章，用 three.js 程序化生成。目前有两个品牌：Claude Code（19 枚）和 Codex（20 枚），顶栏可以切换，也可以直接用 `?brand=codex` 打开。
 
 ## 运行
 
@@ -81,11 +81,22 @@ node scripts/peek.mjs "http://localhost:5199/?preview=unlocked" out.png <徽章i
 
 配置会在启动时校验，写错的字段会在开发模式下直接显示在页面上。
 
-## 新增一个品牌（如 Codex）
+## 新增一个品牌
 
-1. 新建 `src/brands/codex/brand.js`（色板和刻字模板），以及 `badges.js`。
-2. 在 `src/data/progress.js` 的 `SOURCES` 里注册它的数据源。
-3. 在 `src/main.js` 里切换要加载的品牌。
+1. 新建 `src/brands/<id>/`，包括：
+   - `brand.js`：色板和刻字模板。
+   - `helpers.js`：品牌锚点和配件工具。共用的奖章构图从 `../shared/medal.js` 引入。
+   - `badges.js` 和 `series/`：徽章配置。
+2. 在 `src/brands/index.js` 里登记。
+3. 在 `src/data/progress.js` 里登记数据源和示例数据。
+4. 如需本机数据，写一个 `scripts/collect-<id>.mjs`，统计逻辑放在 `src/data/<id>-metrics.js`，并为它写泄漏测试。
+
+## 品牌素材
+
+- **Claude Code**：像素小怪物按 simple-icons 中的 Claude Code 图标逐格还原，见 `src/brands/claude-code/pixel-art.js`。
+- **Codex**：标志路径来自 [LobeHub Icons](https://github.com/lobehub/lobe-icons)（MIT），见 `src/brands/codex/icons.js`。
+
+两者的商标分别归 Anthropic 和 OpenAI 所有。本项目仅用于个人成就展示，公开发布前请先查看各自的品牌使用规范。
 
 ## 文字环字体
 
@@ -94,15 +105,15 @@ node scripts/peek.mjs "http://localhost:5199/?preview=unlocked" out.png <徽章i
 - 要换字体或补充字符，改这个脚本后重新运行即可。
 - 配置里用了字体里没有的字符时，校验会直接报错。
 
-## 品牌素材
-
-Claude Code 像素小怪物按 [simple-icons](https://simpleicons.org/) 中的 Claude Code 图标逐格还原（`src/brands/claude-code/pixel-art.js`）。商标归 Anthropic 所有，本项目仅用于个人成就展示；公开发布前请先查看品牌使用规范。
-
 ## 本机真实数据
 
 ```bash
-npm run collect   # 读取本机 Claude Code 统计，生成徽章进度；之后刷新页面即可
+npm run collect          # 依次采集 Claude Code 和 Codex，生成徽章进度；之后刷新页面即可
+npm run collect:claude   # 只采集 Claude Code
+npm run collect:codex    # 只采集 Codex
 ```
+
+本机没装某个工具时会自动跳过。
 
 页面顶栏会标明数据来源：「本机数据 · 更新于 …」或「示例数据」。加 `?source=mock` 可以强制查看示例数据。
 
@@ -115,6 +126,18 @@ npm run collect   # 读取本机 Claude Code 统计，生成徽章进度；之�
 - **不打开的文件**：`settings.json`、`.credentials.json`、MCP 配置、`history.jsonl`、`shell-snapshots`、`session-env`、`paste-cache`、`file-history`。
 - **输出位置**：`src/data/generated/`，已加入 `.gitignore`。输出文件里只有数字、日期、哈希和模型家族名，`tests/claude-code-metrics.test.js` 里有专门的测试验证正文不会泄漏。
 - **构建产物**：`npm run build` 会把这份统计打包进 `dist/index.html`。分享构建产物前请留意这一点，也可以用 `?source=mock` 的版本。
+
+**Codex 的隐私边界**
+
+- **只读两类数据**：
+  - `~/.codex/sessions/**/rollout-*.jsonl(.zst)`：会话记录。每行只取记录类型、时间戳、Token 计数、上下文压缩事件、推理强度和审批策略的取值。工具名只认 `apply_patch`、`update_plan`、`spawn_agent` 三个，其余一律记为 other；模型名在读取时就哈希。
+  - `~/.codex/state_5.sqlite` 的 `threads` 表：以只读方式打开，SQL 只 SELECT 六列，包括创建时间、来源、会话类型、模型、推理强度、审批策略。来源列里的子代理昵称、父会话 id 只用来分类，当场丢弃。
+- **不打开的文件**：`auth.json`、`config.toml`、`*.env`、`history.jsonl`、`transcription-history.jsonl`、`thread_history*.sqlite`、`logs*.sqlite`、`memories*`、`shell_snapshots`、`chatgpt-meetings`。
+- **不读的列**：`threads` 表里的标题、首条消息、预览、路径、git 信息、账号 id。
+- **验证**：`tests/codex-metrics.test.js` 里有泄漏测试。
+- **口径**：
+  - 线程只统计你自己发起的会话（VS Code / CLI / exec），自动审查和子代理不计。
+  - Token 是「未缓存输入 + 输出」，和 Claude Code 同口径。
 
 **累积账本**：Claude Code 会定期清理较早的会话记录，所以每次采集都会把结果并入 `claude-code.ledger.json`。账本按天汇总，已经拿到的徽章不会因为记录被清理而消失。
 

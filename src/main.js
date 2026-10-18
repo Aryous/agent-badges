@@ -186,7 +186,7 @@ async function main() {
     $('[data-title]').textContent = d.title;
     $('[data-title-en]').textContent = d.masked ? 'HIDDEN ACHIEVEMENT' : config.titleEn.replaceAll('{label}', d.tier?.label ?? config.tiers?.[0].label ?? '');
     $('[data-desc]').textContent = d.masked
-      ? '这是一枚隐藏成就。继续探索 Claude Code，它会在某个时刻揭晓。'
+      ? `这是一枚隐藏成就。继续探索 ${brand.name}，它会在某个时刻揭晓。`
       : config.description;
 
     // 等级阶梯

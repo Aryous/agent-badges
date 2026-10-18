@@ -192,6 +192,31 @@ async function session(viewport, tag) {
   await page.close();
 }
 
+// ---------- Codex 品牌 ----------
+{
+  const codexUrl = url.replace('source=mock', 'source=mock&brand=codex');
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+  const errors = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(codexUrl);
+  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 60000 });
+  await page.screenshot({ path: `${out}/codex-wall.png`, fullPage: true });
+  const ids = await page.evaluate(() => window.__badgeApp.ids);
+  const loaded = await page.locator('.tile:not(.is-loading) img[src^="data:image/png"]').count();
+  check('Codex 陈列墙每枚徽章都有缩略图', loaded === ids.length && ids.length >= 20, `${loaded}/${ids.length}`);
+  const active = await page.locator('.brand-tab.is-active').textContent();
+  check('品牌切换器高亮 Codex', active === 'Codex', active);
+  const masked = await page.locator('.tile[data-id="compactor"] .tile-title').textContent();
+  check('Codex 未解锁的隐藏徽章显示 ???', masked === '???', masked);
+  await page.evaluate(() => window.__badgeApp.open('compactor', { award: false }));
+  await page.waitForTimeout(800);
+  const desc = await page.locator('[data-desc]').textContent();
+  check('隐藏成就文案使用当前品牌名', desc.includes('Codex') && !desc.includes('Claude'), desc);
+  check('Codex 控制台无报错', errors.length === 0, errors.join(' | '));
+  await page.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} 通过`);
