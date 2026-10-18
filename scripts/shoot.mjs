@@ -4,7 +4,7 @@ import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 // 固定使用示例数据，检查结果不随本机真实数据变化
-const withMock = (u) => u + (u.includes('?') ? '&' : '?') + 'source=mock';
+const withMock = (u) => u + (u.includes('?') ? '&' : '?') + 'source=mock&lang=zh';
 const url = withMock(process.argv[2] ?? 'http://localhost:5199/');
 const out = process.argv[3] ?? 'screenshots';
 mkdirSync(out, { recursive: true });
@@ -180,9 +180,82 @@ async function session(viewport, tag) {
   await page.close();
 }
 
+// ---------- 档案、热力图、筛选、海报 ----------
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 2 });
+  const errors = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(url);
+  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 60000 });
+
+  const ringCount = Number(await page.locator('.profile-count b').textContent());
+  const unlockedTiles = await page.locator('.tile:not(.is-locked)').count();
+  check('档案的解锁数与陈列墙一致', ringCount === unlockedTiles, `${ringCount} vs ${unlockedTiles}`);
+  const recent = await page.locator('[data-recent] .profile-item').count();
+  const next = await page.locator('[data-next] .profile-item img[src^="data:image/png"]').count();
+  check('最近获得、即将解锁各 3 枚，且带缩略图', recent === 3 && next === 3, `${recent} / ${next}`);
+
+  const days = await page.locator('.heat-cell[data-date]').count();
+  check('热力图一年 365 或 366 格', days === 365 || days === 366, String(days));
+  const summary2026 = await page.locator('[data-summary]').textContent();
+  await page.locator('.heat-years button', { hasText: '2025' }).click();
+  const summary2025 = await page.locator('[data-summary]').textContent();
+  const first = await page.locator('.heat-cell[data-date]').first().getAttribute('data-date');
+  check('切换年份后日历和汇总跟着变', first === '2025-01-01' && summary2025 !== summary2026, `${first} · ${summary2025}`);
+  await page.locator('.heat-years button', { hasText: '2026' }).click();
+
+  const marker = page.locator('.heat-cell.is-unlock').first();
+  await marker.hover();
+  await page.waitForTimeout(150);
+  const tip = await page.locator('[data-tip]').textContent();
+  check('悬停解锁日显示日期、用量和徽章名', /2026 年/.test(tip) && tip.includes('解锁徽章'), tip.replace(/\s+/g, ' ').slice(0, 80));
+  await page.screenshot({ path: `${out}/desktop-heatmap-tip.png` });
+
+  const codexToggle = page.locator('.heat-brand[data-id="codex"]');
+  await codexToggle.click();
+  const off = await codexToggle.getAttribute('aria-pressed');
+  const ccToggle = page.locator('.heat-brand[data-id="claude-code"]');
+  await ccToggle.click(); // 只剩一个时不能关掉
+  const stillOn = await ccToggle.getAttribute('aria-pressed');
+  check('热力图可以按工具开关，至少保留一个', off === 'false' && stillOn === 'true', `${off} / ${stillOn}`);
+  await codexToggle.click();
+
+  await marker.click();
+  await page.waitForTimeout(700);
+  check('点击解锁标记打开对应徽章', await page.locator('#overlay').isVisible());
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(700);
+
+  const visible = () => page.evaluate(() => [...document.querySelectorAll('.tile')].filter((t) => !t.hidden).length);
+  const total = await page.locator('.tile').count();
+  await page.locator('[data-filter="unlocked"]').click();
+  const nUnlocked = await visible();
+  const lockedShown = await page.locator('.tile.is-locked:not([hidden])').count();
+  await page.locator('[data-filter="locked"]').click();
+  const nLocked = await visible();
+  await page.locator('[data-filter="all"]').click();
+  check('筛选：已获得 + 未解锁 = 全部，且互不混入', nUnlocked + nLocked === total && nUnlocked === unlockedTiles && lockedShown === 0, `${nUnlocked} + ${nLocked} / ${total}`);
+
+  await page.locator('[data-share]').click();
+  await page.waitForFunction(() => window.__badgeApp.posterURL, null, { timeout: 30000 });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: `${out}/desktop-poster.png` });
+  const poster = await page.evaluate(() => window.__badgeApp.posterURL);
+  const buf = Buffer.from(poster.split(',')[1], 'base64');
+  writeFileSync(`${out}/poster.png`, buf);
+  check('分享海报是 2160 像素宽的 PNG', buf.readUInt32BE(16) === 2160, `${buf.readUInt32BE(16)}×${buf.readUInt32BE(20)}`);
+  await page.keyboard.press('Escape');
+  check('Esc 关闭海报', !(await page.locator('#poster').isVisible()));
+  check('展示层控制台无报错', errors.length === 0, errors.join(' | '));
+  await page.close();
+}
+
 // ---------- 手机 ----------
 {
   const { page, errors } = await session({ width: 390, height: 844 }, 'mobile');
+  const wallOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  check('手机端陈列墙（含热力图）无横向溢出', !wallOverflow);
   await page.evaluate(() => window.__badgeApp.open('seven-day-streak'));
   await page.waitForTimeout(3000);
   await page.screenshot({ path: `${out}/mobile-inspect.png` });

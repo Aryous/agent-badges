@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { dailySeries } from '../data/daily.js';
 
 /** 账本和进度的存放目录：默认 ~/.agent-badges，可用 AGENT_BADGES_HOME 覆盖。 */
 export function dataHome(env = process.env) {
@@ -22,7 +23,13 @@ export function writeJSON(path, data) {
 /** 写入一个品牌的账本和进度，返回进度文件内容。 */
 export function saveBrand(home, brandId, ledger, progress) {
   writeJSON(join(home, `${brandId}.ledger.json`), ledger);
-  const out = { source: 'local', generatedAt: new Date().toISOString(), days: Object.keys(ledger.days).length, progress };
+  const out = {
+    source: 'local',
+    generatedAt: new Date().toISOString(),
+    days: Object.keys(ledger.days).length,
+    progress,
+    daily: dailySeries(brandId, ledger),
+  };
   writeJSON(join(home, `${brandId}.json`), out);
   return out;
 }

@@ -27,6 +27,7 @@ export function describeState(config, state) {
 
 export function createGrid({ root, series, items, onSelect }) {
   const byId = new Map(items.map((it) => [it.config.id, it]));
+  const sections = [];
 
   for (const s of series) {
     const members = s.badges.map((b) => byId.get(b.id)).filter(Boolean);
@@ -46,6 +47,7 @@ export function createGrid({ root, series, items, onSelect }) {
     const tiles = section.querySelector('.tiles');
     for (const item of members) tiles.appendChild(makeTile(item));
     root.appendChild(section);
+    sections.push({ section, members });
   }
 
   function makeTile(item) {
@@ -93,6 +95,21 @@ export function createGrid({ root, series, items, onSelect }) {
   }
 
   return {
+    /** 筛选：all 全部 / unlocked 已获得 / locked 未解锁（含未满级以外的未解锁）。返回可见数量。 */
+    setFilter(mode) {
+      let shown = 0;
+      for (const { section, members } of sections) {
+        let n = 0;
+        for (const it of members) {
+          const visible = mode === 'all' || (mode === 'unlocked') === it.state.unlocked;
+          it.tile.hidden = !visible;
+          if (visible) n += 1;
+        }
+        section.hidden = n === 0;
+        shown += n;
+      }
+      return shown;
+    },
     setThumbnail(item, src) {
       const img = item.tile.querySelector('img');
       img.src = src;

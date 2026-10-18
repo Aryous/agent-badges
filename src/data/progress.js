@@ -14,6 +14,7 @@
 import mockClaudeCode from './mock-claude-code.js';
 import mockCodex from './mock-codex.js';
 import { normalizeProgress } from './normalize.js';
+import { mockDaily } from './daily.js';
 
 export { normalizeProgress };
 
@@ -54,4 +55,28 @@ export async function loadProgress(brandId, badges, sources = SOURCES, options =
   } catch (error) {
     return { progress: normalizeProgress({}, badges), error };
   }
+}
+
+// 示例数据的按天使用量：Claude Code 从 2025 年 3 月开始，Codex 从 2026 年 4 月开始，
+// 两者重叠的日子在热力图上显示双色。
+const MOCK_DAILY = {
+  'claude-code': { seed: 7, from: '2025-03-01', to: '2026-10-15', base: 60_000 },
+  codex: { seed: 11, from: '2026-04-10', to: '2026-10-15', base: 1_100_000, restRate: 0.45 },
+};
+
+/**
+ * 读取按天的使用量 { 'YYYY-MM-DD': [tokens, turns] }。
+ * 示例数据会补上徽章获得当天的记录，让热力图上的解锁标记落在有活动的日子。
+ */
+export async function loadDaily(brandId, { forceMock = false } = {}) {
+  const l = local(brandId);
+  if (l && !forceMock) return l.daily ?? {};
+  const cfg = MOCK_DAILY[brandId];
+  if (!cfg) return {};
+  const daily = mockDaily(cfg);
+  const raw = await MOCKS[brandId]();
+  for (const r of Object.values(raw)) {
+    if (r.earnedAt && r.earnedAt >= cfg.from && r.earnedAt <= cfg.to) daily[r.earnedAt] ??= [Math.round(cfg.base * 0.8), 24];
+  }
+  return daily;
 }

@@ -16,11 +16,35 @@
       </div>
       <div class="topbar-right">
         <span class="source" data-source></span>
-        <div class="tally" data-tally></div>
       </div>
     </header>
 
-    <main class="wall" id="wall" aria-label="徽章陈列墙"></main>
+    <main class="wall" id="wall">
+      <div id="profile-slot"></div>
+      <div id="heat-slot"></div>
+      <div class="wall-bar">
+        <h2 class="section-title" data-wall-title></h2>
+        <div class="seg wall-filter" role="radiogroup" data-filter></div>
+      </div>
+      <div id="series"></div>
+      <p class="wall-empty" data-wall-empty hidden></p>
+    </main>
+
+    <!-- 分享海报 -->
+    <div class="modal" id="poster" role="dialog" aria-modal="true" aria-labelledby="poster-title" hidden>
+      <div class="modal-card">
+        <header class="modal-head">
+          <h2 class="modal-title" id="poster-title" data-poster-title></h2>
+          <button class="btn-icon" type="button" data-poster-close>
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </header>
+        <div class="poster-preview" data-poster-preview></div>
+        <footer class="modal-foot">
+          <button class="btn btn-primary" type="button" data-poster-download disabled></button>
+        </footer>
+      </div>
+    </div>
 
     <!-- 单枚查看：全屏遮罩，实时 3D 只在这里渲染 -->
     <div class="overlay" id="overlay" hidden>

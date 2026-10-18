@@ -4,7 +4,11 @@ import { BRANDS, getBrand } from './brands/index.js';
 import { buildBadge } from './engine/badge.js';
 import { partitionBadges, validateBrand } from './engine/validate.js';
 import { TIER_NAMES } from './engine/tiers.js';
-import { loadProgress, sourceInfo } from './data/progress.js';
+import { loadDaily, loadProgress, sourceInfo } from './data/progress.js';
+import { createHeatmap } from './viewer/heatmap.js';
+import { createProfile } from './viewer/profile.js';
+import { renderPoster } from './viewer/poster.js';
+import { t } from './i18n.js';
 import { createStage, supportsWebGL } from './viewer/scene.js';
 import { createGrid, describeState, formatCount } from './viewer/grid.js';
 import { createInspector } from './viewer/inspector.js';
@@ -99,8 +103,6 @@ async function main() {
   if (notices.length) showNotice(notices.join('\n'));
 
   document.title = `${brand.name} 成就徽章`;
-  const unlockedCount = valid.filter((c) => progress[c.id].unlocked).length;
-  $('[data-tally]').innerHTML = `<b>${unlockedCount}</b> / ${valid.length} 已解锁`;
   const sourceEl = $('[data-source]');
   if (source.kind === 'local') {
     const t = new Date(source.generatedAt);
@@ -126,13 +128,140 @@ async function main() {
     return item;
   }
 
+  // ---------- 档案 + 热力图 ----------
+  // 热力图把所有工具叠在一起看，所以每个工具的按天用量和解锁日期都要读
+  const others = await Promise.all(
+    BRANDS.map(async (b) => {
+      const isCurrent = b.brand.id === brand.id;
+      const list = isCurrent ? valid : partitionBadges(b.badges, b.brand).valid;
+      const p = isCurrent ? progress : (await loadProgress(b.brand.id, list, undefined, { forceMock })).progress;
+      const daily = await loadDaily(b.brand.id, { forceMock });
+      return { b, list, p, daily };
+    }),
+  );
+  const markers = {};
+  for (const { b, list, p } of others) {
+    for (const config of list) {
+      const st = p[config.id];
+      if (!st.unlocked || !st.earnedAt) continue;
+      const d = describeState(config, st);
+      (markers[st.earnedAt] ??= []).push({
+        brandId: b.brand.id,
+        brandName: b.brand.name,
+        id: config.id,
+        title: d.tier ? `${d.title} · ${d.meta}` : d.title,
+        openable: b.brand.id === brand.id,
+      });
+    }
+  }
+  const heatSeries = others
+    .filter((o) => Object.keys(o.daily).length || o.b.brand.id === brand.id)
+    .map((o) => ({ id: o.b.brand.id, name: o.b.brand.name, color: o.b.brand.ui.accent, daily: o.daily }));
+  const currentDaily = others.find((o) => o.b.brand.id === brand.id).daily;
+
+  const select = (item, viaKeyboard) => open(item, { viaKeyboard });
+  const profile = createProfile({
+    root: $('#profile-slot'),
+    items,
+    daily: currentDaily,
+    onSelect: select,
+    onShare: (e) => openPoster({ viaKeyboard: e?.detail === 0 }),
+  });
+  const heatmap = createHeatmap({
+    root: $('#heat-slot'),
+    series: heatSeries,
+    markers,
+    onMarker: (m) => open(items.find((it) => it.config.id === m.id)),
+  });
+
   // ---------- 陈列墙 ----------
   const grid = createGrid({
-    root: $('#wall'),
+    root: $('#series'),
     series: SERIES,
     items,
-    onSelect: (item, viaKeyboard) => open(item, { viaKeyboard }),
+    onSelect: select,
   });
+
+  // 筛选：全部 / 已获得 / 未解锁
+  const unlockedCount = items.filter((it) => it.state.unlocked).length;
+  const FILTERS = [
+    ['all', t('filter.all'), items.length],
+    ['unlocked', t('filter.unlocked'), unlockedCount],
+    ['locked', t('filter.locked'), items.length - unlockedCount],
+  ];
+  $('[data-wall-title]').textContent = t('wall.title');
+  const filterEl = $('[data-filter]');
+  filterEl.setAttribute('aria-label', t('filter.label'));
+  for (const [mode, label, n] of FILTERS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'radio');
+    b.dataset.filter = mode;
+    b.innerHTML = `${label}<span class="seg-count">${n}</span>`;
+    b.addEventListener('click', () => setFilter(mode));
+    filterEl.appendChild(b);
+  }
+  function setFilter(mode) {
+    const shown = grid.setFilter(mode);
+    filterEl.querySelectorAll('button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.filter === mode)));
+    const empty = $('[data-wall-empty]');
+    empty.hidden = shown > 0;
+    empty.textContent = t('filter.empty');
+  }
+  setFilter('all');
+
+  // ---------- 分享海报 ----------
+  const posterEl = $('#poster');
+  const posterDownload = $('[data-poster-download]');
+  let posterURL = null;
+  $('[data-poster-title]').textContent = t('poster.title');
+  $('[data-poster-close]').setAttribute('aria-label', t('poster.close'));
+  posterDownload.textContent = t('poster.download');
+  let posterOpener = null;
+
+  async function openPoster({ viaKeyboard = false } = {}) {
+    posterOpener = document.activeElement;
+    posterEl.hidden = false;
+    document.body.classList.add('is-modal');
+    const preview = $('[data-poster-preview]');
+    preview.innerHTML = `<p class="poster-making">${t('poster.making')}</p>`;
+    posterDownload.disabled = true;
+    if (viaKeyboard) $('[data-poster-close]').focus({ preventScroll: true });
+    await thumbsDone;
+    const canvas = await renderPoster({
+      brand,
+      items: items.map((it) => ({ ...it, thumb: it.thumb })),
+      stats: profile.stats,
+      // 海报是单个工具的成绩单，热力图也只画这个工具
+      heat: {
+        year: heatmap.year,
+        series: heatSeries.filter((x) => x.id === brand.id),
+        markers: Object.fromEntries(
+          Object.entries(markers)
+            .map(([d, ms]) => [d, ms.filter((m) => m.brandId === brand.id)])
+            .filter(([, ms]) => ms.length),
+        ),
+      },
+    });
+    posterURL = canvas.toDataURL('image/png');
+    const img = new Image();
+    img.alt = t('poster.title');
+    img.src = posterURL;
+    preview.replaceChildren(img);
+    posterDownload.disabled = false;
+  }
+  function closePoster() {
+    if (posterEl.hidden) return;
+    posterEl.hidden = true;
+    document.body.classList.remove('is-modal');
+    posterOpener?.focus?.({ preventScroll: true });
+  }
+  $('[data-poster-close]').addEventListener('click', closePoster);
+  posterEl.addEventListener('click', (e) => e.target === posterEl && closePoster());
+  posterDownload.addEventListener('click', () => {
+    if (posterURL) downloadDataURL(posterURL, `${brand.id}-badges-${heatmap.year}.png`);
+  });
+  window.addEventListener('keydown', (e) => e.key === 'Escape' && closePoster());
 
   /** 逐枚渲染缩略图，每枚之间让出一帧，页面不会卡住。 */
   async function renderThumbnails() {
@@ -150,6 +279,8 @@ async function main() {
       stage.scene.remove(item.holder);
       if (live) live.visible = true;
       grid.setThumbnail(item, src);
+      profile.setThumbnail(item.config.id, src);
+      item.thumb = src;
       await nextFrame();
     }
   }
@@ -406,6 +537,12 @@ async function main() {
       return { ...inspector.spin };
     },
     exportPNG: (bg) => exportCurrent(bg, { download: false }),
+    openPoster,
+    get posterURL() {
+      return posterURL;
+    },
+    setFilter,
+    heatmap,
   };
 
   // 支持通过 #徽章id 直接打开某一枚
