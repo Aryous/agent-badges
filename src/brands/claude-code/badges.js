@@ -61,10 +61,10 @@ const subagentCommander = {
   titleEn: 'SUBAGENT COMMANDER',
   description: '在一次会话中同时调度 5 个子代理并行工作。',
   criteria: { metric: 'subagents.parallelMax', target: 5 },
-  shape: { type: 'starburst', points: 12, radius: 1.06, innerRadius: 0.8, tipRoundness: 0.1, valleyRoundness: 0.05, depth: 0.2, bevel: 0.04 },
+  shape: { type: 'starburst', points: 12, radius: 1.06, innerRadius: 0.8, tipRoundness: 0.1, valleyRoundness: 0.06, depth: 0.2, bevel: 0.03 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'gold' },
-    { kind: 'face', material: 'ceramic', color: 'ivory', inset: 0.07 },
+    { kind: 'face', material: 'ceramic', color: 'ivory', inset: 0.1 },
   ],
   relief: [
     // 连线（金）

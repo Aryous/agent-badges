@@ -46,3 +46,23 @@ describe('buildBadge', () => {
     expect(g.userData.pulses).toHaveLength(1);
   });
 });
+
+describe('扩展性：换品牌不改徽章配置', () => {
+  it('只换色板，3 枚徽章自动换色且都能通过校验和组装', async () => {
+    const { validateBadge } = await import('../src/engine/validate.js');
+    const fakeBrand = {
+      ...brand,
+      id: 'fake-agent',
+      name: 'Fake Agent',
+      palette: { ...brand.palette, primary: '#10A37F', gold: '#B8C4CC' },
+    };
+    for (const cfg of badges) {
+      expect(validateBadge(cfg, fakeBrand)).toBe(true);
+      const a = buildBadge(cfg, brand, unlocked);
+      const b = buildBadge(cfg, fakeBrand, unlocked);
+      const colorsA = a.children.map((m) => m.material.color.getHexString());
+      const colorsB = b.children.map((m) => m.material.color.getHexString());
+      expect(colorsB).not.toEqual(colorsA);
+    }
+  });
+});

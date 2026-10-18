@@ -1,4 +1,4 @@
-import { Color, MeshPhysicalMaterial } from 'three';
+import { MeshPhysicalMaterial } from 'three';
 import { brushedTexture, radialAnisotropyTexture } from './textures.js';
 
 // 材质预设。color 为 sRGB 十六进制色值。
@@ -8,12 +8,10 @@ const PRESETS = {
   enamel: (c) => ({
     color: c,
     metalness: 0,
-    roughness: 0.42,
+    roughness: 0.55,
     clearcoat: 1,
-    clearcoatRoughness: 0.04,
-    sheen: 0.25,
-    sheenColor: new Color(c).lerp(new Color('#ffffff'), 0.5),
-    sheenRoughness: 0.5,
+    clearcoatRoughness: 0.03,
+    envMapIntensity: 0.55,
   }),
 
   'polished-metal': (c) => ({
@@ -42,12 +40,10 @@ const PRESETS = {
   ceramic: (c) => ({
     color: c,
     metalness: 0,
-    roughness: 0.58,
-    clearcoat: 0.35,
+    roughness: 0.6,
+    clearcoat: 0.3,
     clearcoatRoughness: 0.35,
-    sheen: 0.4,
-    sheenColor: new Color('#ffffff'),
-    sheenRoughness: 0.6,
+    envMapIntensity: 0.7,
   }),
 
   locked: (c) => ({

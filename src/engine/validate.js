@@ -53,6 +53,9 @@ export function validateBadge(config, brand) {
   const face = layers.filter((l) => l.kind === 'face');
   if (face.length !== 1) fail('layers 需要恰好一个 face');
   if (!(face[0].inset > 0 && face[0].inset < 0.5)) fail('face.inset 需要在 (0, 0.5) 之间');
+  // 外圈两侧都有倒角，环宽太窄时几何体会自交，内洞挖不出来
+  const bevel = config.shape.bevel ?? 0.04;
+  if (face[0].inset < bevel * 2 + 0.01 - 1e-9) fail(`face.inset（${face[0].inset}）至少要等于 shape.bevel × 2 + 0.01（${(bevel * 2 + 0.01).toFixed(3)}）`);
 
   for (const [i, r] of (config.relief ?? []).entries()) {
     if (!RELIEF_KINDS.includes(r.kind)) fail(`relief[${i}] 的类型「${r.kind}」未注册`);

@@ -45,6 +45,13 @@ describe('validateBadge', () => {
     expect(() => validateBadge(b, brand)).toThrow(/heart/);
   });
 
+  it('外圈太窄（小于倒角 × 2 + 0.01）报错', () => {
+    const b = clone(badges[2]);
+    b.layers[1].inset = 0.07;
+    b.shape.bevel = 0.04;
+    expect(() => validateBadge(b, brand)).toThrow(/bevel × 2/);
+  });
+
   it('缺少 rim 层报错', () => {
     const b = clone(badges[0]);
     b.layers = b.layers.filter((l) => l.kind !== 'rim');

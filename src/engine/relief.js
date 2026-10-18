@@ -1,5 +1,6 @@
 import { ExtrudeGeometry, Mesh, Shape } from 'three';
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
+import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // 正面浮雕：用几个几何基元（胶囊、圆点、圆环、SVG 路径）拼出图标和数字。
 // 坐标与徽章轮廓同一套单位：中心为原点，外接半径约 1。
@@ -59,7 +60,7 @@ export function reliefShapes(item) {
 export function buildRelief(item, material, baseZ) {
   const height = item.height ?? 0.04;
   const bevel = Math.min(height * 0.45, item.bevel ?? 0.014);
-  const geo = new ExtrudeGeometry(reliefShapes(item), {
+  const raw = new ExtrudeGeometry(reliefShapes(item), {
     depth: Math.max(0.001, height - 2 * bevel),
     bevelEnabled: true,
     bevelThickness: bevel,
@@ -68,6 +69,9 @@ export function buildRelief(item, material, baseZ) {
     bevelSegments: 4,
     curveSegments: 24,
   });
+  // 平滑倒角上的逐面法线，保留顶面与侧面之间的硬边
+  const geo = toCreasedNormals(raw, Math.PI / 6);
+  raw.dispose();
   // ExtrudeGeometry 的 z 范围是 [-bevel, depth + bevel]，把底部对齐到 baseZ
   geo.translate(0, 0, baseZ + bevel);
   const mesh = new Mesh(geo, material);

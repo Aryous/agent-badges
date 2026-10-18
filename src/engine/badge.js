@@ -1,4 +1,5 @@
 import { Color, ExtrudeGeometry, Group, Mesh, Vector2 } from 'three';
+import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import { makeOutline, outlineSegments, withHole } from './shapes.js';
 import { createMaterial } from './materials.js';
 import { buildRelief } from './relief.js';
@@ -11,6 +12,8 @@ import { createEngraving } from './engraving.js';
 //   │  ┌ 正面板 face：内缩 inset，表面比外圈低 recess，上面放浮雕
 //   │  └ 背面板 back：同尺寸，表面带刻字贴图
 //   └──
+
+const SMOOTH_ANGLE = Math.PI / 6;
 
 /** 端面 UV：把 [-1, 1] 映射到 [0, 1]，让程序化贴图覆盖整枚徽章。 */
 const BadgeUV = {
@@ -88,7 +91,9 @@ export function buildBadge(config, brand, state) {
 
   // 外圈
   const ringShape = withHole(makeOutline(shape, 0), makeOutline(shape, inset), segments);
-  const ring = new Mesh(extrude(ringShape, depth, { bevel, segments }), mat(rimLayer.material, rimLayer.color));
+  // ExtrudeGeometry 的法线是逐面的，倒角会一格一格地反光；平滑 30° 以内的折角
+  const ringGeo = toCreasedNormals(extrude(ringShape, depth, { bevel, segments }), SMOOTH_ANGLE);
+  const ring = new Mesh(ringGeo, mat(rimLayer.material, rimLayer.color));
   ring.geometry.translate(0, 0, -depth / 2);
   ring.name = 'rim';
   group.add(ring);
@@ -117,7 +122,8 @@ export function buildBadge(config, brand, state) {
           fontFamily: brand.engraving.fontFamily,
           safeRadius: config.back.safeRadius ?? safeRadius(shape, inset),
           brushed: !locked && backType === 'brushed-metal',
-          ink: locked ? 0.7 : backType === 'ceramic' ? 0.62 : 0.5,
+          ink: locked ? 1 : backType === 'ceramic' ? 0.62 : 0.5,
+          base: locked ? 0.55 : 1,
         })
       : {};
   const back = new Mesh(

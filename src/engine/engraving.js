@@ -10,8 +10,9 @@ import { drawBrushedRings, canvasTexture, makeCanvas } from './textures.js';
  * @param {number}  opts.safeRadius  文字可用区域半径（相对徽章外接半径，0~1）
  * @param {boolean} opts.brushed     底面是否带拉丝纹理
  * @param {number}  opts.ink         刻字颜色深浅（0~1，越小越深）
+ * @param {number}  opts.base        底面颜色（0~1）。ink > base 时文字比底面亮，用于深色的未解锁剪影
  */
-export function createEngraving({ lines, fontFamily, safeRadius = 0.7, brushed = false, ink = 0.55, size = 1024 }) {
+export function createEngraving({ lines, fontFamily, safeRadius = 0.7, brushed = false, ink = 0.55, base = 1, size = 1024 }) {
   const color = makeCanvas(size);
   const bump = makeCanvas(size);
   const rough = makeCanvas(size);
@@ -20,7 +21,8 @@ export function createEngraving({ lines, fontFamily, safeRadius = 0.7, brushed =
   const rc = rough.getContext('2d');
 
   // 底色
-  cc.fillStyle = '#ffffff';
+  const baseGray = Math.round(255 * base);
+  cc.fillStyle = `rgb(${baseGray},${baseGray},${baseGray})`;
   cc.fillRect(0, 0, size, size);
   if (brushed) {
     drawBrushedRings(bc, size);
