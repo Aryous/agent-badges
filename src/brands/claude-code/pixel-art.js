@@ -44,5 +44,4 @@ export const SEVEN = [
   '..##...',
 ];
 
-/** 文字环两侧的分隔符：像素十字。 */
-export const PLUS = ['.#.', '###', '.#.'];
+export { PLUS } from '../shared/pixel-art.js';

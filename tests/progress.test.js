@@ -36,8 +36,8 @@ describe('loadProgress', () => {
   });
 
   it('未知品牌返回错误', async () => {
-    const { error } = await loadProgress('codex', badges);
-    expect(error.message).toMatch(/codex/);
+    const { error } = await loadProgress('gemini', badges);
+    expect(error.message).toMatch(/gemini/);
   });
 });
 

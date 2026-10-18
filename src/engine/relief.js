@@ -54,8 +54,10 @@ function pixels({ rows, cell, center = [0, 0] }) {
  * SVG 路径（evenodd）：d 以正方形 viewBox 描述（默认 24，y 轴向下）；
  * scale 为图案半宽（徽章单位），center 为图案中心。
  */
-function path({ d, scale = 0.5, viewBox = 24, center = [0, 0] }) {
-  return svgShapes(d, { viewBox, scale, center, steps: 10 });
+function path({ d, scale = 0.5, viewBox = 24, center = [0, 0], holesOnly = false }) {
+  const shapes = svgShapes(d, { viewBox, scale, center, steps: 10 });
+  // holesOnly：把镂空部分本身做成实心，用来往洞里垫一层嵌片
+  return holesOnly ? shapes.flatMap((s) => s.holes.map((h) => new Shape(h.getPoints()))) : shapes;
 }
 
 const PRIMITIVES = { capsule, circle, ring, pixels, path };

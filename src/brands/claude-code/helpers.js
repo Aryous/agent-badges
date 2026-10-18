@@ -1,40 +1,8 @@
-import { CLAWD, CLAWD_EYES, PLUS } from './pixel-art.js';
+import { CLAWD, CLAWD_EYES } from './pixel-art.js';
+import { MEDALLION_H } from '../shared/medal.js';
 
-// Claude Code 徽章的共用构图工具。坐标单位：徽章中心为原点，外接半径为 1。
-//
-// 统一的结构（由外到内）：
-//   金属外圈 → 深色珐琅环带（上弧品牌名、下弧成就名）→ 亮色珐琅圆盘 → 像素图案
-// 每枚各用一组主色和一种金属；Claude Code 橙只出现在小怪物身上。
-
-/** 圆周上均匀分布的点（从正上方开始，顺时针）。 */
-export const around = (n, radius, start = Math.PI / 2) =>
-  Array.from({ length: n }, (_, i) => {
-    const t = start - (i / n) * Math.PI * 2;
-    return [Math.cos(t) * radius, Math.sin(t) * radius];
-  });
-
-/** 文字环：上弧 + 下弧 + 左右两个像素十字分隔符。 */
-export function textRing({ top, bottom, radius, size, metal, color }) {
-  const common = { radius, size, material: metal, color, height: 0.024, tracking: 0.22 };
-  const sep = (x) => ({ kind: 'pixels', rows: PLUS, cell: size * 0.26, center: [x, 0], material: metal, color, height: 0.022 });
-  return [
-    { kind: 'text-arc', text: top, arc: 'top', ...common },
-    { kind: 'text-arc', text: bottom, arc: 'bottom', ...common },
-    sep(-radius),
-    sep(radius),
-  ];
-}
-
-/** 中心圆盘的高度：放在圆盘上的图案要用 z: MEDALLION_H 抬起来。 */
-export const MEDALLION_H = 0.014;
-
-/** 中心圆盘 + 金属描边。 */
-export function medallion({ radius, color, metal, metalColor, pattern = 'sunburst' }) {
-  return [
-    { kind: 'circle', radius, material: 'enamel', color, height: MEDALLION_H, pattern },
-    { kind: 'ring', radius: radius + 0.006, width: 0.03, material: metal, color: metalColor, height: 0.034 },
-  ];
-}
+// Claude Code 专属构图：像素小怪物和它的配件。共用的奖章构图见 ../shared/medal.js。
+export { around, textRing, MEDALLION_H, medallion } from '../shared/medal.js';
 
 /** 像素小怪物：橙色身体 + 墨色眼睛（眼睛比身体低，像嵌在里面）。 */
 export function clawd({ cell, center = [0, 0], color = 'primary', height = 0.07, z = MEDALLION_H }) {

@@ -1,7 +1,6 @@
 import './style.css';
 import { Group } from 'three';
-import brand from './brands/claude-code/brand.js';
-import badgeConfigs, { SERIES } from './brands/claude-code/badges.js';
+import { BRANDS, getBrand } from './brands/index.js';
 import { buildBadge } from './engine/badge.js';
 import { partitionBadges, validateBrand } from './engine/validate.js';
 import { TIER_NAMES } from './engine/tiers.js';
@@ -34,7 +33,6 @@ function fatal(text) {
  * 分级徽章可再加 &tier=0..3 预览某一级（默认最高级）。
  */
 function applyPreview(configs, progress) {
-  const params = new URLSearchParams(location.search);
   const preview = params.get('preview');
   if (preview !== 'unlocked' && preview !== 'locked') return;
   const today = new Date().toISOString().slice(0, 10);
@@ -55,7 +53,28 @@ function applyPreview(configs, progress) {
   }
 }
 
+const params = new URLSearchParams(location.search);
+const { brand, badges: badgeConfigs, series: SERIES } = getBrand(params.get('brand'));
+
+/** 顶栏的品牌切换：切换时保留其他参数（如 preview），去掉锚点。 */
+function renderBrandSwitch() {
+  const nav = $('[data-brands]');
+  for (const b of BRANDS) {
+    const a = document.createElement('a');
+    const p = new URLSearchParams(location.search);
+    p.set('brand', b.brand.id);
+    a.href = `?${p}`;
+    a.textContent = b.brand.name;
+    a.className = 'brand-tab' + (b.brand.id === brand.id ? ' is-active' : '');
+    if (b.brand.id === brand.id) a.setAttribute('aria-current', 'page');
+    nav.appendChild(a);
+  }
+  document.documentElement.style.setProperty('--accent', brand.ui.accent);
+  document.documentElement.dataset.brand = brand.id;
+}
+
 async function main() {
+  renderBrandSwitch();
   if (!supportsWebGL()) {
     fatal('当前浏览器不支持 WebGL，无法显示 3D 徽章。');
     return;
@@ -69,7 +88,7 @@ async function main() {
     if (import.meta.env.DEV) notices.push(...errors.map((e) => e.message));
   }
 
-  const forceMock = new URLSearchParams(location.search).get('source') === 'mock';
+  const forceMock = params.get('source') === 'mock';
   const { progress, error } = await loadProgress(brand.id, valid, undefined, { forceMock });
   const source = sourceInfo(brand.id, { forceMock });
   applyPreview(valid, progress);
@@ -79,7 +98,6 @@ async function main() {
   }
   if (notices.length) showNotice(notices.join('\n'));
 
-  $('[data-brand-name]').textContent = brand.name;
   document.title = `${brand.name} 成就徽章`;
   const unlockedCount = valid.filter((c) => progress[c.id].unlocked).length;
   $('[data-tally]').innerHTML = `<b>${unlockedCount}</b> / ${valid.length} 已解锁`;
@@ -89,7 +107,7 @@ async function main() {
     sourceEl.textContent = `本机数据 · 更新于 ${t.getMonth() + 1} 月 ${t.getDate()} 日 ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
   } else {
     sourceEl.textContent = '示例数据';
-    sourceEl.title = '运行 npm run collect 生成本机数据';
+    sourceEl.title = `运行 npm run collect 生成本机数据`;
   }
 
   const stage = createStage($('#stage'));

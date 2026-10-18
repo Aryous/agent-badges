@@ -12,23 +12,29 @@
 // 以后接入真实数据（如读取 ~/.claude 下的会话记录）时，只需新增一个 source。
 
 import mockClaudeCode from './mock-claude-code.js';
+import mockCodex from './mock-codex.js';
 import { tierIndexFor } from '../engine/tiers.js';
 
-// npm run collect 生成的本地数据（已 gitignore）。文件不存在时这里是空对象，自动退回示例数据。
-const generated = import.meta.glob('./generated/claude-code.json', { eager: true, import: 'default' });
-const localClaudeCode = Object.values(generated)[0] ?? null;
+// npm run collect 生成的本地数据（已 gitignore）。文件不存在时自动退回示例数据。
+const generated = import.meta.glob('./generated/*.json', { eager: true, import: 'default' });
+const local = (brandId) => generated[`./generated/${brandId}.json`] ?? null;
+const MOCKS = { 'claude-code': mockClaudeCode, codex: mockCodex };
 
 /** 数据来源说明，供页面展示。 */
 export function sourceInfo(brandId, { forceMock = false } = {}) {
-  if (brandId === 'claude-code' && localClaudeCode && !forceMock) {
-    return { kind: 'local', generatedAt: localClaudeCode.generatedAt };
-  }
+  const l = local(brandId);
+  if (l && !forceMock) return { kind: 'local', generatedAt: l.generatedAt };
   return { kind: 'mock' };
 }
 
+const source = (brandId) => async ({ forceMock } = {}) => {
+  const l = local(brandId);
+  return l && !forceMock ? l.progress : MOCKS[brandId]();
+};
+
 const SOURCES = {
-  'claude-code': async ({ forceMock } = {}) =>
-    localClaudeCode && !forceMock ? localClaudeCode.progress : mockClaudeCode(),
+  'claude-code': source('claude-code'),
+  codex: source('codex'),
 };
 
 /** 补齐缺失字段：没有数据的徽章按「未解锁、进度 0」处理。 */
