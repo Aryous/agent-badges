@@ -22,6 +22,28 @@ export default {
     // 分级金属
     bronze: '#C0825A',
     platinum: '#E4E7EC',
+    // 扩展色（新系列可用；深色做环带，亮色做圆盘或点缀）
+    midnight: '#141F4D',
+    navy: '#1E2F6E',
+    sky: '#5BA8F0',
+    teal: '#0E6E78',
+    aqua: '#3CC7C9',
+    forest: '#1E5A3A',
+    lime: '#A6D64F',
+    crimson: '#8E1D33',
+    scarlet: '#E04A5F',
+    plum: '#4E2259',
+    magenta: '#C2408C',
+    amber: '#F2B03D',
+    honey: '#E8C46A',
+    sand: '#E8D9B8',
+    slate: '#2C323C',
+    steel: '#8C95A4',
+    snow: '#F7F6F2',
+    ruby: '#D0233F',
+    sapphire: '#2D5BE3',
+    topaz: '#F2B41E',
+    amethyst: '#9A5BD6',
     graphite: '#3A3936', // 未解锁剪影
   },
   ui: {

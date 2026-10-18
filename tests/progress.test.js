@@ -23,7 +23,8 @@ describe('loadProgress', () => {
   it('读取模拟数据：两枚已解锁，一枚 3/5', async () => {
     const { progress, error } = await loadProgress('claude-code', badges);
     expect(error).toBeNull();
-    expect(Object.values(progress).filter((p) => p.unlocked)).toHaveLength(2);
+    expect(progress['first-session'].unlocked).toBe(true);
+    expect(progress['seven-day-streak'].unlocked).toBe(true);
     expect(progress['subagent-commander'].progress).toEqual({ current: 3, target: 5 });
   });
 
