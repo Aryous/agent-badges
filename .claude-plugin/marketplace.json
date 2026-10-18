@@ -1,0 +1,12 @@
+{
+  "name": "agent-badges",
+  "owner": { "name": "Aryous" },
+  "description": "3D achievement badges for your AI coding agents",
+  "plugins": [
+    {
+      "name": "agent-badges",
+      "source": "./",
+      "description": "Check your Claude Code and Codex achievement badges: new unlocks, what's almost unlocked, and your totals."
+    }
+  ]
+}

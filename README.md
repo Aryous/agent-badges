@@ -99,6 +99,16 @@ This writes `agent-badges-card.svg`: unlock counts, totals, streaks and a grid o
 
 The card contains numbers only. Re-run the command whenever you want to refresh it.
 
+## Claude Code plugin
+
+Ask Claude "check my badges" and it runs the CLI, then tells you what you just unlocked and what you're closest to.
+
+```text
+/plugin install agent-badges --marketplace Aryous/agent-badges
+```
+
+On older Claude Code versions, add the marketplace first: `/plugin marketplace add Aryous/agent-badges`, then `/plugin install agent-badges@agent-badges`. The skill is `/agent-badges:badges`, and Claude also uses it on its own when you ask about your badges. It only pre-approves `npx -y agent-badges@latest …` commands.
+
 ## Privacy
 
 It reads the logs your tools already keep on your machine, so the rules are strict and covered by tests.

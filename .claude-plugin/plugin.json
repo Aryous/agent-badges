@@ -1,0 +1,17 @@
+{
+  "name": "agent-badges",
+  "version": "0.1.0",
+  "description": "Check your Claude Code and Codex achievement badges: new unlocks, what's almost unlocked, and your totals. Runs the agent-badges CLI locally.",
+  "author": {
+    "name": "Aryous"
+  },
+  "homepage": "https://aryous.github.io/agent-badges/",
+  "repository": "https://github.com/Aryous/agent-badges",
+  "license": "MIT",
+  "keywords": [
+    "achievements",
+    "badges",
+    "claude-code",
+    "codex"
+  ]
+}

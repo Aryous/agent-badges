@@ -37,7 +37,7 @@ const HELP = t(
   --out <文件>                     卡片保存位置（默认 agent-badges-card.svg）
   --theme <dark|light>             卡片配色（默认 dark）
   --name <名字>                    卡片标题里的名字
-  --lang <en|zh>                   卡片语言（默认 en）
+  --lang <en|zh>                   输出语言（卡片默认 en，汇总默认跟随系统）
   -v, --version / -h, --help
 
 数据只读本机、只存 ~/.agent-badges（可用 AGENT_BADGES_HOME 修改），不上传任何内容。`,
@@ -57,7 +57,7 @@ Options
   --out <file>                     where to save the card (default agent-badges-card.svg)
   --theme <dark|light>             card colors (default dark)
   --name <name>                    name shown on the card
-  --lang <en|zh>                   card language (default en)
+  --lang <en|zh>                   output language (card defaults to en, summary to your system)
   -v, --version / -h, --help
 
 Everything stays on this machine: data is read locally and stored in ~/.agent-badges
@@ -65,7 +65,7 @@ Everything stays on this machine: data is read locally and stored in ~/.agent-ba
 );
 
 export function parseArgs(argv) {
-  const opts = { command: 'open', dir: null, brand: null, port: 4747, open: true, json: false, out: null, theme: 'dark', name: '', cardLang: 'en' };
+  const opts = { command: 'open', dir: null, brand: null, port: 4747, open: true, json: false, out: null, theme: 'dark', name: '', cardLang: 'en', outLang: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '-h' || a === '--help') opts.command = 'help';
@@ -77,7 +77,7 @@ export function parseArgs(argv) {
     else if (a === '--out') opts.out = argv[++i];
     else if (a === '--theme') opts.theme = argv[++i];
     else if (a === '--name') opts.name = argv[++i] ?? '';
-    else if (a === '--lang') opts.cardLang = argv[++i];
+    else if (a === '--lang') opts.cardLang = opts.outLang = argv[++i];
     else if (a === 'collect' || a === 'export' || a === 'open' || a === 'card') opts.command = a;
     else if (opts.command === 'export' && !opts.dir) opts.dir = a;
     else throw new Error(t(`不认识的参数：${a}`, `Unknown argument: ${a}`));
@@ -105,7 +105,7 @@ async function checkRuntime() {
 
 async function collectAndReport(opts) {
   const { collectAll } = await import('../src/collect/index.js');
-  const { summarize, formatSummary } = await import('../src/collect/summary.js');
+  const { summarize, formatSummary, newUnlocks } = await import('../src/collect/summary.js');
   // 首次运行要读完全部会话记录（可能有几 GB），在终端显示进度；之后只处理新增文件
   const tty = process.stderr.isTTY && !opts.json;
   const onProgress = tty
@@ -115,6 +115,9 @@ async function collectAndReport(opts) {
         if (done === total) process.stderr.write('\r\x1b[K');
       }
     : null;
+  // 先记下上次的进度，采集完对比出「新解锁」
+  const { dataHome, readJSON } = await import('../src/collect/common.js');
+  const before = Object.fromEntries(['claude-code', 'codex'].map((id) => [id, readJSON(join(dataHome(), `${id}.json`))?.progress ?? null]));
   const { home, results } = await collectAll({ only: opts.brand, onProgress });
   const data = {};
   const summaries = [];
@@ -128,10 +131,11 @@ async function collectAndReport(opts) {
       continue;
     }
     data[r.brandId] = r.data;
-    const s = summarize(r.brandId, r.progress, { lang });
+    const outLang = opts.outLang ?? lang;
+    const s = { ...summarize(r.brandId, r.progress, { lang: outLang }), newUnlocks: newUnlocks(r.brandId, before[r.brandId], r.progress, { lang: outLang }) };
     summaries.push({ id: r.brandId, ...s });
     if (!opts.json) {
-      console.log(formatSummary(s, { lang }));
+      console.log(formatSummary(s, { lang: outLang }));
       if (r.note) console.log(`  ${r.note}`);
     }
   }

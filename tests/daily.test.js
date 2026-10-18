@@ -95,3 +95,21 @@ describe('CLI 汇总', () => {
     expect(s.nearMiss[0]).toMatchObject({ id: 'tool-calls', title: '10K Tool Calls', current: 8500, target: 10000 });
   });
 });
+
+import { newUnlocks } from '../src/collect/summary.js';
+
+describe('新解锁', () => {
+  const prev = { 'night-owl': { unlocked: false, progress: { current: 0, target: 1 } }, sessions: { value: 50, earnedAt: '2026-01-01' } };
+  it('第一次运行不报告', () => {
+    expect(newUnlocks('claude-code', null, prev)).toEqual([]);
+  });
+  it('新解锁和分级升级都算，没变化的不算', () => {
+    const next = { 'night-owl': { unlocked: true, earnedAt: '2026-10-19' }, sessions: { value: 120, earnedAt: '2026-10-18' }, 'first-session': { unlocked: false } };
+    const out = newUnlocks('claude-code', prev, next, { lang: 'en' });
+    expect(out).toEqual([
+      { id: 'sessions', title: '100 Sessions', earnedAt: '2026-10-18', tier: 'silver', upgrade: true },
+      { id: 'night-owl', title: 'Night Owl', earnedAt: '2026-10-19' },
+    ]);
+    expect(newUnlocks('claude-code', next, next)).toEqual([]);
+  });
+});

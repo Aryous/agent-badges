@@ -99,6 +99,16 @@ npx agent-badges card --name "你的名字" --lang zh
 
 卡片里只有数字。想更新时重新运行一次即可。
 
+## Claude Code 插件
+
+对 Claude 说「看看我的徽章」，它会运行命令行，告诉你刚解锁了什么、离哪几枚最近。
+
+```text
+/plugin install agent-badges --marketplace Aryous/agent-badges
+```
+
+较旧的 Claude Code 版本需要先添加市场：`/plugin marketplace add Aryous/agent-badges`，再 `/plugin install agent-badges@agent-badges`。技能名是 `/agent-badges:badges`，你问起徽章时 Claude 也会自动调用它。它只预先放行 `npx -y agent-badges@latest …` 这一类命令。
+
 ## 隐私
 
 它读的是你本机上工具自己写下的记录，所以规则定得很死，并且有测试保证。
