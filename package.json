@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "collect": "node scripts/collect-claude-code.mjs",
+    "collect": "npm run collect:claude --silent && npm run collect:codex --silent",
+    "collect:claude": "node scripts/collect-claude-code.mjs",
+    "collect:codex": "node --no-warnings=ExperimentalWarning scripts/collect-codex.mjs",
     "check:browser": "node scripts/shoot.mjs"
   },
   "dependencies": {
