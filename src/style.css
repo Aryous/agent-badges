@@ -1485,3 +1485,13 @@ body.is-modal {
   color: var(--text);
   border-color: rgba(240, 238, 230, 0.3);
 }
+
+.source-link {
+  pointer-events: auto;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.source-link:hover {
+  text-decoration: underline;
+}

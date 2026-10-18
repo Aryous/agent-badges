@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <title>Agent Badges</title>
+    <meta name="description" content="Turn your Claude Code and Codex history into collectible 3D achievement badges. Runs locally, reads only metadata, uploads nothing." />
+    <meta property="og:title" content="Agent Badges" />
+    <meta property="og:description" content="3D achievement badges for your AI coding agents. npx agent-badges" />
+  </head>
+  <body class="site">
+    <header class="site-nav">
+      <a class="site-logo" href="./"><img src="./assets/favicon.svg" alt="" width="28" height="28" /><span>Agent Badges</span></a>
+      <nav class="site-links">
+        <a href="./demo/" data-demo-link data-i18n="nav.demo"></a>
+        <a href="https://github.com/Aryous/agent-badges" data-i18n="nav.github"></a>
+        <a class="lang-switch" data-lang-switch></a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="hero-kicker" data-i18n="hero.kicker"></p>
+          <h1 class="hero-title" data-i18n-html="hero.title"></h1>
+          <p class="hero-sub" data-i18n="hero.sub"></p>
+          <div class="cmd">
+            <code><span class="cmd-prompt">$</span> npx agent-badges</code>
+            <button class="cmd-copy" type="button" data-copy data-i18n="hero.copy"></button>
+          </div>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="./demo/" data-demo-link><span data-i18n="hero.demo"></span> →</a>
+          </div>
+          <p class="hero-req" data-i18n="hero.req"></p>
+        </div>
+        <div class="hero-art">
+          <canvas id="hero-stage" data-i18n-aria="hero.drag"></canvas>
+          <p class="hero-caption" data-hero-caption></p>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2 class="block-title" data-i18n="gallery.title"></h2>
+        <p class="block-sub" data-i18n="gallery.sub"></p>
+        <div class="seg gallery-tabs" role="tablist" data-gallery-tabs></div>
+        <div class="gallery" data-gallery></div>
+      </section>
+
+      <section class="block">
+        <h2 class="block-title" data-i18n="heat.sectionTitle"></h2>
+        <p class="block-sub" data-i18n="heat.sectionSub"></p>
+        <div data-heat></div>
+      </section>
+
+      <section class="block">
+        <h2 class="block-title" data-i18n="privacy.title"></h2>
+        <p class="block-sub" data-i18n="privacy.sub"></p>
+        <div class="cards">
+          <article class="card">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z" /></svg>
+            <h3 data-i18n="privacy.local.title"></h3>
+            <p data-i18n="privacy.local.body"></p>
+          </article>
+          <article class="card">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h6" /></svg>
+            <h3 data-i18n="privacy.meta.title"></h3>
+            <p data-i18n="privacy.meta.body"></p>
+          </article>
+          <article class="card">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10m0 0-4-4m4 4 4-4M5 19h14" /><path d="M4 4l16 16" /></svg>
+            <h3 data-i18n="privacy.none.title"></h3>
+            <p data-i18n="privacy.none.body"></p>
+          </article>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2 class="block-title" data-i18n="how.title"></h2>
+        <ol class="steps">
+          <li><span class="step-n">1</span><h3 data-i18n="how.1.title"></h3><p data-i18n="how.1.body"></p></li>
+          <li><span class="step-n">2</span><h3 data-i18n="how.2.title"></h3><p data-i18n="how.2.body"></p></li>
+          <li><span class="step-n">3</span><h3 data-i18n="how.3.title"></h3><p data-i18n="how.3.body"></p></li>
+        </ol>
+      </section>
+    </main>
+
+    <footer class="site-foot">
+      <img src="./assets/logo.svg" alt="" width="44" height="44" />
+      <p class="foot-disclaimer" data-i18n="foot.disclaimer"></p>
+      <p class="foot-meta"><span data-i18n="foot.license"></span> · <a href="https://github.com/Aryous/agent-badges">github.com/Aryous/agent-badges</a></p>
+    </footer>
+
+    <canvas id="thumb-stage" aria-hidden="true"></canvas>
+    <script type="module" src="/src/site/main.js"></script>
+  </body>
+</html>

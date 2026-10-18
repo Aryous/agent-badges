@@ -17,6 +17,7 @@ const STRINGS = {
     'app.progressFailed': '进度数据加载失败，徽章暂按未解锁展示。',
     'source.local': '本机数据 · 更新于 {m} 月 {d} 日 {time}',
     'source.mock': '示例数据',
+    'source.getYours': '生成你自己的 →',
     'source.mockHint': '运行 npx agent-badges 查看你自己的徽章',
     'state.hidden': '隐藏成就',
     'state.earned': '已获得',
@@ -84,6 +85,7 @@ const STRINGS = {
     'app.progressFailed': 'Could not load progress data. Badges are shown as locked for now.',
     'source.local': 'Local data · updated {date} {time}',
     'source.mock': 'Sample data',
+    'source.getYours': 'Get yours →',
     'source.mockHint': 'Run npx agent-badges to see your own badges',
     'state.hidden': 'Hidden achievement',
     'state.earned': 'Earned',
@@ -143,6 +145,11 @@ const STRINGS = {
     months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
   },
 };
+
+/** 其他页面（如落地页）追加自己的文字。 */
+export function addStrings(dict) {
+  for (const l of Object.keys(dict)) Object.assign(STRINGS[l], dict[l]);
+}
 
 /** t('heat.turns', { n: 3 }) → "3 轮对话" */
 export function t(key, vars = {}, l = lang) {

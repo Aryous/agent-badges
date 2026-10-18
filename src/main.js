@@ -4,7 +4,7 @@ import { BRANDS, getBrand } from './brands/index.js';
 import { buildBadge } from './engine/badge.js';
 import { partitionBadges, validateBrand } from './engine/validate.js';
 import { loadDaily, loadProgress, sourceInfo } from './data/progress.js';
-import { createHeatmap } from './viewer/heatmap.js';
+import { createHeatmap, markersFrom } from './viewer/heatmap.js';
 import { createProfile } from './viewer/profile.js';
 import { renderPoster } from './viewer/poster.js';
 import { applyStatic, formatBig, lang, t } from './i18n.js';
@@ -126,6 +126,14 @@ async function main() {
   } else {
     sourceEl.textContent = t('source.mock');
     sourceEl.title = t('source.mockHint');
+    // 在线演示（GitHub Pages 的 /demo/）：给一个回到首页、看怎么装的入口
+    if (location.pathname.includes('/demo/')) {
+      const a = document.createElement('a');
+      a.href = `../?lang=${lang}`;
+      a.className = 'source-link';
+      a.textContent = t('source.getYours');
+      sourceEl.append(' · ', a);
+    }
   }
 
   const stage = createStage($('#stage'));
@@ -155,21 +163,7 @@ async function main() {
       return { b, list, p, daily };
     }),
   );
-  const markers = {};
-  for (const { b, list, p } of others) {
-    for (const config of list) {
-      const st = p[config.id];
-      if (!st.unlocked || !st.earnedAt) continue;
-      const d = describeState(config, st);
-      (markers[st.earnedAt] ??= []).push({
-        brandId: b.brand.id,
-        brandName: b.brand.name,
-        id: config.id,
-        title: d.tier ? `${d.title} · ${d.meta}` : d.title,
-        openable: b.brand.id === brand.id,
-      });
-    }
-  }
+  const markers = markersFrom(others.map((o) => ({ brand: o.b.brand, badges: o.list, progress: o.p })), brand.id);
   const heatSeries = others
     .filter((o) => Object.keys(o.daily).length || o.b.brand.id === brand.id)
     .map((o) => ({ id: o.b.brand.id, name: o.b.brand.name, color: o.b.brand.ui.accent, daily: o.daily }));

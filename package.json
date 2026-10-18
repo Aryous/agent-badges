@@ -15,6 +15,8 @@
     "src/data/metrics-common.js",
     "src/data/claude-code-metrics.js",
     "src/data/codex-metrics.js",
+    "src/data/daily.js",
+    "src/data/highlights.js",
     "src/engine/tiers.js",
     "src/brands/",
     "README.md",
@@ -40,7 +42,11 @@
     "collect": "node bin/agent-badges.mjs collect",
     "check:browser": "node scripts/shoot.mjs",
     "start": "node bin/agent-badges.mjs",
-    "prepack": "npm run build && npm test"
+    "prepack": "npm run build && npm test",
+    "build:site": "vite build && vite build -c vite.site.config.js && node scripts/build-site.mjs",
+    "preview:site": "python3 -m http.server 4848 -d dist-site",
+    "check:site": "node scripts/check-site.mjs",
+    "check:pack": "node scripts/check-pack.mjs"
   },
   "devDependencies": {
     "@fontsource/jetbrains-mono": "5.3.0",

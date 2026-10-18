@@ -4,6 +4,7 @@
 import { dailyStats, dailyYears } from '../data/daily.js';
 import { levelOf, levelThresholds, today, yearWeeks } from '../data/calendar.js';
 import { formatBig, formatDay, lang, t } from '../i18n.js';
+import { describeState } from './grid.js';
 
 const ALPHA = [0, 0.3, 0.5, 0.74, 1];
 const EMPTY = 'rgba(240, 238, 230, 0.06)';
@@ -12,6 +13,30 @@ const rgba = (hex, a) => {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 };
+
+/**
+ * 每天解锁了哪些徽章（热力图上的小圆点）。
+ * @param {{ brand, badges, progress }[]} list  各工具的徽章配置和归一化进度
+ * @param {string|null} current  当前页面的工具：只有它的徽章可以点开
+ */
+export function markersFrom(list, current = null) {
+  const markers = {};
+  for (const { brand, badges, progress } of list) {
+    for (const config of badges) {
+      const st = progress[config.id];
+      if (!st?.unlocked || !st.earnedAt) continue;
+      const d = describeState(config, st);
+      (markers[st.earnedAt] ??= []).push({
+        brandId: brand.id,
+        brandName: brand.name,
+        id: config.id,
+        title: d.tier ? `${d.title} · ${d.meta}` : d.title,
+        openable: brand.id === current,
+      });
+    }
+  }
+  return markers;
+}
 
 /** 几个工具按天相加，用于汇总（活跃天数、连续天数按「任一工具有活动」算）。 */
 export function combineDaily(list) {

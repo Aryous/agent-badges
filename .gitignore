@@ -4,3 +4,4 @@ dist/
 screenshots/
 *.local
 src/data/generated/
+dist-site/
