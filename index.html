@@ -47,6 +47,23 @@
       </div>
     </div>
 
+    <!-- GitHub 主页徽章图 -->
+    <div class="modal" id="shelf" role="dialog" aria-modal="true" aria-labelledby="shelf-title" hidden>
+      <div class="modal-card modal-wide">
+        <header class="modal-head">
+          <h2 class="modal-title" id="shelf-title" data-shelf-title></h2>
+          <button class="btn-icon" type="button" data-shelf-close>
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </header>
+        <div class="poster-preview shelf-preview" data-shelf-preview></div>
+        <footer class="modal-foot shelf-foot">
+          <p class="shelf-status" data-shelf-status aria-live="polite"></p>
+          <button class="btn btn-primary" type="button" data-shelf-download disabled></button>
+        </footer>
+      </div>
+    </div>
+
     <!-- 单枚查看：全屏遮罩，实时 3D 只在这里渲染 -->
     <div class="overlay" id="overlay" hidden>
     <div class="export-frame" id="export-frame" data-bg="transparent" aria-hidden="true"></div>

@@ -24,8 +24,9 @@ function ring(ratio) {
  * @param {object} opts.daily    当前工具的按天用量
  * @param {(item) => void} opts.onSelect
  * @param {() => void} opts.onShare
+ * @param {() => void} opts.onShelf   生成 GitHub 主页徽章图
  */
-export function createProfile({ root, items, daily, onSelect, onShare }) {
+export function createProfile({ root, items, daily, onSelect, onShare, onShelf }) {
   const badges = items.map((it) => it.config);
   const progress = Object.fromEntries(items.map((it) => [it.config.id, it.state]));
   const h = highlights(badges, progress);
@@ -48,7 +49,10 @@ export function createProfile({ root, items, daily, onSelect, onShare }) {
           <div><dt>${t('profile.activeDays')}</dt><dd>${stats.activeDays}</dd></div>
           <div><dt>${t('profile.streak')}</dt><dd>${t('profile.days', { n: stats.longestStreak })}</dd></div>
         </dl>
-        <button class="btn btn-primary profile-share" type="button" data-share>${t('profile.share')}</button>
+        <div class="profile-actions">
+          <button class="btn btn-primary profile-share" type="button" data-share>${t('profile.share')}</button>
+          <button class="btn" type="button" data-shelf>${t('profile.shelf')}</button>
+        </div>
       </div>
     </div>
     <div class="profile-col">
@@ -90,6 +94,7 @@ export function createProfile({ root, items, daily, onSelect, onShare }) {
   fill('[data-recent]', h.recent, 'recent', t('profile.noneRecent'));
   fill('[data-next]', h.nearMiss, 'next', t('profile.noneNext'));
   el.querySelector('[data-share]').addEventListener('click', onShare);
+  el.querySelector('[data-shelf]').addEventListener('click', onShelf);
 
   return {
     el,

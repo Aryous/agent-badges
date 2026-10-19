@@ -1,6 +1,6 @@
 // 生成 README 和落地页用的图片素材（需要先启动开发服务器：npx vite --port 5199）。
 // 全部用示例数据，不含任何个人数据。
-// 用法：node scripts/assets.mjs [logo|banner|gallery|gif|shots|card|all] [url]
+// 用法：node scripts/assets.mjs [logo|banner|gallery|gif|shots|card|shelf|all] [url]
 import { chromium } from 'playwright-core';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -156,9 +156,22 @@ if (want('card')) {
   }
 }
 
+// ---------- GitHub 主页徽章图示例（示例数据） ----------
+if (want('shelf')) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
+  await page.goto(new URL('?source=mock&lang=en', base).href);
+  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 90000 });
+  await page.evaluate(() => window.__badgeApp.openShelf());
+  await page.waitForFunction(() => window.__badgeApp.shelfURL, null, { timeout: 90000 });
+  toFile(`${OUT}/shelf-example.png`, await page.evaluate(() => window.__badgeApp.shelfURL));
+  // README 里显示 600 宽，2 倍清晰度够用，缩小一些省体积
+  execFileSync('sips', ['--resampleWidth', '1200', `${OUT}/shelf-example.png`], { stdio: 'ignore' });
+  await page.close();
+}
+
 await browser.close();
 // 素材体积提醒：README 图片太大会拖慢仓库
-for (const f of ['banner.png', 'spin.gif']) {
+for (const f of ['banner.png', 'spin.gif', 'shelf-example.png']) {
   try {
     console.log(`${f}: ${(readFileSync(`${OUT}/${f}`).length / 1024).toFixed(0)} KB`);
   } catch {}

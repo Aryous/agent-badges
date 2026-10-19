@@ -107,7 +107,7 @@ The skill is a plain [Agent Skills](https://agentskills.io) folder, [`skills/bad
 | Permissions | The skill pre-approves `npx -y agent-badges@latest …`. Anything else asks you first. | Commands run in Codex's sandbox. npx needs the network and the CLI writes to `~/.agent-badges`, so Codex usually asks you to approve the command. |
 
 - The agent only reports what the CLI prints. It doesn't make up badges, dates or numbers.
-- Opening the badge wall, making a profile card and exporting a page are offered, never run without asking.
+- Opening the badge wall, making a profile image and exporting a page are offered, never run without asking. The agent asks before committing or pushing your profile repository.
 - The skill always runs the latest version on npm, so new badges arrive without reinstalling anything. In Claude Code, the pre-approval applies to whichever version is latest.
 
 ### JSON output
@@ -149,6 +149,7 @@ npx agent-badges                    # collect local stats and open your badge wa
 npx agent-badges collect            # collect only, print a summary in the terminal
 npx agent-badges collect --json     # the same summary as JSON
 npx agent-badges export ./my-wall   # a static page you can open offline (contains your stats)
+npx agent-badges shelf              # your unlocked badges as a PNG for your GitHub profile
 npx agent-badges card               # an achievement card SVG for your GitHub profile
 ```
 
@@ -158,8 +159,9 @@ npx agent-badges card               # an achievement card SVG for your GitHub pr
 | `--port <n>` | Local page port (default 4747; the next free one if taken) |
 | `--no-open` | Don't open the browser |
 | `--json` | Print the summary as JSON (`collect`) |
-| `--lang en\|zh` | Language of the summary and the card (the summary follows your system by default, the card defaults to English) |
-| `--out`, `--theme dark\|light`, `--name` | Card options |
+| `--lang en\|zh` | Language of the summary, the shelf and the card (the summary follows your system by default, the shelf and card default to English) |
+| `--out <file>` | Where `shelf` or `card` saves its file |
+| `--theme dark\|light`, `--name` | Card options |
 
 | Environment variable | Default |
 | --- | --- |
@@ -169,13 +171,34 @@ npx agent-badges card               # an achievement card SVG for your GitHub pr
 
 The first run reads every session log you have, which can take a while if you have gigabytes of Codex history. Later runs only read new or changed files.
 
-## Achievement card for your GitHub profile
+## Show it on your GitHub profile
+
+Commit either image to your profile repository (`<you>/<you>`) and reference it from its README. Both are static images, so re-run the command when you want to refresh them. Or ask your agent to "update my GitHub profile badges".
+
+### Badge shelf
+
+```bash
+npx agent-badges shelf --out path/to/<you>/agent-badges-shelf.png
+```
+
+The 3D badges are rendered with WebGL, so this opens a tab in your browser, renders every badge you have unlocked, hands the PNG back to the terminal and exits. The image has a transparent background and reads on GitHub's light and dark themes. It shows unlocked badges only, with names and tiers: no dates and no usage numbers. You can also make it from the **GitHub profile image** button on your badge wall.
+
+```html
+<img src="./agent-badges-shelf.png" alt="Agent Badges" width="720">
+```
+
+<p align="center">
+  <img src="assets/shelf-example.png" alt="Example badge shelf (sample data)" width="600" />
+</p>
+
+### Achievement card
 
 ```bash
 npx agent-badges card --name "Your Name"
 ```
 
-This writes `agent-badges-card.svg`: unlock counts, totals, streaks and a grid of recent activity. Commit it to your profile repository (`<you>/<you>`) and add it to the README:
+This writes `agent-badges-card.svg`: unlock counts, totals, streaks and a grid of recent activity. It needs no browser, so it also works on a remote machine.
+
 
 ```markdown
 ![Agent Badges](./agent-badges-card.svg)
@@ -188,7 +211,7 @@ This writes `agent-badges-card.svg`: unlock counts, totals, streaks and a grid o
   </picture>
 </p>
 
-The card contains numbers only. Re-run the command whenever you want to refresh it.
+The card contains numbers only.
 
 ## Privacy
 
@@ -201,7 +224,7 @@ It reads the logs your tools already keep on your machine, so the rules are stri
 - **What is saved.** `~/.agent-badges` holds a per-day ledger of numbers, dates and hashes, so badges you earned stay earned even after the tools clean up old logs.
 - **Tested.** The test suite plants fake secrets, prompts, paths and thread titles in fake `~/.claude` and `~/.codex` folders, runs the real collector and export, and checks none of them appear in any output.
 
-The public demo and the npm package contain no personal data. Only `export` and `card` write files with your numbers in them, and only where you tell them to.
+The public demo and the npm package contain no personal data. Only `export`, `card` and `shelf` write files about your usage, and only where you tell them to.
 
 ## How badges are counted
 

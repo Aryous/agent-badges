@@ -1410,6 +1410,34 @@ body.is-modal {
   box-shadow: 0 0 0 1px var(--line);
 }
 
+.modal-wide {
+  width: min(720px, 100%);
+}
+
+/* 透明图放在棋盘格上预览，看得出哪里是透明的 */
+.shelf-preview img {
+  background: repeating-conic-gradient(rgba(240, 238, 230, 0.06) 0 25%, transparent 0 50%) 0 0 / 16px 16px;
+}
+
+.shelf-foot {
+  gap: 16px;
+}
+
+.shelf-status {
+  flex: 1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .poster-making {
   margin: 0;
   padding: 120px 0;

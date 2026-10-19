@@ -107,7 +107,7 @@ $skill-installer install https://github.com/Aryous/agent-badges/tree/main/skills
 | 权限 | 技能预先放行 `npx -y agent-badges@latest …` 这一类命令，其他命令照常先问你 | 命令在 Codex 的沙箱里运行。npx 要联网下载，命令行要写入 `~/.agent-badges`，所以 Codex 通常会请你批准这条命令 |
 
 - Agent 只汇报命令行输出的内容，不会编造徽章、日期或数字。
-- 打开徽章墙、生成成就卡片、导出网页，Agent 只会提议，不会擅自执行。
+- 打开徽章墙、生成主页图片、导出网页，Agent 只会提议，不会擅自执行。提交或推送你的主页仓库之前也会先问你。
 - 技能总是运行 npm 上的最新版本，新徽章上线后不用重装任何东西。在 Claude Code 里，这个预先放行也对以后的新版本生效。
 
 ### JSON 输出
@@ -149,6 +149,7 @@ npx agent-badges                    # 采集本机数据，打开徽章墙
 npx agent-badges collect            # 只采集，在终端打印汇总
 npx agent-badges collect --json     # 同样的汇总，JSON 格式
 npx agent-badges export ./my-wall   # 导出可离线打开的静态网页（含你的统计数字）
+npx agent-badges shelf              # 把已解锁的徽章保存成 PNG，放进 GitHub 个人主页
 npx agent-badges card               # 生成成就卡片 SVG，放进 GitHub 个人主页
 ```
 
@@ -158,8 +159,9 @@ npx agent-badges card               # 生成成就卡片 SVG，放进 GitHub 个
 | `--port <端口>` | 本地页面端口（默认 4747，被占用时自动往后找） |
 | `--no-open` | 不自动打开浏览器 |
 | `--json` | 以 JSON 输出汇总（`collect`） |
-| `--lang en\|zh` | 汇总和卡片的语言（汇总默认跟随系统，卡片默认英文） |
-| `--out`、`--theme dark\|light`、`--name` | 成就卡片的选项 |
+| `--lang en\|zh` | 汇总、陈列图和卡片的语言（汇总默认跟随系统，陈列图和卡片默认英文） |
+| `--out <文件>` | `shelf` 或 `card` 的保存位置 |
+| `--theme dark\|light`、`--name` | 成就卡片的选项 |
 
 | 环境变量 | 默认值 |
 | --- | --- |
@@ -169,13 +171,33 @@ npx agent-badges card               # 生成成就卡片 SVG，放进 GitHub 个
 
 第一次运行要读完全部会话记录，Codex 记录有几 GB 的话需要一些时间；之后只处理新增或变化的文件。
 
-## GitHub 个人主页的成就卡片
+## 放到 GitHub 个人主页
+
+下面两种图都可以：提交到你的个人主页仓库（`<用户名>/<用户名>`），在它的 README 里引用。它们都是静态图片，想更新时重新运行命令即可。也可以直接让 Agent「更新我 GitHub 主页的徽章」。
+
+### 徽章陈列图
+
+```bash
+npx agent-badges shelf --out 路径/<用户名>/agent-badges-shelf.png --lang zh
+```
+
+3D 徽章要用 WebGL 渲染，所以这条命令会在你的浏览器里打开一个标签页，画出你已解锁的全部徽章，把 PNG 交回终端保存后退出。图片背景透明，GitHub 深浅两种主题下都能看清。图里只有已解锁的徽章、名字和等级，没有日期，也没有用量数字。在徽章墙上点「GitHub 主页图」按钮也能生成。
+
+```html
+<img src="./agent-badges-shelf.png" alt="Agent Badges" width="720">
+```
+
+<p align="center">
+  <img src="assets/shelf-example.png" alt="徽章陈列图示例（示例数据）" width="600" />
+</p>
+
+### 成就卡片
 
 ```bash
 npx agent-badges card --name "你的名字" --lang zh
 ```
 
-会生成 `agent-badges-card.svg`：解锁数、累计数字、最长连续和最近的活动格子。把它提交到你的个人主页仓库（`<用户名>/<用户名>`），在 README 里引用：
+会生成 `agent-badges-card.svg`：解锁数、累计数字、最长连续和最近的活动格子。不需要浏览器，在远程服务器上也能用。
 
 ```markdown
 ![Agent Badges](./agent-badges-card.svg)
@@ -188,7 +210,7 @@ npx agent-badges card --name "你的名字" --lang zh
   </picture>
 </p>
 
-卡片里只有数字。想更新时重新运行一次即可。
+卡片里只有数字。
 
 ## 隐私
 
@@ -201,7 +223,7 @@ npx agent-badges card --name "你的名字" --lang zh
 - **保存了什么。** `~/.agent-badges` 里是按天汇总的账本，只有数字、日期和哈希。工具清理旧记录之后，已经拿到的徽章也不会消失。
 - **有测试。** 测试会在伪造的 `~/.claude` 和 `~/.codex` 里塞入假密钥、对话、路径和会话标题，真跑一遍采集和导出，确认它们不会出现在任何输出里。
 
-在线演示和 npm 包里都没有任何个人数据。只有 `export` 和 `card` 会写出带你统计数字的文件，而且只写到你指定的位置。
+在线演示和 npm 包里都没有任何个人数据。只有 `export`、`card` 和 `shelf` 会写出和你使用情况有关的文件，而且只写到你指定的位置。
 
 ## 统计口径
 

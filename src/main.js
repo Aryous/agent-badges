@@ -7,6 +7,7 @@ import { loadDaily, loadProgress, sourceInfo } from './data/progress.js';
 import { createHeatmap, markersFrom } from './viewer/heatmap.js';
 import { createProfile } from './viewer/profile.js';
 import { renderPoster } from './viewer/poster.js';
+import { renderShelf, shelfGroups } from './viewer/shelf.js';
 import { applyStatic, formatBig, lang, t } from './i18n.js';
 import { badgeDescription, badgeTitle, tierName } from './brands/shared/text.js';
 import { createStage, supportsWebGL } from './viewer/scene.js';
@@ -176,6 +177,7 @@ async function main() {
     daily: currentDaily,
     onSelect: select,
     onShare: (e) => openPoster({ viaKeyboard: e?.detail === 0 }),
+    onShelf: (e) => openShelf({ viaKeyboard: e?.detail === 0 }),
   });
   const heatmap = createHeatmap({
     root: $('#heat-slot'),
@@ -272,6 +274,87 @@ async function main() {
     if (posterURL) downloadDataURL(posterURL, `${brand.id}-badges-${heatmap.year}.png`);
   });
   window.addEventListener('keydown', (e) => e.key === 'Escape' && closePoster());
+
+  // ---------- GitHub 主页徽章图 ----------
+  // npx agent-badges shelf 会带着 ?task=shelf&nonce=… 打开页面：自动生成，再交回命令行保存
+  const shelfEl = $('#shelf');
+  const shelfDownload = $('[data-shelf-download]');
+  const shelfStatus = $('[data-shelf-status]');
+  const task = params.get('task') === 'shelf' ? { nonce: params.get('nonce') ?? '' } : null;
+  const shelfLang = ['en', 'zh'].includes(params.get('shelfLang')) ? params.get('shelfLang') : lang;
+  let shelfURL = null;
+  let shelfBusy = null;
+  let shelfOpener = null;
+  $('[data-shelf-title]').textContent = t('shelf.title');
+  $('[data-shelf-close]').setAttribute('aria-label', t('poster.close'));
+  shelfDownload.textContent = t('poster.download');
+
+  async function sendShelf(canvas) {
+    shelfStatus.textContent = t('shelf.sending');
+    try {
+      const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
+      const res = await fetch(`/__agent-badges/shelf?nonce=${encodeURIComponent(task.nonce)}`, {
+        method: 'POST',
+        headers: { 'content-type': 'image/png' },
+        body: blob,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+      shelfStatus.textContent = t('shelf.saved', { file: body.file });
+    } catch (e) {
+      shelfStatus.textContent = t('shelf.failed', { msg: e.message });
+    }
+  }
+
+  async function makeShelf() {
+    const preview = $('[data-shelf-preview]');
+    const making = document.createElement('p');
+    making.className = 'poster-making';
+    preview.replaceChildren(making);
+    shelfDownload.disabled = true;
+    shelfStatus.textContent = '';
+    const groups = await shelfGroups({ only: task ? params.get('brand') : null, forceMock });
+    if (!groups.length) {
+      making.textContent = t('shelf.empty');
+      return;
+    }
+    const canvas = await renderShelf(groups, {
+      lang: shelfLang,
+      onProgress: (done, total) => (making.textContent = t('shelf.making', { done, total })),
+    });
+    shelfURL = canvas.toDataURL('image/png');
+    const img = new Image();
+    img.alt = t('shelf.title');
+    img.src = shelfURL;
+    preview.replaceChildren(img);
+    shelfDownload.disabled = false;
+    if (task) await sendShelf(canvas);
+    else shelfStatus.textContent = t('shelf.hint');
+  }
+
+  async function openShelf({ viaKeyboard = false } = {}) {
+    shelfOpener = document.activeElement;
+    shelfEl.hidden = false;
+    document.body.classList.add('is-modal');
+    if (viaKeyboard) $('[data-shelf-close]').focus({ preventScroll: true });
+    // 生成过就直接显示；命令行交付只做一次
+    shelfBusy ??= makeShelf().catch((e) => {
+      console.error(e);
+      shelfBusy = null;
+      shelfStatus.textContent = t('app.loadFailed', { msg: e.message });
+    });
+    await shelfBusy;
+  }
+  function closeShelf() {
+    if (shelfEl.hidden) return;
+    shelfEl.hidden = true;
+    document.body.classList.remove('is-modal');
+    shelfOpener?.focus?.({ preventScroll: true });
+  }
+  $('[data-shelf-close]').addEventListener('click', closeShelf);
+  shelfEl.addEventListener('click', (e) => e.target === shelfEl && closeShelf());
+  shelfDownload.addEventListener('click', () => shelfURL && downloadDataURL(shelfURL, 'agent-badges-shelf.png'));
+  window.addEventListener('keydown', (e) => e.key === 'Escape' && closeShelf());
 
   /** 逐枚渲染缩略图，每枚之间让出一帧，页面不会卡住。 */
   async function renderThumbnails() {
@@ -552,6 +635,10 @@ async function main() {
     get posterURL() {
       return posterURL;
     },
+    openShelf,
+    get shelfURL() {
+      return shelfURL;
+    },
     setFilter,
     heatmap,
   };
@@ -559,6 +646,7 @@ async function main() {
   // 支持通过 #徽章id 直接打开某一枚
   const fromHash = items.find((it) => `#${it.config.id}` === location.hash);
   if (fromHash) open(fromHash);
+  if (task) openShelf();
 
   await thumbsDone;
   window.__badgeApp.ready = true;

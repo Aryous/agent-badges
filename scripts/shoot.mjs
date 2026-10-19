@@ -2,6 +2,7 @@
 // 用法：node scripts/shoot.mjs [url] [outDir]
 import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { SHELF } from '../src/data/shelf.js';
 
 // 固定使用示例数据，检查结果不随本机真实数据变化
 const withMock = (u) => u + (u.includes('?') ? '&' : '?') + 'source=mock&lang=zh';
@@ -247,6 +248,34 @@ async function session(viewport, tag) {
   check('分享海报是 2160 像素宽的 PNG', buf.readUInt32BE(16) === 2160, `${buf.readUInt32BE(16)}×${buf.readUInt32BE(20)}`);
   await page.keyboard.press('Escape');
   check('Esc 关闭海报', !(await page.locator('#poster').isVisible()));
+
+  // GitHub 主页徽章图：只有已解锁的徽章，透明背景，1680 像素宽
+  await page.locator('[data-shelf]').click();
+  await page.waitForFunction(() => window.__badgeApp.shelfURL, null, { timeout: 60000 });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: `${out}/desktop-shelf.png` });
+  const shelfURL = await page.evaluate(() => window.__badgeApp.shelfURL);
+  const shelf = Buffer.from(shelfURL.split(',')[1], 'base64');
+  writeFileSync(`${out}/shelf.png`, shelf);
+  // 右下角应该透明；第一枚徽章的中心应该不透明（徽章确实画上去了）
+  const cell = (SHELF.width - SHELF.pad * 2) / SHELF.cols;
+  const firstBadge = [(SHELF.pad + cell / 2) * SHELF.scale, (SHELF.pad + SHELF.head + SHELF.badge / 2) * SHELF.scale];
+  const [shelfCorner, badgeAlpha] = await page.evaluate(async ([src, first]) => {
+    const img = new Image();
+    img.src = src;
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = img.width;
+    c.height = img.height;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    return [g.getImageData(c.width - 2, c.height - 2, 1, 1).data[3], g.getImageData(first[0], first[1], 1, 1).data[3]];
+  }, [shelfURL, firstBadge]);
+  check('主页徽章图是 1680 像素宽、背景透明的 PNG', shelf.readUInt32BE(16) === 1680 && shelfCorner === 0, `${shelf.readUInt32BE(16)}×${shelf.readUInt32BE(20)}，右下角透明度 ${shelfCorner}`);
+  check('主页徽章图里画出了徽章', badgeAlpha > 200, `第一枚中心透明度 ${badgeAlpha}`);
+  check('主页徽章图面板有提示文字，可以下载', (await page.locator('[data-shelf-status]').textContent()).length > 0 && (await page.locator('[data-shelf-download]').isEnabled()));
+  await page.keyboard.press('Escape');
+  check('Esc 关闭主页徽章图', !(await page.locator('#shelf').isVisible()));
   check('展示层控制台无报错', errors.length === 0, errors.join(' | '));
   await page.close();
 }

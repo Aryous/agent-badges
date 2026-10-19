@@ -4,7 +4,7 @@
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
-import { join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Node 22 读 SQLite 时会打印「实验特性」警告，对用户没有意义，只屏蔽这一条
@@ -28,16 +28,17 @@ const HELP = t(
   npx agent-badges collect         只采集，在终端打印汇总
   npx agent-badges export <目录>   导出可离线打开的静态网页
   npx agent-badges card            生成成就卡片 SVG（可放进 GitHub 个人主页）
+  npx agent-badges shelf           在浏览器里渲染已解锁徽章，保存为 PNG（可放进 GitHub 个人主页）
 
 选项
   --brand <claude-code|codex>      只采集 / 只看某个工具
   --port <端口>                    本地页面端口（默认 4747）
   --no-open                        不自动打开浏览器
   --json                           以 JSON 输出汇总（collect）
-  --out <文件>                     卡片保存位置（默认 agent-badges-card.svg）
+  --out <文件>                     保存位置（默认 agent-badges-card.svg / agent-badges-shelf.png）
   --theme <dark|light>             卡片配色（默认 dark）
   --name <名字>                    卡片标题里的名字
-  --lang <en|zh>                   输出语言（卡片默认 en，汇总默认跟随系统）
+  --lang <en|zh>                   输出语言（卡片和陈列图默认 en，汇总默认跟随系统）
   -v, --version / -h, --help
 
 数据只读本机、只存 ~/.agent-badges（可用 AGENT_BADGES_HOME 修改），不上传任何内容。`,
@@ -48,16 +49,17 @@ Usage
   npx agent-badges collect         collect only and print a summary
   npx agent-badges export <dir>    export a static page you can open offline
   npx agent-badges card            write an achievement card SVG for your GitHub profile
+  npx agent-badges shelf           render your unlocked badges in the browser and save a PNG for your profile
 
 Options
   --brand <claude-code|codex>      only one tool
   --port <port>                    local page port (default 4747)
   --no-open                        don't open the browser
   --json                           print the summary as JSON (collect)
-  --out <file>                     where to save the card (default agent-badges-card.svg)
+  --out <file>                     where to save it (default agent-badges-card.svg / agent-badges-shelf.png)
   --theme <dark|light>             card colors (default dark)
   --name <name>                    name shown on the card
-  --lang <en|zh>                   output language (card defaults to en, summary to your system)
+  --lang <en|zh>                   output language (card and shelf default to en, summary to your system)
   -v, --version / -h, --help
 
 Everything stays on this machine: data is read locally and stored in ~/.agent-badges
@@ -78,7 +80,7 @@ export function parseArgs(argv) {
     else if (a === '--theme') opts.theme = argv[++i];
     else if (a === '--name') opts.name = argv[++i] ?? '';
     else if (a === '--lang') opts.cardLang = opts.outLang = argv[++i];
-    else if (a === 'collect' || a === 'export' || a === 'open' || a === 'card') opts.command = a;
+    else if (a === 'collect' || a === 'export' || a === 'open' || a === 'card' || a === 'shelf') opts.command = a;
     else if (opts.command === 'export' && !opts.dir) opts.dir = a;
     else throw new Error(t(`不认识的参数：${a}`, `Unknown argument: ${a}`));
   }
@@ -160,6 +162,65 @@ async function writeCard(data, opts) {
   console.log(t('放进 GitHub 个人主页 README：![Agent Badges](./agent-badges-card.svg)', 'Add it to your profile README: ![Agent Badges](./agent-badges-card.svg)'));
 }
 
+const SHELF_TIMEOUT = 120_000;
+
+/**
+ * 陈列图：徽章要用 WebGL 渲染，所以交给浏览器。
+ * 打开本地页面 → 页面渲染已解锁的徽章 → 把 PNG 交回这里 → 写文件、退出。
+ */
+async function writeShelf(data, opts) {
+  const { summarize } = await import('../src/collect/summary.js');
+  const { createReceiver } = await import('../src/collect/receive.js');
+  const unlocked = Object.entries(data).reduce((n, [id, d]) => n + summarize(id, d.progress).unlocked, 0);
+  if (!unlocked) throw new Error(t('还没有解锁的徽章，陈列图是空的。先多用用 Claude Code 或 Codex 吧', 'No badges unlocked yet, so the shelf would be empty'));
+
+  const file = resolve(opts.out ?? 'agent-badges-shelf.png');
+  const receiver = createReceiver();
+  const { server, port } = await serve(await appHtml(data), opts.port, { handle: receiver.handle });
+  const query = new URLSearchParams({ task: 'shelf', nonce: receiver.nonce, shelfLang: opts.cardLang, lang });
+  if (opts.brand) query.set('brand', opts.brand);
+  const url = `http://127.0.0.1:${port}/?${query}`;
+  const shut = () => {
+    server.closeAllConnections();
+    server.close();
+  };
+
+  console.log(t(`\n正在浏览器里渲染徽章：${url}`, `\nRendering your badges in the browser: ${url}`));
+  if (opts.open) openBrowser(url);
+  else console.log(t('请在浏览器里打开上面的网址。', 'Open the address above in your browser.'));
+
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(t(
+        `${SHELF_TIMEOUT / 1000} 秒内没有收到浏览器交回的图片。请手动打开上面的网址，或在有图形界面的电脑上运行。`,
+        `No image came back from the browser within ${SHELF_TIMEOUT / 1000}s. Open the address above yourself, or run this on a machine with a desktop browser.`,
+      ))),
+      SHELF_TIMEOUT,
+    );
+  });
+  try {
+    const { png, respond } = await Promise.race([receiver.received, timeout]);
+    try {
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, png);
+    } catch (e) {
+      respond(500, { error: e.message });
+      throw e;
+    }
+    respond(200, { ok: true, file });
+  } finally {
+    clearTimeout(timer);
+    // 留一点时间把回复送到页面，再关掉服务
+    await new Promise((r) => setTimeout(r, 200));
+    shut();
+  }
+  const name = basename(file);
+  console.log(t(`\n徽章陈列图：${file}`, `\nShelf saved to ${file}`));
+  console.log(t('放进 GitHub 个人主页 README：', 'Add it to your profile README:'));
+  console.log(`  <img src="./${name}" alt="Agent Badges" width="720">`);
+}
+
 function appHtml(data) {
   if (!existsSync(APP)) throw new Error(t('没有找到页面文件，请先运行 npm run build', 'App not built. Run npm run build first.'));
   return import('../src/collect/inject.js').then(({ injectData }) => injectData(readFileSync(APP, 'utf8'), data));
@@ -171,10 +232,12 @@ function openBrowser(url) {
   spawn(cmd, args, { stdio: 'ignore', detached: true }).on('error', () => {}).unref();
 }
 
-function serve(html, port, tries = 10) {
+/** 本地页面。handle 可以接管额外的请求（陈列图回传），返回 true 表示已处理。 */
+function serve(html, port, { handle = null, tries = 10 } = {}) {
   return new Promise((resolvePromise, reject) => {
     const server = createServer((req, res) => {
-      if (req.url === '/' || req.url.startsWith('/?')) {
+      if (handle?.(req, res)) return;
+      if (req.method === 'GET' && (req.url === '/' || req.url.startsWith('/?'))) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
         res.end(html);
       } else {
@@ -182,7 +245,7 @@ function serve(html, port, tries = 10) {
       }
     });
     server.once('error', (e) => {
-      if (e.code === 'EADDRINUSE' && tries > 0) resolvePromise(serve(html, port + 1, tries - 1));
+      if (e.code === 'EADDRINUSE' && tries > 0) resolvePromise(serve(html, port + 1, { handle, tries: tries - 1 }));
       else reject(e);
     });
     // 只监听本机回环地址，局域网里的其他设备访问不到
@@ -199,6 +262,7 @@ async function main() {
   const data = await collectAndReport(opts);
   if (opts.command === 'collect') return;
   if (opts.command === 'card') return writeCard(data, opts);
+  if (opts.command === 'shelf') return writeShelf(data, opts);
 
   const html = await appHtml(data);
   if (opts.command === 'export') {

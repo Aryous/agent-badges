@@ -1,6 +1,6 @@
 ---
 name: badges
-description: Check the user's Claude Code and Codex achievement badges with the agent-badges CLI — badges just unlocked, badges almost unlocked, and totals. Use when the user asks about their badges, achievements, streaks or usage milestones ("check my badges", "what did I unlock", "how close am I to 100M tokens", "我的徽章", "解锁了什么"). Can also open the 3D badge wall or make a GitHub profile card. Not for designing badges or editing this project's code.
+description: Check the user's Claude Code and Codex achievement badges with the agent-badges CLI — badges just unlocked, badges almost unlocked, and totals. Use when the user asks about their badges, achievements, streaks or usage milestones ("check my badges", "what did I unlock", "how close am I to 100M tokens", "我的徽章", "解锁了什么"). Can also open the 3D badge wall, or put the user's badges on their GitHub profile ("update my GitHub profile badges", "更新主页徽章"). Not for designing badges or editing this project's code.
 license: MIT
 compatibility: Requires Node.js 22.15+ and network access the first time (npx downloads the agent-badges package from npm). Works in Claude Code, Codex and other agents that can run shell commands.
 allowed-tools: Bash(npx -y agent-badges@latest *)
@@ -42,8 +42,31 @@ Only report what the JSON contains. Do not invent badges, dates or numbers. Hidd
 Then offer one of these, without running them unasked:
 
 - **Open the 3D badge wall:** `npx -y agent-badges@latest`. It starts a local server on 127.0.0.1 and keeps running until stopped, so run it in the background and give the user the URL it prints.
-- **GitHub profile card:** `npx -y agent-badges@latest card --out agent-badges-card.svg`. It writes an SVG with counts and a recent-activity grid only.
+- **GitHub profile:** see below.
 - **Offline copy:** `npx -y agent-badges@latest export ./my-wall`. Mention that this file contains the user's stats.
+
+## GitHub profile
+
+When the user wants their badges on their GitHub profile:
+
+1. Ask where their profile repository is checked out (the repo named after their username, `<user>/<user>`) unless they already said. Don't guess or search their disk.
+2. Run, with `--lang zh` only if they want Chinese labels:
+
+   ```bash
+   npx -y agent-badges@latest shelf --out <profile-repo>/agent-badges-shelf.png
+   ```
+
+   It opens a tab in the user's browser, renders their unlocked badges with WebGL, saves a transparent PNG and exits (up to two minutes). Tell the user a browser tab will open. It needs a desktop browser; on a remote machine with no browser, offer the numbers-only card instead: `npx -y agent-badges@latest card --out <profile-repo>/agent-badges-card.svg`.
+   In a sandbox it also needs to listen on 127.0.0.1 and write outside the workspace; request escalation for this exact command.
+3. Tell the user to add this line to the profile README (the CLI prints it too):
+
+   ```html
+   <img src="./agent-badges-shelf.png" alt="Agent Badges" width="720">
+   ```
+
+4. **Ask before committing or pushing** the profile repository. Never do either unasked.
+
+The image shows unlocked badges only, with names and tiers. No dates, token counts or other usage numbers. To refresh it later, run the same command again.
 
 ## Privacy questions
 
