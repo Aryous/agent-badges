@@ -62,8 +62,14 @@ async function runWithBrowser(args) {
   const code = await exited;
   await page.waitForFunction(() => /\.png/.test(document.querySelector('[data-shelf-status]')?.textContent ?? ''), null, { timeout: 10000 }).catch(() => {});
   const status = await page.locator('[data-shelf-status]').textContent();
+  // 本机徽章墙上出现的工具：顶栏切换和热力图图例
+  const shown = await page.evaluate(() => ({
+    tabs: [...document.querySelectorAll('.brand-tab')].map((a) => a.textContent),
+    heat: [...document.querySelectorAll('.heat-brand-name')].map((a) => a.textContent),
+    source: document.querySelector('[data-source]')?.textContent ?? '',
+  }));
   await page.close();
-  return { url, code, stdout, status, errors };
+  return { url, code, stdout, status, errors, shown };
 }
 
 // ---------- shelf ----------
@@ -75,6 +81,12 @@ async function runWithBrowser(args) {
   check('shelf：终端给出可粘贴进 README 的一行', r.stdout.includes('<img src="./agent-badges-shelf.png"'));
   check('shelf：页面显示已保存到哪里', r.status.includes(out), r.status);
   check('shelf：页面没有报错', r.errors.length === 0, r.errors.join(' | '));
+  // 这份伪造数据只有 Claude Code：没装的 Codex 不能用示例数据冒充
+  check(
+    '只装了一个工具时，徽章墙不出现另一个工具的示例数据',
+    JSON.stringify(r.shown.tabs) === '["Claude Code"]' && JSON.stringify(r.shown.heat) === '["Claude Code"]' && !/Sample|示例/.test(r.shown.source),
+    JSON.stringify(r.shown),
+  );
   if (existsSync(out)) writeFileSync('screenshots/shelf-cli.png', readFileSync(out));
 }
 

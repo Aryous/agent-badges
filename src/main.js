@@ -59,13 +59,14 @@ function applyPreview(configs, progress) {
 }
 
 const params = new URLSearchParams(location.search);
-// 公开版（npx agent-badges profile 生成、放在 GitHub Pages 上给别人看）：
-// 只列有数据的工具，不用示例数据冒充；文字改成「某某的徽章」
+// 公开版（npx agent-badges profile 生成、放在 GitHub Pages 上给别人看）：文字改成「某某的徽章」
 const PUBLIC = window.__AGENT_BADGES_PUBLIC__ ?? null;
-const AVAILABLE = PUBLIC ? BRANDS.filter((b) => window.__AGENT_BADGES_DATA__?.[b.brand.id]) : BRANDS;
+// 有本机数据时只列有数据的工具：没装的工具不能用示例数据冒充。
+// 只有在线演示（没有本机数据）或 ?source=mock 时才把两个工具的示例数据都列出来
+const LOCAL = params.get('source') === 'mock' ? [] : BRANDS.filter((b) => window.__AGENT_BADGES_DATA__?.[b.brand.id]);
+const AVAILABLE = LOCAL.length ? LOCAL : BRANDS;
 const wantedBrand = params.get('brand');
-const { brand, badges: badgeConfigs, series: SERIES } =
-  AVAILABLE.find((b) => b.brand.id === wantedBrand) ?? (PUBLIC && AVAILABLE[0]) ?? getBrand(wantedBrand);
+const { brand, badges: badgeConfigs, series: SERIES } = AVAILABLE.find((b) => b.brand.id === wantedBrand) ?? AVAILABLE[0] ?? getBrand(wantedBrand);
 
 /** 顶栏的品牌切换：切换时保留其他参数（如 preview），去掉锚点。 */
 function renderBrandSwitch() {
