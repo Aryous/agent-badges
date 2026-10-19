@@ -10,6 +10,7 @@ import { createStage } from '../viewer/scene.js';
 import { renderBadgePNG } from '../viewer/export.js';
 import { LOGO_STATE, logoBadge, logoBrand } from '../project/logo.js';
 import { renderShelf, shelfGroups } from '../viewer/shelf.js';
+import { CLICK_AT, DONE_AT, DURATION, END_GLINT, END_LAND, HERO_GLINT, HERO_LAND, LINE_AT, TIER_AT, TYPE, TYPED, wallPopAt } from './timeline.js';
 
 const params = new URLSearchParams(location.search);
 const PORTRAIT = params.get('aspect') === '9x16';
@@ -18,7 +19,6 @@ document.documentElement.classList.add(PORTRAIT ? 'portrait' : 'landscape');
 document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
 const W = PORTRAIT ? 1080 : 1920;
 const H = PORTRAIT ? 1920 : 1080;
-const DURATION = 20;
 
 const TEXT = {
   en: {
@@ -29,7 +29,6 @@ const TEXT = {
     'tier.sub': 'Earned from your real Claude Code and Codex history.',
     'agent.title': 'Then just ask your agent.',
     'agent.sub': 'Works in Claude Code and Codex.',
-    'agent.typed': 'put my badges on my GitHub profile',
     'agent.lines': ['Checked GitHub: you/you', 'Rendered 30 badges in your browser', 'Committed and pushed', 'GitHub Pages is live'],
     'agent.done': 'Done → <u>github.com/you</u>',
     'profile.title': 'Your badges, on your profile.',
@@ -45,7 +44,6 @@ const TEXT = {
     'tier.sub': '来自你真实的 Claude Code 和 Codex 使用记录。',
     'agent.title': '然后，跟 Agent 说一句。',
     'agent.sub': 'Claude Code 和 Codex 都能用。',
-    'agent.typed': '把我的徽章放到 GitHub 主页',
     'agent.lines': ['已检查 GitHub：you/you', '在浏览器里渲染了 30 枚徽章', '已提交并推送', 'GitHub Pages 已上线'],
     'agent.done': '完成 → <u>github.com/you</u>',
     'profile.title': '徽章，挂在你的主页上。',
@@ -176,8 +174,6 @@ async function prepare() {
 const L = PORTRAIT
   ? { hero: [540, 760, 360], tier: [540, 900, 330], end: [540, 820, 220], cursorFrom: [880, 980], cursorTo: [470, 560] }
   : { hero: [960, 420, 300], tier: [960, 540, 250], end: [960, 390, 190], cursorFrom: [1260, 640], cursorTo: [860, 330] };
-const TIER_AT = [8.0, 8.95, 9.9, 10.85]; // 每一级出现的时刻
-const LINE_AT = [13.6, 14.0, 14.4, 14.8];
 
 function frame(t, { logo, tiers }) {
   // 背景光晕跟着每一幕变色
@@ -192,7 +188,7 @@ function frame(t, { logo, tiers }) {
     $('#s-hero').style.opacity = t < 3.8 ? sAlpha : 0;
     show($('#s-hero .kicker'), seg(t, 0.9, 1.4), (1 - outCubic(seg(t, 0.9, 1.4))) * 16);
     show($('#s-hero .headline'), seg(t, 1.3, 2.0), (1 - outCubic(seg(t, 1.3, 2.0))) * 30);
-    const p = seg(t, 0, 1.3);
+    const p = seg(t, 0, HERO_LAND);
     const exit = 1 - inCubic(seg(t, 3.3, 3.8));
     const angle = 4 * Math.PI * (1 - outCubic(p)) + 0.22 * Math.sin((t - 1.3) * 1.7) * seg(t, 1.3, 2.0);
     if (t < 3.8) place(logo, x, y, r * outBack(p) * exit, angle, 0.05 * Math.sin(t * 1.2));
@@ -204,7 +200,7 @@ function frame(t, { logo, tiers }) {
     $('#s-wall').style.opacity = a;
     show($('#s-wall .caption'), 1, (1 - outCubic(seg(t, 3.8, 4.3))) * 24);
     [...document.querySelectorAll('.wall-grid img')].forEach((img, i) => {
-      const start = 4.05 + i * 0.055;
+      const start = wallPopAt(i);
       const p = seg(t, start, start + 0.45);
       img.style.opacity = seg(t, start, start + 0.18);
       img.style.transform = `translateY(${Math.sin(t * 1.4 + i * 0.7) * 4}px) scale(${0.5 + 0.5 * outBack(p)})`;
@@ -248,10 +244,10 @@ function frame(t, { logo, tiers }) {
     $('#s-agent').style.opacity = alpha(t, 11.8, 16.2);
     show($('#s-agent .caption'), 1, (1 - outCubic(seg(t, 11.8, 12.3))) * 24);
     show($('#term'), 1, (1 - outCubic(seg(t, 11.8, 12.4))) * 40);
-    const typed = TEXT['agent.typed'];
-    const n = Math.floor(seg(t, 12.15, 13.25) * typed.length);
+    const typed = TYPED[LANG];
+    const n = Math.floor(seg(t, TYPE[0], TYPE[1]) * typed.length);
     $('#term-typed').textContent = typed.slice(0, n);
-    const typing = t >= 12.15 && t < 13.25;
+    const typing = t >= TYPE[0] && t < TYPE[1];
     $('#term-cursor').style.opacity = typing || Math.floor(t * 2.4) % 2 === 0 ? 1 : 0;
     const ul = $('#term-lines');
     if (!ul.children.length) {
@@ -260,7 +256,7 @@ function frame(t, { logo, tiers }) {
         `<li class="done"><b>●</b><span>${TEXT['agent.done']}</span></li>`;
     }
     [...ul.children].forEach((li, i) => {
-      const at = i < LINE_AT.length ? LINE_AT[i] : 15.25;
+      const at = i < LINE_AT.length ? LINE_AT[i] : DONE_AT;
       show(li, seg(t, at, at + 0.2), (1 - outCubic(seg(t, at, at + 0.25))) * 12);
     });
   }
@@ -269,14 +265,14 @@ function frame(t, { logo, tiers }) {
   {
     $('#s-profile').style.opacity = alpha(t, 16.2, 18.3);
     show($('#s-profile .caption'), 1, (1 - outCubic(seg(t, 16.2, 16.7))) * 24);
-    const press = seg(t, 17.35, 17.45) * (1 - seg(t, 17.45, 17.6));
+    const press = seg(t, CLICK_AT, CLICK_AT + 0.1) * (1 - seg(t, CLICK_AT + 0.1, CLICK_AT + 0.25));
     show($('#profile'), 1, (1 - outCubic(seg(t, 16.2, 16.8))) * 50, 1 - 0.012 * press);
     const m = inOutCubic(seg(t, 16.6, 17.3));
     const cursor = $('#cursor');
     cursor.style.left = `${lerp(L.cursorFrom[0], L.cursorTo[0], m)}px`;
     cursor.style.top = `${lerp(L.cursorFrom[1], L.cursorTo[1], m)}px`;
     cursor.style.opacity = seg(t, 16.5, 16.7);
-    const ring = seg(t, 17.35, 17.85);
+    const ring = seg(t, CLICK_AT, CLICK_AT + 0.5);
     cursor.style.setProperty('--ring', ring > 0 ? 1 - ring : 0);
     cursor.style.setProperty('--ring-scale', 0.4 + ring);
   }
@@ -290,7 +286,7 @@ function frame(t, { logo, tiers }) {
     show($('#s-end .end-tag'), seg(t, 18.85, 19.25), 0);
     show($('#s-end .end-url'), seg(t, 19.05, 19.45), 0);
     if (t >= 18.0) {
-      const p = seg(t, 18.1, 18.8);
+      const p = seg(t, END_LAND[0], END_LAND[1]);
       place(logo, x, y, r * outBack(p), 2 * Math.PI * (1 - outCubic(p)) + 0.15 * Math.sin((t - 18.8) * 1.5) * seg(t, 18.8, 19.3), 0.04 * Math.sin(t));
     } else if (t >= 3.8) {
       logo.holder.visible = false;
@@ -299,9 +295,9 @@ function frame(t, { logo, tiers }) {
 
   // 高光：开场落定、每次升级、结尾落定
   const glints = [
-    [1.1, 1.75, L.hero],
+    [...HERO_GLINT, L.hero],
     ...TIER_AT.slice(1).map((at) => [at + 0.28, at + 0.9, L.tier]),
-    [18.75, 19.4, L.end],
+    [...END_GLINT, L.end],
   ];
   const g = glints.find(([a, b]) => t >= a && t <= b);
   if (g) glint(seg(t, g[0], g[1]), ...g[2]);
