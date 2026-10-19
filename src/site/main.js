@@ -43,15 +43,17 @@ function setupText() {
   const other = lang === 'zh' ? 'en' : 'zh';
   sw.href = `?lang=${other}`;
   sw.textContent = other === 'zh' ? '中文' : 'EN';
-  const copy = $('[data-copy]');
-  copy.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText('npx agent-badges');
-      copy.textContent = t('hero.copied');
-      setTimeout(() => (copy.textContent = t('hero.copy')), 1600);
-    } catch {
-      // 剪贴板不可用时什么也不做，命令本身就在旁边
-    }
+  // 复制按钮：data-copy 有值就复制它，没有就复制首屏命令
+  document.querySelectorAll('[data-copy]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy || 'npx agent-badges');
+        btn.textContent = t('hero.copied');
+        setTimeout(() => (btn.textContent = t('hero.copy')), 1600);
+      } catch {
+        // 剪贴板不可用时什么也不做，命令本身就在旁边
+      }
+    });
   });
 }
 

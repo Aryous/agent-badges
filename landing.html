@@ -32,6 +32,7 @@
           </div>
           <div class="hero-actions">
             <a class="btn btn-primary btn-lg" href="./demo/" data-demo-link><span data-i18n="hero.demo"></span> →</a>
+            <a class="hero-alt" href="#agent"><span data-i18n="hero.agent"></span> ↓</a>
           </div>
           <p class="hero-req" data-i18n="hero.req"></p>
         </div>
@@ -83,6 +84,37 @@
           <li><span class="step-n">2</span><h3 data-i18n="how.2.title"></h3><p data-i18n="how.2.body"></p></li>
           <li><span class="step-n">3</span><h3 data-i18n="how.3.title"></h3><p data-i18n="how.3.body"></p></li>
         </ol>
+      </section>
+
+      <section class="block" id="agent">
+        <h2 class="block-title" data-i18n="agent.title"></h2>
+        <p class="block-sub" data-i18n="agent.sub"></p>
+        <div class="agent-grid">
+          <div class="chat" aria-hidden="true">
+            <p class="chat-q"><span class="cmd-prompt">&gt;</span> <span data-i18n="agent.chat.q"></span></p>
+            <p class="chat-a" data-i18n-html="agent.chat.a"></p>
+          </div>
+          <div class="installs">
+            <article class="card install">
+              <h3>Claude Code</h3>
+              <div class="snippet">
+                <pre><code>/plugin install agent-badges --marketplace Aryous/agent-badges</code></pre>
+                <button class="cmd-copy" type="button" data-copy="/plugin install agent-badges --marketplace Aryous/agent-badges" data-i18n="hero.copy"></button>
+              </div>
+              <p data-i18n-html="agent.claude.note"></p>
+            </article>
+            <article class="card install">
+              <h3>Codex</h3>
+              <div class="snippet">
+                <pre><code>codex plugin marketplace add Aryous/agent-badges
+codex plugin add agent-badges@agent-badges</code></pre>
+                <button class="cmd-copy" type="button" data-copy="codex plugin marketplace add Aryous/agent-badges && codex plugin add agent-badges@agent-badges" data-i18n="hero.copy"></button>
+              </div>
+              <p data-i18n-html="agent.codex.note"></p>
+            </article>
+          </div>
+        </div>
+        <p class="agent-more" data-i18n-html="agent.more"></p>
       </section>
     </main>
 

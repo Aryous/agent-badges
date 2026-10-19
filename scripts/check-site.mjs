@@ -57,9 +57,20 @@ for (const [tag, viewport] of [['desktop', { width: 1440, height: 900 }], ['mobi
   await page.waitForFunction(() => document.querySelectorAll('.gallery-item.is-ready').length >= 20, null, { timeout: 60000 });
   check(`[${tag}] 切到 Codex 标签，渲染出 20 枚`, (await page.locator('.gallery-item').count()) === 20);
   check(`[${tag}] 热力图有 365 格`, (await page.locator('.heat-cell[data-date]').count()) >= 365);
-  const demoHref = await page.locator('.hero-actions a').getAttribute('href');
+  const demoHref = await page.locator('.hero-actions [data-demo-link]').getAttribute('href');
   check(`[${tag}] 演示链接指向 ./demo/`, demoHref.startsWith('./demo/'), demoHref);
   check(`[${tag}] 落地页无横向溢出`, !(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
+  const agent = await page.evaluate(() => ({
+    empty: [...document.querySelectorAll('#agent [data-i18n], #agent [data-i18n-html]')].filter((el) => !el.textContent.trim()).length,
+    copies: [...document.querySelectorAll('#agent [data-copy]')].map((b) => b.dataset.copy),
+    jump: document.querySelector('.hero-alt')?.getAttribute('href'),
+  }));
+  check(
+    `[${tag}] Agent 区块文字齐全，有 Claude Code 和 Codex 两段可复制的安装命令`,
+    agent.empty === 0 && agent.copies.length === 2 && agent.copies[0].startsWith('/plugin install') && agent.copies[1].startsWith('codex plugin') && agent.jump === '#agent',
+    JSON.stringify(agent),
+  );
+  await page.locator('#agent').screenshot({ path: `screenshots/site-agent-${tag}.png` });
   await page.screenshot({ path: `screenshots/site-${tag}.png`, fullPage: true });
   check(`[${tag}] 落地页控制台无报错`, errors.length === 0, errors.join(' | '));
   await page.close();

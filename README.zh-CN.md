@@ -15,11 +15,13 @@
   <a href="README.md">English</a> · <b>简体中文</b> · <a href="https://aryous.github.io/agent-badges/?lang=zh">官网</a> · <a href="https://aryous.github.io/agent-badges/demo/?lang=zh">在线演示</a>
 </p>
 
-把你的 Claude Code 和 Codex 使用记录变成可收藏的 3D 成就徽章，像 Apple Watch 健身徽章那样。一条命令，全程在本机运行，不上传任何内容。
+把你的 Claude Code 和 Codex 使用记录变成可收藏的 3D 成就徽章，像 Apple Watch 健身徽章那样。全程在本机运行，不上传任何内容。
 
 ```bash
 npx agent-badges
 ```
+
+**也可以直接问你的 Agent。** 在 Claude Code 或 Codex 里[装上技能](#让-agent-帮你看)，然后说「看看我的徽章」。
 
 <p align="center">
   <img src="assets/spin.gif" alt="三枚旋转的徽章：Claude Code 初次相遇、Agent Badges 标志、Codex 初次启动" width="720" />
@@ -51,6 +53,93 @@ npx agent-badges
 
 </details>
 
+## 让 Agent 帮你看
+
+Agent Badges 带有一个给 Claude Code 和 Codex 用的技能（Skill）。直接用平常的话问，比如「看看我的徽章」「我刚解锁了什么」或 "check my badges"。Agent 会在你的电脑上运行命令行，然后告诉你新解锁了什么、总共解锁了多少、离哪几枚最近。
+
+```text
+> 看看我的徽章
+
+上次之后新解锁：Bash 狂人。
+Claude Code：已解锁 15 / 19。
+快解锁了：连接者 2 / 3 · 子代理指挥官 3 / 5 · Token 里程碑 48M / 100M。
+
+要我打开 3D 徽章墙，或者生成一张 GitHub 个人主页的成就卡片吗？
+```
+
+<sub>回复示例，用示例数据生成。</sub>
+
+### 安装
+
+**Claude Code**
+
+```text
+/plugin install agent-badges --marketplace Aryous/agent-badges
+```
+
+较旧的版本需要先添加市场：`/plugin marketplace add Aryous/agent-badges`，再运行 `/plugin install agent-badges@agent-badges`。
+
+**Codex**
+
+```bash
+codex plugin marketplace add Aryous/agent-badges
+codex plugin add agent-badges@agent-badges
+```
+
+只想装技能、不装插件的话，在 Codex 里说：
+
+```text
+$skill-installer install https://github.com/Aryous/agent-badges/tree/main/skills/badges
+```
+
+装好后新开一个 Codex 会话，它才会加载这个技能。
+
+**其他 Agent**
+
+这个技能就是一个标准的 [Agent Skills](https://agentskills.io) 目录：[`skills/badges`](skills/badges)。可以把它复制到任何支持 `SKILL.md` 的 Agent 里，也可以让 Agent 直接调用命令行、读取 [JSON 输出](#json-输出)。
+
+### 怎么运作
+
+| | Claude Code | Codex |
+| --- | --- | --- |
+| 怎么用 | 问起你的徽章，或者输入 `/agent-badges:badges` | 问起你的徽章，或者输入 `$` 选择 `agent-badges:badges`（只装了技能的话是 `$badges`） |
+| 运行什么 | `npx -y agent-badges@latest collect --json` | 同左 |
+| 权限 | 技能预先放行 `npx -y agent-badges@latest …` 这一类命令，其他命令照常先问你 | 命令在 Codex 的沙箱里运行。npx 要联网下载，命令行要写入 `~/.agent-badges`，所以 Codex 通常会请你批准这条命令 |
+
+- Agent 只汇报命令行输出的内容，不会编造徽章、日期或数字。
+- 打开徽章墙、生成成就卡片、导出网页，Agent 只会提议，不会擅自执行。
+- 技能总是运行 npm 上的最新版本，新徽章上线后不用重装任何东西。在 Claude Code 里，这个预先放行也对以后的新版本生效。
+
+### JSON 输出
+
+给脚本或者没装技能的 Agent 用：
+
+```bash
+npx agent-badges collect --json --lang zh
+```
+
+```json
+{
+  "home": "/Users/you/.agent-badges",
+  "brands": [
+    {
+      "id": "claude-code",
+      "brand": "Claude Code",
+      "unlocked": 15,
+      "total": 19,
+      "newUnlocks": [{ "id": "bash-maniac", "title": "Bash 狂人", "earnedAt": "2025-11-19" }],
+      "recent": [{ "id": "anniversary", "title": "一周年", "earnedAt": "2026-03-02" }],
+      "nearMiss": [{ "id": "tokens", "title": "Token 里程碑", "current": 48000000, "target": 100000000 }]
+    }
+  ]
+}
+```
+
+- `newUnlocks`：上次运行之后新获得的徽章，第一次运行时为空。分级徽章还带有 `tier`（`bronze`、`silver`、`gold`、`platinum`），升级时 `upgrade` 为 `true`。
+- `recent`：最近获得的三枚。
+- `nearMiss`：最接近解锁的最多三枚。
+- 没装的工具不会出现在结果里。`--brand codex` 只看一个工具，`--lang en` 输出英文名称。
+
 ## 快速开始
 
 需要 **Node.js 22.15 或更高版本**（用到了 Node 内置的 zstd 解压和 SQLite）。在 macOS 上开发，CI 在 Linux 上测试；Windows 理论上可用，但还没实际试过。
@@ -68,7 +157,9 @@ npx agent-badges card               # 生成成就卡片 SVG，放进 GitHub 个
 | `--brand claude-code\|codex` | 只看某个工具 |
 | `--port <端口>` | 本地页面端口（默认 4747，被占用时自动往后找） |
 | `--no-open` | 不自动打开浏览器 |
-| `--out`、`--theme dark\|light`、`--name`、`--lang en\|zh` | 成就卡片的选项 |
+| `--json` | 以 JSON 输出汇总（`collect`） |
+| `--lang en\|zh` | 汇总和卡片的语言（汇总默认跟随系统，卡片默认英文） |
+| `--out`、`--theme dark\|light`、`--name` | 成就卡片的选项 |
 
 | 环境变量 | 默认值 |
 | --- | --- |
@@ -98,16 +189,6 @@ npx agent-badges card --name "你的名字" --lang zh
 </p>
 
 卡片里只有数字。想更新时重新运行一次即可。
-
-## Claude Code 插件
-
-对 Claude 说「看看我的徽章」，它会运行命令行，告诉你刚解锁了什么、离哪几枚最近。
-
-```text
-/plugin install agent-badges --marketplace Aryous/agent-badges
-```
-
-较旧的 Claude Code 版本需要先添加市场：`/plugin marketplace add Aryous/agent-badges`，再 `/plugin install agent-badges@agent-badges`。技能名是 `/agent-badges:badges`，你问起徽章时 Claude 也会自动调用它。它只预先放行 `npx -y agent-badges@latest …` 这一类命令。
 
 ## 隐私
 
@@ -160,6 +241,9 @@ src/
 ├─ site/      落地页
 └─ project/   Agent Badges 标志和素材工作台
 bin/          命令行
+skills/       Agent 技能，Claude Code 和 Codex 共用
+.claude-plugin/              Claude Code 插件和市场
+plugin.json、.agents/plugins/  Codex 插件和市场
 ```
 
 ### 新增一枚徽章

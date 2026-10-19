@@ -1,0 +1,33 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "agent-badges",
+  "version": "0.1.0",
+  "description": "Check your Claude Code and Codex achievement badges: new unlocks, what's almost unlocked, and your totals. Runs the agent-badges CLI locally.",
+  "author": {
+    "name": "Aryous",
+    "url": "https://github.com/Aryous"
+  },
+  "homepage": "https://aryous.github.io/agent-badges/",
+  "repository": "https://github.com/Aryous/agent-badges",
+  "license": "MIT",
+  "keywords": ["achievements", "badges", "claude-code", "codex"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Agent Badges",
+        "shortDescription": "Check your Claude Code and Codex achievement badges",
+        "longDescription": "Ask \"check my badges\" and the agent runs the agent-badges CLI on your machine, then tells you what you just unlocked, your totals, and what you are closest to. It reads metadata only from your local Claude Code and Codex logs and uploads nothing.",
+        "developerName": "Aryous",
+        "category": "Developer Tools",
+        "capabilities": ["Read"],
+        "websiteURL": "https://aryous.github.io/agent-badges/",
+        "privacyPolicyURL": "https://github.com/Aryous/agent-badges#privacy",
+        "defaultPrompt": ["Check my agent badges. What did I just unlock, and what am I closest to?"],
+        "brandColor": "#E8B45A",
+        "composerIcon": "./assets/favicon.svg",
+        "logo": "./assets/logo.png",
+        "screenshots": ["./assets/screenshot-wall.png"]
+      }
+    }
+  }
+}

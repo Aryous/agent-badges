@@ -1,0 +1,6 @@
+interface:
+  display_name: "Agent Badges"
+  short_description: "Check your Claude Code and Codex achievement badges"
+  default_prompt: "Check my agent badges. What did I just unlock, and what am I closest to?"
+policy:
+  allow_implicit_invocation: true

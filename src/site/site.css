@@ -350,6 +350,133 @@ body.site {
   font-weight: 600;
 }
 
+/* ---------- 让 Agent 帮你看 ---------- */
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+}
+
+.site .hero-alt {
+  font-size: 15px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.site .hero-alt:hover {
+  color: var(--text);
+}
+
+#agent {
+  scroll-margin-top: 72px;
+}
+
+.agent-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.chat {
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #0f0f0e;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.chat p {
+  margin: 0;
+}
+
+.chat .chat-q {
+  margin-bottom: 14px;
+  color: var(--text);
+}
+
+.chat-a {
+  color: #bdb9b0;
+}
+
+.chat-a b {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.chat-offer {
+  color: var(--muted);
+}
+
+.installs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.install h3 {
+  margin-top: 0;
+}
+
+.install p code,
+.agent-more code {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.snippet {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 8px 10px 14px;
+  border: 1px solid rgba(240, 238, 230, 0.12);
+  border-radius: 10px;
+  background: rgba(240, 238, 230, 0.04);
+}
+
+.snippet pre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.snippet .cmd-copy {
+  flex: none;
+  margin-left: 0;
+}
+
+.agent-more {
+  margin: 18px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.agent-more a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.agent-more a:hover {
+  text-decoration: underline;
+}
+
 .site-foot {
   max-width: var(--max);
   margin: 96px auto 0;
@@ -402,6 +529,10 @@ body.site {
   .cards,
   .steps {
     grid-template-columns: 1fr;
+  }
+
+  .agent-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

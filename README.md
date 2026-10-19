@@ -15,11 +15,13 @@
   <b>English</b> · <a href="README.zh-CN.md">简体中文</a> · <a href="https://aryous.github.io/agent-badges/">Website</a> · <a href="https://aryous.github.io/agent-badges/demo/">Live demo</a>
 </p>
 
-Turn your Claude Code and Codex history into collectible 3D achievement badges, Apple Watch style. One command, entirely on your machine, nothing uploaded.
+Turn your Claude Code and Codex history into collectible 3D achievement badges, Apple Watch style. Entirely on your machine, nothing uploaded.
 
 ```bash
 npx agent-badges
 ```
+
+**Or ask your agent.** Install the [skill for Claude Code or Codex](#ask-your-agent), then say *"check my badges"*.
 
 <p align="center">
   <img src="assets/spin.gif" alt="Three badges spinning: Claude Code First Session, the Agent Badges logo, Codex First Thread" width="720" />
@@ -51,6 +53,93 @@ The two `???` in each row are hidden achievements. They reveal themselves when y
 
 </details>
 
+## Ask your agent
+
+Agent Badges comes with a skill for Claude Code and Codex. Ask in plain words, such as "check my badges", "what did I just unlock?" or "我的徽章". The agent runs the CLI on your machine and tells you what's new, your totals, and what you're closest to.
+
+```text
+> check my badges
+
+New since last time: Bash Maniac.
+Claude Code: 15 / 19 unlocked.
+Almost there: MCP Connector 2 / 3 · Subagent Commander 3 / 5 · 100M Tokens 48M / 100M.
+
+Want me to open the 3D badge wall, or make a card for your GitHub profile?
+```
+
+<sub>An example reply, made from sample data.</sub>
+
+### Install
+
+**Claude Code**
+
+```text
+/plugin install agent-badges --marketplace Aryous/agent-badges
+```
+
+On older versions, add the marketplace first with `/plugin marketplace add Aryous/agent-badges`, then run `/plugin install agent-badges@agent-badges`.
+
+**Codex**
+
+```bash
+codex plugin marketplace add Aryous/agent-badges
+codex plugin add agent-badges@agent-badges
+```
+
+To install just the skill without the plugin, ask Codex:
+
+```text
+$skill-installer install https://github.com/Aryous/agent-badges/tree/main/skills/badges
+```
+
+Start a new Codex session afterwards so it picks up the skill.
+
+**Other agents**
+
+The skill is a plain [Agent Skills](https://agentskills.io) folder, [`skills/badges`](skills/badges). Copy it into any agent that reads `SKILL.md` files, or have your agent call the CLI directly and read its [JSON output](#json-output).
+
+### How it works
+
+| | Claude Code | Codex |
+| --- | --- | --- |
+| Use it | Ask about your badges, or run `/agent-badges:badges` | Ask about your badges, or type `$` and pick `agent-badges:badges` (`$badges` if you installed only the skill) |
+| What it runs | `npx -y agent-badges@latest collect --json` | The same |
+| Permissions | The skill pre-approves `npx -y agent-badges@latest …`. Anything else asks you first. | Commands run in Codex's sandbox. npx needs the network and the CLI writes to `~/.agent-badges`, so Codex usually asks you to approve the command. |
+
+- The agent only reports what the CLI prints. It doesn't make up badges, dates or numbers.
+- Opening the badge wall, making a profile card and exporting a page are offered, never run without asking.
+- The skill always runs the latest version on npm, so new badges arrive without reinstalling anything. In Claude Code, the pre-approval applies to whichever version is latest.
+
+### JSON output
+
+For scripts, or agents without the skill:
+
+```bash
+npx agent-badges collect --json --lang en
+```
+
+```json
+{
+  "home": "/Users/you/.agent-badges",
+  "brands": [
+    {
+      "id": "claude-code",
+      "brand": "Claude Code",
+      "unlocked": 15,
+      "total": 19,
+      "newUnlocks": [{ "id": "bash-maniac", "title": "Bash Maniac", "earnedAt": "2025-11-19" }],
+      "recent": [{ "id": "anniversary", "title": "One Year", "earnedAt": "2026-03-02" }],
+      "nearMiss": [{ "id": "tokens", "title": "100M Tokens", "current": 48000000, "target": 100000000 }]
+    }
+  ]
+}
+```
+
+- `newUnlocks`: badges earned since the previous run, empty on the first run. Tiered badges also carry `tier` (`bronze`, `silver`, `gold`, `platinum`) and `upgrade: true` when they moved up a tier.
+- `recent`: the three most recently earned badges.
+- `nearMiss`: up to three badges closest to unlocking.
+- A tool that isn't installed is left out. Use `--brand codex` for one tool and `--lang zh` for Chinese titles.
+
 ## Quick start
 
 Requires **Node.js 22.15 or later** (it uses Node's built-in zstd and SQLite). Developed on macOS and tested on Linux in CI; Windows should work but hasn't been tried yet.
@@ -68,7 +157,9 @@ npx agent-badges card               # an achievement card SVG for your GitHub pr
 | `--brand claude-code\|codex` | Only one tool |
 | `--port <n>` | Local page port (default 4747; the next free one if taken) |
 | `--no-open` | Don't open the browser |
-| `--out`, `--theme dark\|light`, `--name`, `--lang en\|zh` | Card options |
+| `--json` | Print the summary as JSON (`collect`) |
+| `--lang en\|zh` | Language of the summary and the card (the summary follows your system by default, the card defaults to English) |
+| `--out`, `--theme dark\|light`, `--name` | Card options |
 
 | Environment variable | Default |
 | --- | --- |
@@ -98,16 +189,6 @@ This writes `agent-badges-card.svg`: unlock counts, totals, streaks and a grid o
 </p>
 
 The card contains numbers only. Re-run the command whenever you want to refresh it.
-
-## Claude Code plugin
-
-Ask Claude "check my badges" and it runs the CLI, then tells you what you just unlocked and what you're closest to.
-
-```text
-/plugin install agent-badges --marketplace Aryous/agent-badges
-```
-
-On older Claude Code versions, add the marketplace first: `/plugin marketplace add Aryous/agent-badges`, then `/plugin install agent-badges@agent-badges`. The skill is `/agent-badges:badges`, and Claude also uses it on its own when you ask about your badges. It only pre-approves `npx -y agent-badges@latest …` commands.
 
 ## Privacy
 
@@ -160,6 +241,9 @@ src/
 ├─ site/      landing page
 └─ project/   the Agent Badges logo and the asset studio
 bin/          the CLI
+skills/       the agent skill, shared by Claude Code and Codex
+.claude-plugin/              Claude Code plugin and marketplace
+plugin.json, .agents/plugins/  Codex plugin and marketplace
 ```
 
 ### Adding a badge

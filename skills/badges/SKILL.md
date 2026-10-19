@@ -1,6 +1,8 @@
 ---
 name: badges
-description: Check the user's Claude Code and Codex achievement badges with the agent-badges CLI — badges just unlocked, badges almost unlocked, and totals. Use when the user asks about their badges, achievements, streaks or usage milestones ("check my badges", "what did I unlock", "how close am I to 100M tokens", "我的徽章", "解锁了什么"). Can also open the 3D badge wall or make a GitHub profile card.
+description: Check the user's Claude Code and Codex achievement badges with the agent-badges CLI — badges just unlocked, badges almost unlocked, and totals. Use when the user asks about their badges, achievements, streaks or usage milestones ("check my badges", "what did I unlock", "how close am I to 100M tokens", "我的徽章", "解锁了什么"). Can also open the 3D badge wall or make a GitHub profile card. Not for designing badges or editing this project's code.
+license: MIT
+compatibility: Requires Node.js 22.15+ and network access the first time (npx downloads the agent-badges package from npm). Works in Claude Code, Codex and other agents that can run shell commands.
 allowed-tools: Bash(npx -y agent-badges@latest *)
 ---
 
@@ -16,12 +18,15 @@ Run this exactly, with `--lang zh` if the user writes in Chinese and `--lang en`
 npx -y agent-badges@latest collect --json --lang en
 ```
 
+Add `--brand claude-code` or `--brand codex` if the user only asks about one tool.
+
 - Requires Node.js 22.15 or later. If it fails with a Node version error, tell the user to upgrade Node and stop.
 - The first run reads all session logs and can take a minute on large Codex histories. Later runs are fast.
+- **Sandboxed agents (such as Codex):** the command needs network access (npx downloads the package) and writes its ledger to `~/.agent-badges`, outside the workspace. If the sandbox blocks it, request escalated permissions for this exact command and say why in one line; don't try workarounds.
 - Output is JSON: `{ home, brands: [{ id, brand, unlocked, total, newUnlocks, recent, nearMiss }] }`. A tool that isn't installed is simply absent.
   - `newUnlocks`: earned since the last run, `[{ id, title, earnedAt, tier?, upgrade? }]`. `upgrade: true` means a tiered badge moved up (for example bronze → silver). It is empty on the very first run.
-  - `recent`: the three most recently earned badges.
-  - `nearMiss`: up to three badges closest to unlocking, `[{ title, current, target }]`.
+  - `recent`: the three most recently earned badges, `[{ id, title, earnedAt }]`.
+  - `nearMiss`: up to three badges closest to unlocking, `[{ id, title, current, target }]`.
 
 ## Report
 
