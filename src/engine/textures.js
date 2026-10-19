@@ -48,6 +48,7 @@ export function brushedTexture(size = 1024) {
   const tex = new CanvasTexture(canvas);
   tex.colorSpace = NoColorSpace;
   tex.anisotropy = 8;
+  tex.userData.shared = true; // 多枚徽章共用，释放单枚徽章时不能一起释放
   cache.set(key, tex);
   return tex;
 }
@@ -78,6 +79,7 @@ export function radialAnisotropyTexture(size = 256) {
   tex.minFilter = LinearMipmapLinearFilter;
   tex.generateMipmaps = true;
   tex.needsUpdate = true;
+  tex.userData.shared = true; // 多枚徽章共用，释放单枚徽章时不能一起释放
   cache.set(key, tex);
   return tex;
 }
@@ -127,6 +129,7 @@ export function patternTexture(name, size = 1024) {
   const tex = new CanvasTexture(canvas);
   tex.colorSpace = NoColorSpace;
   tex.anisotropy = 8;
+  tex.userData.shared = true; // 多枚徽章共用，释放单枚徽章时不能一起释放
   cache.set(key, tex);
   return tex;
 }
@@ -161,6 +164,7 @@ export function holoTexture(size = 512) {
   tex.minFilter = LinearMipmapLinearFilter;
   tex.generateMipmaps = true;
   tex.needsUpdate = true;
+  tex.userData.shared = true; // 多枚徽章共用，释放单枚徽章时不能一起释放
   cache.set(key, tex);
   return tex;
 }

@@ -86,6 +86,9 @@ function heroItem(entry) {
 function startHero() {
   const canvas = $('#hero-stage');
   const stage = createStage(canvas);
+  // 首屏只有一枚徽章，一直在转，用不上静止超采样；直接按 2 倍像素渲染，普通屏幕上边缘也细腻
+  stage.renderer.setPixelRatio(2);
+  stage.resize();
   const caption = $('[data-hero-caption]');
   const holder = new Group();
   const pivot = new Group();

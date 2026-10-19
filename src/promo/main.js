@@ -4,7 +4,7 @@
 import './promo.css';
 import { Group } from 'three';
 import { BRANDS } from '../brands/index.js';
-import { buildBadge } from '../engine/badge.js';
+import { buildBadge, setEngravingSize } from '../engine/badge.js';
 import { badgeTitle, tierName } from '../brands/shared/text.js';
 import { createStage } from '../viewer/scene.js';
 import { renderBadgePNG } from '../viewer/export.js';
@@ -82,6 +82,8 @@ for (const el of document.querySelectorAll('.tier-chip, .tier-steps, .term, .pro
 
 // ---------- 3D 舞台 ----------
 const stage = createStage($('#stage'));
+// 视频每一帧按 2 倍像素渲染，截图时由浏览器缩小，相当于 2×2 超采样
+stage.renderer.setPixelRatio(2);
 stage.resize();
 
 const METAL_COLORS = { bronze: '#c0825a', silver: '#c9ced6', gold: '#d9b061', platinum: '#e4e7ec' };
@@ -95,8 +97,9 @@ function showcase(config, tier = null) {
   return { unlocked: true, earnedAt: '2026-05-02', tier: t, value, progress: { current: value, target: value } };
 }
 
-function holderFor(config, brand, state) {
+function holderFor(config, brand, state, { sharpBack = false } = {}) {
   const badge = buildBadge(config, brand, state, { lang: LANG });
+  if (sharpBack) setEngravingSize(badge, 2048); // 旋转和翻面时会看到背面
   stage.applyEnvironment(badge);
   const pivot = new Group();
   const holder = new Group();
@@ -156,8 +159,8 @@ async function prepare() {
   shelf.src = (await renderShelf(await shelfGroups({ forceMock: true }), { lang: LANG })).toDataURL('image/png');
   await shelf.decode();
 
-  const logo = holderFor(logoBadge, logoBrand, LOGO_STATE);
-  const tiers = tokens.tiers.map((_, i) => holderFor(tokens, claude.brand, showcase(tokens, i)));
+  const logo = holderFor(logoBadge, logoBrand, LOGO_STATE, { sharpBack: true });
+  const tiers = tokens.tiers.map((_, i) => holderFor(tokens, claude.brand, showcase(tokens, i), { sharpBack: true }));
   for (const it of [logo, ...tiers]) {
     it.holder.visible = false;
     stage.scene.add(it.holder);
