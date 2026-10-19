@@ -5,3 +5,4 @@ screenshots/
 *.local
 src/data/generated/
 dist-site/
+promo-out/

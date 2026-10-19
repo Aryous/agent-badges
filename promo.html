@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Agent Badges promo</title>
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
+    <!-- 开发用：宣传动画。scripts/promo.mjs 逐帧调用 window.__promo.seek(t) 截图，再用 ffmpeg 合成视频。不进入发布包。 -->
+    <div class="frame" id="frame">
+      <div class="glow" id="glow"></div>
+      <canvas id="stage"></canvas>
+
+      <!-- 1. 开场 -->
+      <section class="scene" id="s-hero">
+        <p class="kicker">Agent Badges</p>
+        <h1 class="headline" data-t="hero.title"></h1>
+      </section>
+
+      <!-- 2. 徽章墙 -->
+      <section class="scene" id="s-wall">
+        <header class="caption">
+          <h2 data-t="wall.title"></h2>
+          <p data-t="wall.sub"></p>
+        </header>
+        <div class="wall" id="wall"></div>
+      </section>
+
+      <!-- 3. 分级升级 -->
+      <section class="scene" id="s-tier">
+        <header class="caption">
+          <h2 data-t="tier.title"></h2>
+          <p data-t="tier.sub"></p>
+        </header>
+        <div class="tier-chip" id="tier-chip"><span class="tier-metal"></span><span class="tier-label"></span></div>
+        <div class="tier-steps" id="tier-steps"></div>
+      </section>
+
+      <!-- 4. 跟 Agent 说一句 -->
+      <section class="scene" id="s-agent">
+        <header class="caption">
+          <h2 data-t="agent.title"></h2>
+          <p data-t="agent.sub"></p>
+        </header>
+        <div class="term" id="term">
+          <div class="term-bar"><i></i><i></i><i></i><span>Claude Code · Codex</span></div>
+          <div class="term-body">
+            <p class="term-prompt"><span class="term-caret">›</span> <span id="term-typed"></span><span class="term-cursor" id="term-cursor"></span></p>
+            <ul class="term-lines" id="term-lines"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. 主页效果 -->
+      <section class="scene" id="s-profile">
+        <header class="caption">
+          <h2 data-t="profile.title"></h2>
+          <p data-t="profile.sub"></p>
+        </header>
+        <div class="profile" id="profile">
+          <aside class="profile-side">
+            <div class="avatar"></div>
+            <p class="profile-name">you</p>
+            <p class="profile-handle">github.com/you</p>
+          </aside>
+          <div class="profile-readme">
+            <p class="readme-path">you / README.md</p>
+            <img id="shelf-img" alt="" />
+          </div>
+          <div class="cursor" id="cursor"></div>
+        </div>
+      </section>
+
+      <!-- 6. 结尾 -->
+      <section class="scene" id="s-end">
+        <h2 class="end-title">Agent Badges</h2>
+        <p class="end-cmd"><span>$</span> npx agent-badges</p>
+        <p class="end-tag" data-t="end.tag"></p>
+        <p class="end-url">github.com/Aryous/agent-badges</p>
+      </section>
+    </div>
+    <script type="module" src="/src/promo/main.js"></script>
+  </body>
+</html>
