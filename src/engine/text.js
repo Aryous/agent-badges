@@ -82,7 +82,7 @@ export function arcTextGeometry({ text, radius, size, tracking, arc = 'top', hei
       bevelSize: (b * 0.7) / em,
       bevelOffset: (-b * 0.7) / em,
       bevelSegments: 2,
-      curveSegments: 6,
+      curveSegments: 9,
     });
     geo.translate(-g.advance / 2, 0, b / em);
     geo.scale(em, em, em);
@@ -111,7 +111,7 @@ function glyphGeometry(ch, em, height, bevel) {
     bevelSize: (b * 0.7) / em,
     bevelOffset: (-b * 0.7) / em,
     bevelSegments: 2,
-    curveSegments: 8,
+    curveSegments: 12,
   });
   geo.translate(0, 0, b / em);
   geo.scale(em, em, em);

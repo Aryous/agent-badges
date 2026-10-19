@@ -55,7 +55,7 @@ function pixels({ rows, cell, center = [0, 0] }) {
  * scale 为图案半宽（徽章单位），center 为图案中心。
  */
 function path({ d, scale = 0.5, viewBox = 24, center = [0, 0], holesOnly = false }) {
-  const shapes = svgShapes(d, { viewBox, scale, center, steps: 10 });
+  const shapes = svgShapes(d, { viewBox, scale, center, steps: 14 });
   // holesOnly：把镂空部分本身做成实心，用来往洞里垫一层嵌片
   return holesOnly ? shapes.flatMap((s) => s.holes.map((h) => new Shape(h.getPoints()))) : shapes;
 }
@@ -107,7 +107,7 @@ export function reliefGeometry(item) {
     bevelSize: bevel * 0.8,
     bevelOffset: -bevel * 0.8,
     bevelSegments: 4,
-    curveSegments: 24,
+    curveSegments: 30,
     UVGenerator: BadgeUV,
   });
   // 平滑倒角上的逐面法线，顶面保持纯平

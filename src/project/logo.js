@@ -51,7 +51,7 @@ export const logoBadge = {
     { kind: 'ring', radius: 0.8, width: 0.012, material: 'polished-metal', color: 'gold', height: 0.014 },
     ...textRing({ top: 'AGENT BADGES', bottom: 'ACHIEVEMENTS', radius: 0.68, size: 0.095, metal: 'polished-metal', color: 'gold' }),
     ...medallion({ radius: 0.54, color: 'ivory', metal: 'polished-metal', metalColor: 'gold' }),
-    { kind: 'path', d: SPARKLE, viewBox: 24, scale: 0.42, center: [0, 0], z: MEDALLION_H, material: 'enamel', color: 'primary', gradient: SPARKLE_GRADIENT, height: 0.075, bevel: 0.014 },
+    { kind: 'path', d: SPARKLE, viewBox: 24, scale: 0.42, center: [0, 0], z: MEDALLION_H, material: 'enamel', color: 'primary', gradient: SPARKLE_GRADIENT, height: 0.075, bevel: 0.007 },
   ],
   back: { material: 'brushed-metal', color: 'gold' },
 };
