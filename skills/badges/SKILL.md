@@ -3,7 +3,7 @@ name: badges
 description: Check the user's Claude Code and Codex achievement badges with the agent-badges CLI — badges just unlocked, badges almost unlocked, and totals. Use when the user asks about their badges, achievements, streaks or usage milestones ("check my badges", "what did I unlock", "how close am I to 100M tokens", "我的徽章", "解锁了什么"). Can also open the 3D badge wall, or put the user's badges on their GitHub profile with a public badge wall ("update my GitHub profile badges", "更新主页徽章"). Not for designing badges or editing this project's code.
 license: MIT
 compatibility: Requires Node.js 22.15+ and network access the first time (npx downloads the agent-badges package from npm). Works in Claude Code, Codex and other agents that can run shell commands.
-allowed-tools: Bash(npx -y agent-badges@latest *)
+allowed-tools: Bash(npx -y agent-badges@latest collect *) Bash(npx -y agent-badges@latest publish)
 ---
 
 # Agent Badges
@@ -47,26 +47,31 @@ Then offer one of these, without running them unasked:
 
 ## GitHub profile
 
-When the user wants their badges on their GitHub profile:
+When the user wants their badges on their GitHub profile ("put my badges on my GitHub profile", "update my profile badges"), use `publish`. It does everything: finds or creates their `<user>/<user>` repository, renders the badge image, writes a public 3D badge wall, updates only its own block in the README, commits, pushes, turns on GitHub Pages and waits until the page is live. Don't edit the README, commit or push by hand.
 
-1. Ask where their profile repository is checked out (the repo named after their username, `<user>/<user>`) unless they already said. Don't guess or search their disk.
-2. Ask which they want, unless it's already clear:
-   - **Image + public badge wall (default):** the README image links to their 3D badge wall on GitHub Pages.
-   - **Image only:** just the PNG, nothing else made public.
-3. Run one of these, adding `--lang zh` only if they want Chinese labels on the image:
+1. Check first. This only reads; it changes nothing:
 
    ```bash
-   npx -y agent-badges@latest profile <profile-repo>
-   npx -y agent-badges@latest shelf --out <profile-repo>/agent-badges-shelf.png
+   npx -y agent-badges@latest publish
    ```
 
-   Both open a tab in the user's browser, render their unlocked badges with WebGL and save a transparent PNG (up to two minutes). Tell the user a browser tab will open. `profile` also writes `<profile-repo>/index.html`, the public badge wall. In a sandbox they need to listen on 127.0.0.1 and write outside the workspace; request escalation for this exact command.
-   With no desktop browser (a remote machine), offer the numbers-only card instead: `npx -y agent-badges@latest card --out <profile-repo>/agent-badges-card.svg`.
-4. **Before the badge wall goes public for the first time,** tell the user in one or two lines what it publishes: daily token counts and turns (the heatmap), badge progress and unlock dates. Old versions stay in git history after they push. Locked hidden badges and anything beyond what the page shows are left out.
-5. Tell the user the README line the CLI printed: for `profile`, the image wrapped in a link to their GitHub Pages URL; for `shelf`, the image alone.
-6. **Ask before committing or pushing** the profile repository, and before turning on GitHub Pages (the CLI prints a `gh api` command for it). Never do any of these unasked.
+   It prints a plan: account, repository (new or existing), what happens to the README, the page URL, and what becomes public. Relay the plan to the user in a few lines, including what becomes public: unlocked badges and tiers, badge progress and unlock dates, and daily token counts and turns (the heatmap). Old versions stay in git history. Prompts, code, paths, hours of the day and model or tool names are never published.
+2. Only if the user agrees, run it for real. Mention that a browser tab will open to render the badges:
 
-To refresh later, run the same command again, then commit and push.
+   ```bash
+   npx -y agent-badges@latest publish --yes
+   ```
+
+   Add `--lang zh` only if they want Chinese labels on the image. It takes a minute or two, most of it waiting for GitHub Pages.
+3. Give the user both links it prints: their profile, and the badge wall the image opens.
+
+If it stops:
+
+- **gh missing or not signed in:** tell the user to install the GitHub CLI (https://cli.github.com) and run `gh auth login` themselves (in Claude Code they can type `! gh auth login`). Don't try to work around it.
+- **Private repository, GitHub Pages publishing from elsewhere, or an existing `index.html`:** explain the message. Don't change their settings. Offer the image only instead (below).
+- **Sandbox (Codex):** it needs the network, `gh`, git and a browser tab on 127.0.0.1. Request escalation for this exact command.
+
+Image only, no public page: `npx -y agent-badges@latest shelf --out <path>/agent-badges-shelf.png`. With no desktop browser (a remote machine), offer the numbers-only card: `npx -y agent-badges@latest card --out <path>/agent-badges-card.svg`. Ask the user where to save, and ask before committing or pushing anything.
 
 ## Privacy questions
 

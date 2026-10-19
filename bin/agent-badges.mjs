@@ -29,7 +29,8 @@ const HELP = t(
   npx agent-badges export <目录>   导出可离线打开的静态网页
   npx agent-badges card            生成成就卡片 SVG（可放进 GitHub 个人主页）
   npx agent-badges shelf           在浏览器里渲染已解锁徽章，保存为 PNG（可放进 GitHub 个人主页）
-  npx agent-badges profile <目录>  往 GitHub 主页仓库写入徽章图和公开版徽章墙（GitHub Pages）
+  npx agent-badges publish         一条命令部署到 GitHub 主页：徽章图 + 公开版徽章墙（需要 gh）
+  npx agent-badges profile <目录>  只往主页仓库目录写入徽章图和公开版徽章墙，不提交
 
 选项
   --brand <claude-code|codex>      只采集 / 只看某个工具
@@ -39,6 +40,7 @@ const HELP = t(
   --out <文件>                     保存位置（默认 agent-badges-card.svg / agent-badges-shelf.png）
   --theme <dark|light>             卡片配色（默认 dark）
   --name <名字>                    卡片和公开版徽章墙上的名字
+  --yes                            publish：确认执行（不带时只检查并列出计划）
   --lang <en|zh>                   输出语言（卡片和陈列图默认 en，汇总默认跟随系统）
   -v, --version / -h, --help
 
@@ -51,7 +53,8 @@ Usage
   npx agent-badges export <dir>    export a static page you can open offline
   npx agent-badges card            write an achievement card SVG for your GitHub profile
   npx agent-badges shelf           render your unlocked badges in the browser and save a PNG for your profile
-  npx agent-badges profile <dir>   write the badge image and a public badge wall (GitHub Pages) into your profile repo
+  npx agent-badges publish         put your badges on your GitHub profile, with a public badge wall (needs gh)
+  npx agent-badges profile <dir>   only write the badge image and public badge wall into a profile repo folder
 
 Options
   --brand <claude-code|codex>      only one tool
@@ -61,6 +64,7 @@ Options
   --out <file>                     where to save it (default agent-badges-card.svg / agent-badges-shelf.png)
   --theme <dark|light>             card colors (default dark)
   --name <name>                    name shown on the card and the public badge wall
+  --yes                            publish: go ahead (without it, publish only checks and shows the plan)
   --lang <en|zh>                   output language (card and shelf default to en, summary to your system)
   -v, --version / -h, --help
 
@@ -69,7 +73,7 @@ Everything stays on this machine: data is read locally and stored in ~/.agent-ba
 );
 
 export function parseArgs(argv) {
-  const opts = { command: 'open', dir: null, brand: null, port: 4747, open: true, json: false, out: null, theme: 'dark', name: '', cardLang: 'en', outLang: null };
+  const opts = { command: 'open', dir: null, brand: null, port: 4747, open: true, json: false, out: null, theme: 'dark', name: '', cardLang: 'en', outLang: null, yes: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '-h' || a === '--help') opts.command = 'help';
@@ -78,11 +82,12 @@ export function parseArgs(argv) {
     else if (a === '--port') opts.port = Number(argv[++i]);
     else if (a === '--no-open') opts.open = false;
     else if (a === '--json') opts.json = true;
+    else if (a === '--yes' || a === '-y') opts.yes = true;
     else if (a === '--out') opts.out = argv[++i];
     else if (a === '--theme') opts.theme = argv[++i];
     else if (a === '--name') opts.name = argv[++i] ?? '';
     else if (a === '--lang') opts.cardLang = opts.outLang = argv[++i];
-    else if (a === 'collect' || a === 'export' || a === 'open' || a === 'card' || a === 'shelf' || a === 'profile') opts.command = a;
+    else if (a === 'collect' || a === 'export' || a === 'open' || a === 'card' || a === 'shelf' || a === 'profile' || a === 'publish') opts.command = a;
     else if ((opts.command === 'export' || opts.command === 'profile') && !opts.dir) opts.dir = a;
     else throw new Error(t(`不认识的参数：${a}`, `Unknown argument: ${a}`));
   }
@@ -226,6 +231,86 @@ async function writeShelf(data, opts, { snippet = true } = {}) {
 
 const PROJECT_SITE = 'https://aryous.github.io/agent-badges/';
 
+/** 公开版徽章墙的 HTML：只放页面上看得到的数据。 */
+async function publicPage(data, name) {
+  const { publicData } = await import('../src/collect/public.js');
+  const { injectData } = await import('../src/collect/inject.js');
+  return injectData(appTemplate(), publicData(data), { name, home: PROJECT_SITE });
+}
+
+const PUBLISH_STOPS = {
+  'no-gh': () => t('需要 GitHub 命令行工具 gh：https://cli.github.com 。装好后运行 gh auth login 登录，再重试。', 'This needs the GitHub CLI (gh): https://cli.github.com. Install it, run gh auth login, then try again.'),
+  'not-logged-in': () => t('gh 还没有登录。请运行 gh auth login，在浏览器里完成登录后再重试。', "gh isn't signed in. Run gh auth login, finish signing in in your browser, then try again."),
+  'private-repo': (d) => t(`${d} 是私有仓库。GitHub 只会在主页显示公开仓库的 README，请把它改成公开，或者换一种方式。`, `${d} is private. GitHub only shows the README of a public profile repository.`),
+  'pages-source': (d) => t(`这个仓库的 GitHub Pages 已经设置成从其他位置发布（${d}）。为了不打乱你的设置，这里不做改动。`, `GitHub Pages on this repository already publishes from somewhere else (${d}). Leaving your settings alone.`),
+  'foreign-index': (d) => t(`${d} 已经存在，而且不是 agent-badges 生成的。为了不覆盖你的网页，这里不做改动。可以改用 npx agent-badges shelf 只生成徽章图。`, `${d} already exists and wasn't made by agent-badges, so it won't be overwritten. Use npx agent-badges shelf for the image only.`),
+  'pages-error': () => t('GitHub Pages 构建失败，请到仓库的 Actions / Pages 页面查看原因。', 'The GitHub Pages build failed. Check the Pages section of the repository.'),
+};
+
+/**
+ * 一条命令部署到 GitHub 主页。不带 --yes 时只检查并列出计划（只读）；
+ * 在终端里会问一次，Agent 调用时打印计划后退出，等用户同意再带 --yes 运行。
+ */
+async function writePublish(data, opts) {
+  const { createGitHub, preparePublish, executePublish, PublishStop } = await import('../src/collect/publish.js');
+  const { dataHome } = await import('../src/collect/common.js');
+  const gh = createGitHub();
+  try {
+    const plan = await preparePublish({ gh, home: dataHome() });
+    const readme = {
+      create: t('新建 README，只放徽章', 'create the README with your badges'),
+      append: t('在 README 最后加上徽章（其他内容不动）', 'add your badges at the end of the README (nothing else changes)'),
+      update: t('更新 README 里的徽章（其他内容不动）', 'update your badges in the README (nothing else changes)'),
+    }[plan.readme];
+    console.log(t('\n部署计划', '\nPlan'));
+    console.log(t(`  账号        ${plan.login}`, `  Account     ${plan.login}`));
+    console.log(t(`  仓库        ${plan.login}/${plan.login}${plan.createRepo ? '（新建，公开）' : ''}`, `  Repository  ${plan.login}/${plan.login}${plan.createRepo ? ' (new, public)' : ''}`));
+    console.log(t(`  README      ${readme}`, `  README      ${readme}`));
+    console.log(t(`  网页        ${plan.url}${plan.enablePages ? '（开启 GitHub Pages）' : ''}`, `  Page        ${plan.url}${plan.enablePages ? ' (turns on GitHub Pages)' : ''}`));
+    console.log(
+      t(
+        '  会公开      已解锁的徽章和等级、徽章进度和解锁日期、每天的 Token 用量和对话轮数（热力图）。旧版本会留在 git 历史里。\n              不公开：对话内容、代码、路径、一天中几点在用、模型和工具的名字。',
+        '  Public      unlocked badges and tiers, badge progress and unlock dates, daily token counts and turns (the heatmap). Old versions stay in git history.\n              Not public: prompts, code, paths, what hours you work, model and tool names.',
+      ),
+    );
+
+    if (!opts.yes) {
+      if (!process.stdin.isTTY) {
+        console.log(t('\n这只是检查，什么都没改。确认后加上 --yes 再运行一次。', '\nNothing has changed yet. Run again with --yes to go ahead.'));
+        return;
+      }
+      const { createInterface } = await import('node:readline/promises');
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      const answer = (await rl.question(t('\n继续吗？[y/N] ', '\nGo ahead? [y/N] '))).trim().toLowerCase();
+      rl.close();
+      if (answer !== 'y' && answer !== 'yes') return console.log(t('已取消，什么都没改。', 'Cancelled. Nothing changed.'));
+    }
+
+    const steps = {
+      'create-repo': t('新建仓库…', 'Creating the repository…'),
+      push: t('推送到 GitHub…', 'Pushing to GitHub…'),
+      unchanged: t('徽章没有变化，不需要提交。', 'Nothing changed since last time, so there is nothing to commit.'),
+      'enable-pages': t('开启 GitHub Pages…', 'Turning on GitHub Pages…'),
+      wait: t('等 GitHub Pages 构建（通常一两分钟）…', 'Waiting for GitHub Pages to build (usually a minute or two)…'),
+    };
+    const { live } = await executePublish(plan, {
+      gh,
+      pageHtml: await publicPage(data, opts.name || plan.login),
+      renderShelf: (file) => writeShelf(data, { ...opts, out: file }, { snippet: false }),
+      log: (step) => console.log(steps[step] ?? step),
+    });
+    console.log(t(`\n完成。你的主页：${plan.profileUrl}`, `\nDone. Your profile: ${plan.profileUrl}`));
+    console.log(
+      live
+        ? t(`点徽章图会打开：${plan.url}`, `Clicking the badges opens: ${plan.url}`)
+        : t(`徽章墙还在构建，过一两分钟再打开：${plan.url}`, `The badge wall is still building. Open it in a minute or two: ${plan.url}`),
+    );
+  } catch (e) {
+    if (e instanceof PublishStop) throw new Error(PUBLISH_STOPS[e.code]?.(e.detail) ?? e.message);
+    throw e;
+  }
+}
+
 /**
  * 个人主页：往主页仓库写两样东西，一起提交、一起推送。
  *   index.html               公开版徽章墙（开启 GitHub Pages 后可访问）
@@ -233,15 +318,12 @@ const PROJECT_SITE = 'https://aryous.github.io/agent-badges/';
  * 不改 README，不提交，不推送。
  */
 async function writeProfile(data, opts) {
-  const { publicData, pagesForDir } = await import('../src/collect/public.js');
-  const { injectData } = await import('../src/collect/inject.js');
+  const { pagesForDir } = await import('../src/collect/public.js');
   const dir = resolve(opts.dir);
   if (!existsSync(dir)) throw new Error(t(`目录不存在：${dir}`, `No such directory: ${dir}`));
   const pages = pagesForDir(dir);
-  const name = opts.name || pages?.owner || '';
-
   const page = join(dir, 'index.html');
-  writeFileSync(page, injectData(appTemplate(), publicData(data), { name, home: PROJECT_SITE }));
+  writeFileSync(page, await publicPage(data, opts.name || pages?.owner || ''));
   console.log(t(`\n公开版徽章墙：${page}`, `\nPublic badge wall: ${page}`));
   await writeShelf(data, { ...opts, out: join(dir, 'agent-badges-shelf.png') }, { snippet: false });
 
@@ -306,6 +388,7 @@ async function main() {
   if (opts.command === 'card') return writeCard(data, opts);
   if (opts.command === 'shelf') return writeShelf(data, opts);
   if (opts.command === 'profile') return writeProfile(data, opts);
+  if (opts.command === 'publish') return writePublish(data, opts);
 
   const html = await appHtml(data);
   if (opts.command === 'export') {

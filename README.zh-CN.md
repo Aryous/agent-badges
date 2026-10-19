@@ -104,11 +104,11 @@ $skill-installer install https://github.com/Aryous/agent-badges/tree/main/skills
 | --- | --- | --- |
 | 怎么用 | 问起你的徽章，或者输入 `/agent-badges:badges` | 问起你的徽章，或者输入 `$` 选择 `agent-badges:badges`（只装了技能的话是 `$badges`） |
 | 运行什么 | `npx -y agent-badges@latest collect --json` | 同左 |
-| 权限 | 技能预先放行 `npx -y agent-badges@latest …` 这一类命令，其他命令照常先问你 | 命令在 Codex 的沙箱里运行。npx 要联网下载，命令行要写入 `~/.agent-badges`，所以 Codex 通常会请你批准这条命令 |
+| 权限 | 技能只预先放行只读的命令（`collect`，以及不带 `--yes` 的 `publish`）。发布到主页这类会改动东西的命令照常先问你 | 命令在 Codex 的沙箱里运行。npx 要联网下载，命令行要写入 `~/.agent-badges`，所以 Codex 通常会请你批准这条命令 |
 
 - Agent 只汇报命令行输出的内容，不会编造徽章、日期或数字。
 - 打开徽章墙、生成主页图片、导出网页，Agent 只会提议，不会擅自执行。提交或推送你的主页仓库之前也会先问你。
-- 技能总是运行 npm 上的最新版本，新徽章上线后不用重装任何东西。在 Claude Code 里，这个预先放行也对以后的新版本生效。
+- 技能总是运行 npm 上的最新版本，新徽章上线后不用重装任何东西。
 
 ### JSON 输出
 
@@ -149,7 +149,7 @@ npx agent-badges                    # 采集本机数据，打开徽章墙
 npx agent-badges collect            # 只采集，在终端打印汇总
 npx agent-badges collect --json     # 同样的汇总，JSON 格式
 npx agent-badges export ./my-wall   # 导出可离线打开的静态网页（含你的统计数字）
-npx agent-badges profile ./me       # 往 GitHub 主页仓库写入徽章图和公开版徽章墙
+npx agent-badges publish            # 把徽章放到 GitHub 个人主页（会先问你）
 npx agent-badges shelf              # 把已解锁的徽章保存成 PNG，放进 GitHub 个人主页
 npx agent-badges card               # 生成成就卡片 SVG，放进 GitHub 个人主页
 ```
@@ -162,7 +162,8 @@ npx agent-badges card               # 生成成就卡片 SVG，放进 GitHub 个
 | `--json` | 以 JSON 输出汇总（`collect`） |
 | `--lang en\|zh` | 汇总、陈列图和卡片的语言（汇总默认跟随系统，陈列图和卡片默认英文） |
 | `--out <文件>` | `shelf` 或 `card` 的保存位置 |
-| `--name <名字>` | 卡片和公开版徽章墙上的名字（`profile` 默认用仓库所有者） |
+| `--yes` | `publish`：不再询问，直接执行（看过计划之后再用） |
+| `--name <名字>` | 卡片和公开版徽章墙上的名字（默认用你的 GitHub 用户名） |
 | `--theme dark\|light` | 卡片配色 |
 
 | 环境变量 | 默认值 |
@@ -175,26 +176,30 @@ npx agent-badges card               # 生成成就卡片 SVG，放进 GitHub 个
 
 ## 放到 GitHub 个人主页
 
-个人主页的 README 在和你用户名同名的仓库里（`<用户名>/<用户名>`）。下面的命令都只往这个目录里写文件，不会替你提交或推送。图片是静态的，想更新时重新运行命令即可。也可以直接让 Agent「更新我 GitHub 主页的徽章」。
-
-### 徽章图 + 公开版徽章墙
+跟 Agent 说「把我的徽章放到 GitHub 主页」，或者运行：
 
 ```bash
-npx agent-badges profile 路径/<用户名> --lang zh
+npx agent-badges publish --lang zh
 ```
 
-会往主页仓库写两个文件：
+主页上会出现一张徽章图，点它打开你在 GitHub Pages 上的 3D 徽章墙。实际效果：[github.com/Aryous](https://github.com/Aryous) → [aryous.github.io/Aryous](https://aryous.github.io/Aryous/)。
 
-- `agent-badges-shelf.png`：下面介绍的徽章陈列图。
-- `index.html`：给访客看的 3D 徽章墙。在仓库里开启 GitHub Pages（Settings → Pages → Deploy from a branch → `main` / 根目录）后，网址是 `https://<用户名>.github.io/<用户名>/`。
+它会先检查一遍、列出计划，问过你再动手。你同意后它会：
 
-命令会打印 README 里要写的一行，点图片就会打开这个网页：
+1. 如果你还没有主页仓库（`<用户名>/<用户名>`），新建一个公开仓库；
+2. 在浏览器标签页里渲染你已解锁的徽章；
+3. 写入公开版徽章墙和徽章图，并把图片加进 README 里 `<!-- agent-badges:start -->` 和 `<!-- agent-badges:end -->` 之间。已经有主页 README 的话，徽章加在最后，其他内容一个字不动；
+4. 提交、推送、开启 GitHub Pages，等网页能打开。
 
-```html
-<a href="https://<用户名>.github.io/<用户名>/"><img src="./agent-badges-shelf.png" alt="Agent Badges" width="720"></a>
-```
+想更新徽章时再运行一次就行。它在 `~/.agent-badges/profile/` 里自己管理一份仓库副本，你不需要克隆任何东西。
 
-这个网页是公开的，内嵌的数据也一样公开：每天的 Token 用量和对话轮数（热力图）、徽章进度和解锁日期。网页里只放页面上看得到的东西：未解锁的隐藏徽章不放，更新时间只到日期，详细账本（一天中几点在用、工具调用、模型哈希）不会离开你的电脑。旧版本会留在仓库的 git 历史里。实际效果：[aryous.github.io/Aryous](https://aryous.github.io/Aryous/)。
+**需要** [GitHub 命令行工具 gh](https://cli.github.com)，并用 `gh auth login` 登录。它只在自己的 git 命令里临时使用 gh 的凭证，不改你的 git 设置。
+
+**会公开什么：** 已解锁的徽章和等级、徽章进度和解锁日期、每天的 Token 用量和对话轮数（热力图）。网页里只放页面上看得到的东西：未解锁的隐藏徽章不放，更新时间只到日期，详细账本（一天中几点在用、工具调用、模型名字）不会离开你的电脑。旧版本会留在仓库的 git 历史里。
+
+如果主页仓库是私有的、GitHub Pages 已经设置成从别处发布，或者根目录已有不是它生成的 `index.html`，它会停下来告诉你，不做改动。
+
+想自己管理仓库的话，`npx agent-badges profile 路径/<用户名>` 只往那个目录写入徽章图和网页，并打印 README 里要写的一行，不会替你提交。
 
 ### 只要徽章图
 
@@ -244,7 +249,7 @@ npx agent-badges card --name "你的名字" --lang zh
 - **保存了什么。** `~/.agent-badges` 里是按天汇总的账本，只有数字、日期和哈希。工具清理旧记录之后，已经拿到的徽章也不会消失。
 - **有测试。** 测试会在伪造的 `~/.claude` 和 `~/.codex` 里塞入假密钥、对话、路径和会话标题，真跑一遍采集和导出，确认它们不会出现在任何输出里。
 
-在线演示和 npm 包里都没有任何个人数据。只有 `export`、`card`、`shelf` 和 `profile` 会写出和你使用情况有关的文件，而且只写到你指定的位置。`profile` 生成的网页就是用来公开的，[里面有什么](#徽章图--公开版徽章墙)写在上面。
+在线演示和 npm 包里都没有任何个人数据。只有 `export`、`card`、`shelf` 和 `profile` 会写出和你使用情况有关的文件，而且只写到你指定的位置。`publish` 和 `profile` 生成的网页就是用来公开的，[里面有什么](#放到-github-个人主页)写在上面。
 
 ## 统计口径
 

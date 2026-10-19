@@ -57,7 +57,8 @@ describe('Skill', () => {
   });
 
   it('正文里的每条命令都在预先批准的范围内', () => {
-    expect(meta['allowed-tools']).toBe('Bash(npx -y agent-badges@latest *)');
+    // 只预先放行只读的命令；publish --yes 这类会改外部状态的命令照常弹出权限确认
+    expect(meta['allowed-tools']).toBe('Bash(npx -y agent-badges@latest collect *) Bash(npx -y agent-badges@latest publish)');
     // 只看代码（`行内` 和 ``` 代码块）里的命令，不看说明文字
     const code = [...body.matchAll(/```bash\n([\s\S]*?)```|`([^`\n]+)`/g)].map((m) => m[1] ?? m[2]).join('\n');
     const commands = code.match(/npx [^\n]*/g);

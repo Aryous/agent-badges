@@ -104,11 +104,11 @@ The skill is a plain [Agent Skills](https://agentskills.io) folder, [`skills/bad
 | --- | --- | --- |
 | Use it | Ask about your badges, or run `/agent-badges:badges` | Ask about your badges, or type `$` and pick `agent-badges:badges` (`$badges` if you installed only the skill) |
 | What it runs | `npx -y agent-badges@latest collect --json` | The same |
-| Permissions | The skill pre-approves `npx -y agent-badges@latest …`. Anything else asks you first. | Commands run in Codex's sandbox. npx needs the network and the CLI writes to `~/.agent-badges`, so Codex usually asks you to approve the command. |
+| Permissions | The skill pre-approves only read-only commands (`collect`, and `publish` without `--yes`). Anything that changes something, like publishing to your profile, asks you first. | Commands run in Codex's sandbox. npx needs the network and the CLI writes to `~/.agent-badges`, so Codex usually asks you to approve the command. |
 
 - The agent only reports what the CLI prints. It doesn't make up badges, dates or numbers.
 - Opening the badge wall, making a profile image and exporting a page are offered, never run without asking. The agent asks before committing or pushing your profile repository.
-- The skill always runs the latest version on npm, so new badges arrive without reinstalling anything. In Claude Code, the pre-approval applies to whichever version is latest.
+- The skill always runs the latest version on npm, so new badges arrive without reinstalling anything.
 
 ### JSON output
 
@@ -149,7 +149,7 @@ npx agent-badges                    # collect local stats and open your badge wa
 npx agent-badges collect            # collect only, print a summary in the terminal
 npx agent-badges collect --json     # the same summary as JSON
 npx agent-badges export ./my-wall   # a static page you can open offline (contains your stats)
-npx agent-badges profile ./me       # badge image + public badge wall for your GitHub profile repo
+npx agent-badges publish            # put your badges on your GitHub profile (asks first)
 npx agent-badges shelf              # your unlocked badges as a PNG for your GitHub profile
 npx agent-badges card               # an achievement card SVG for your GitHub profile
 ```
@@ -162,7 +162,8 @@ npx agent-badges card               # an achievement card SVG for your GitHub pr
 | `--json` | Print the summary as JSON (`collect`) |
 | `--lang en\|zh` | Language of the summary, the shelf and the card (the summary follows your system by default, the shelf and card default to English) |
 | `--out <file>` | Where `shelf` or `card` saves its file |
-| `--name <name>` | Name on the card and the public badge wall (`profile` defaults to the repo owner) |
+| `--yes` | `publish`: go ahead without asking (only after you've seen the plan) |
+| `--name <name>` | Name on the card and the public badge wall (defaults to your GitHub username) |
 | `--theme dark\|light` | Card colors |
 
 | Environment variable | Default |
@@ -175,26 +176,30 @@ The first run reads every session log you have, which can take a while if you ha
 
 ## Show it on your GitHub profile
 
-Your profile README lives in the repository named after you (`<you>/<you>`). Everything below writes into that folder; nothing is committed or pushed for you. The images are static, so re-run the command when you want to refresh them. Or ask your agent to "update my GitHub profile badges".
-
-### Badge image + public badge wall
+Ask your agent to "put my badges on my GitHub profile", or run:
 
 ```bash
-npx agent-badges profile path/to/<you>
+npx agent-badges publish
 ```
 
-This writes two files into your profile repo:
+Your profile shows a badge image, and clicking it opens your 3D badge wall on GitHub Pages. See it live: [github.com/Aryous](https://github.com/Aryous) → [aryous.github.io/Aryous](https://aryous.github.io/Aryous/).
 
-- `agent-badges-shelf.png`: the badge image described below.
-- `index.html`: your 3D badge wall, made for visitors. With GitHub Pages turned on for the repo (Settings → Pages → Deploy from a branch → `main` / root) it's at `https://<you>.github.io/<you>/`.
+It first checks everything and prints a plan, then asks before changing anything. Once you say yes it:
 
-It prints the README line, with the image linking to that page:
+1. creates your profile repository (`<you>/<you>`, public) if you don't have one;
+2. renders your unlocked badges in a browser tab;
+3. writes the public badge wall and the image, and adds the image to your README between `<!-- agent-badges:start -->` and `<!-- agent-badges:end -->`. If you already have a profile README, the badges go at the end and nothing else in it changes;
+4. commits, pushes, turns on GitHub Pages and waits until the page is live.
 
-```html
-<a href="https://<you>.github.io/<you>/"><img src="./agent-badges-shelf.png" alt="Agent Badges" width="720"></a>
-```
+Run it again whenever you want to refresh your badges. It keeps its own copy of the repository in `~/.agent-badges/profile/`, so you don't need to clone anything.
 
-The page is public, and so is everything embedded in it: your daily token counts and turns (the heatmap), badge progress and unlock dates. Only what the page shows goes in: locked hidden badges are left out, the update time is just a date, and the detailed ledger (hours of the day, tool calls, model hashes) never leaves your machine. Old versions stay in your repo's git history. See it live: [aryous.github.io/Aryous](https://aryous.github.io/Aryous/).
+**Needs** the [GitHub CLI](https://cli.github.com), signed in with `gh auth login`. It uses gh's credentials just for its own git commands and doesn't change your git settings.
+
+**What becomes public:** your unlocked badges and tiers, badge progress and unlock dates, and your daily token counts and turns (the heatmap). The page embeds only what it shows: locked hidden badges are left out, the update time is just a date, and the detailed ledger (hours of the day, tool calls, model names) never leaves your machine. Old versions stay in the repository's git history.
+
+It won't touch a private profile repository, GitHub Pages set to publish from somewhere else, or an `index.html` it didn't write. It stops and tells you instead.
+
+To manage the repository yourself, `npx agent-badges profile path/to/<you>` only writes the image and the page into that folder and prints the README line. Nothing is committed for you.
 
 ### Badge image only
 
@@ -245,7 +250,7 @@ It reads the logs your tools already keep on your machine, so the rules are stri
 - **What is saved.** `~/.agent-badges` holds a per-day ledger of numbers, dates and hashes, so badges you earned stay earned even after the tools clean up old logs.
 - **Tested.** The test suite plants fake secrets, prompts, paths and thread titles in fake `~/.claude` and `~/.codex` folders, runs the real collector and export, and checks none of them appear in any output.
 
-The public demo and the npm package contain no personal data. Only `export`, `card`, `shelf` and `profile` write files about your usage, and only where you tell them to. `profile` makes a page meant to be published; see [what it contains](#badge-image--public-badge-wall).
+The public demo and the npm package contain no personal data. Only `export`, `card`, `shelf` and `profile` write files about your usage, and only where you tell them to. `publish` and `profile` make a page meant to be public; see [what it contains](#show-it-on-your-github-profile).
 
 ## How badges are counted
 
