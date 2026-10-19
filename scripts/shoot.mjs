@@ -57,6 +57,26 @@ async function session(viewport, tag) {
   const overlayClosed = !(await page.locator('#overlay').isVisible());
   check('点击网格打开单枚查看，Esc 回到陈列墙', overlayOpen && overlayClosed);
 
+  // 静止时超采样：停稳后叠上更细腻的画面，一拖动就收起
+  {
+    await page.evaluate(() => window.__badgeApp.open('first-session', { award: false }));
+    await page.waitForTimeout(150);
+    const moving = await page.evaluate(() => getComputedStyle(document.querySelector('#stage-accum')).visibility);
+    await page.screenshot({ path: `${out}/desktop-inspect-moving.png` });
+    await page.waitForTimeout(1800);
+    const settled = await page.evaluate(() => getComputedStyle(document.querySelector('#stage-accum')).visibility);
+    await page.screenshot({ path: `${out}/desktop-inspect-settled.png` });
+    const box = await page.locator('#stage').boundingBox();
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.45);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.5 + 120, box.y + box.height * 0.45, { steps: 6 });
+    const dragging = await page.evaluate(() => getComputedStyle(document.querySelector('#stage-accum')).visibility);
+    await page.mouse.up();
+    check('单枚查看：停稳后叠上超采样画面，拖动时立刻收起', moving === 'hidden' && settled === 'visible' && dragging === 'hidden', `${moving} → ${settled} → ${dragging}`);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(600);
+  }
+
   // 隐藏徽章和分级徽章在墙上的表现
   const wallInfo = await page.evaluate(() =>
     [...document.querySelectorAll('.tile')].map((t) => ({

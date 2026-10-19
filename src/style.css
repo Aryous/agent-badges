@@ -38,7 +38,8 @@ body {
   background-attachment: fixed;
 }
 
-#stage {
+#stage,
+#stage-accum {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -46,6 +47,11 @@ body {
   display: block;
   outline: none;
   touch-action: none;
+}
+
+#stage-accum {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* ---------- 单枚查看遮罩 ---------- */

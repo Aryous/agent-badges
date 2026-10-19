@@ -27,10 +27,12 @@ export function drawBrushedRings(ctx, size, { base = 168, spread = 70, seed = 7 
   ctx.fillRect(0, 0, size, size);
   const cx = size / 2;
   const maxR = size * 0.72;
-  for (let r = 1; r < maxR; r += 0.8 + rand() * 1.4) {
+  // 间距和线宽按 1024 设计，随贴图尺寸等比放大：大贴图纹理看起来一样，只是更清晰，圈数也不翻倍
+  const k = size / 1024;
+  for (let r = k; r < maxR; r += (0.8 + rand() * 1.4) * k) {
     const g = Math.round(base + (rand() - 0.5) * spread);
     ctx.strokeStyle = `rgba(${g},${g},${g},${0.35 + rand() * 0.5})`;
-    ctx.lineWidth = 0.6 + rand() * 1.6;
+    ctx.lineWidth = (0.6 + rand() * 1.6) * k;
     ctx.beginPath();
     ctx.arc(cx, cx, r, 0, Math.PI * 2);
     ctx.stroke();

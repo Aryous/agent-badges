@@ -167,23 +167,24 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
     hidden: masked,
   });
   const backType = config.back.material;
-  const engraving =
-    typeof document !== 'undefined'
-      ? createEngraving({
-          lines,
-          fontFamily: brand.engraving.fontFamily,
-          safeRadius: config.back.safeRadius ?? safeRadius(shape, inset),
-          brushed: !locked && backType === 'brushed-metal',
-          ink: locked ? 1 : backType === 'ceramic' ? 0.62 : 0.5,
-          base: locked ? 0.55 : 1,
-        })
-      : {};
+  const engravingOpts = {
+    lines,
+    fontFamily: brand.engraving.fontFamily,
+    safeRadius: config.back.safeRadius ?? safeRadius(shape, inset),
+    brushed: !locked && backType === 'brushed-metal',
+    ink: locked ? 1 : backType === 'ceramic' ? 0.62 : 0.5,
+    base: locked ? 0.55 : 1,
+  };
+  const engraving = typeof document !== 'undefined' ? createEngraving(engravingOpts) : {};
   const back = new Mesh(
     extrude(coreShape, plate, { segments }),
     mat(backType, config.back.color, { ...engraving, bumpScale: 1.2, roughness: locked ? 0.85 : 0.62 }),
   );
   back.geometry.translate(0, 0, -plate);
   back.name = 'back';
+  // 背面刻字默认 1024；近看时用 setEngravingSize 换成更清晰的版本
+  back.userData.engraving = engravingOpts;
+  back.userData.engravingSize = 1024;
   group.add(back);
 
   // 浮雕：同材质同颜色的基元共用一份材质；带动效的单独一份
@@ -231,4 +232,24 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
     },
   };
   return group;
+}
+
+/**
+ * 换一套指定分辨率的背面刻字贴图。陈列墙同时建着十几枚徽章，全用 2048 显存吃不消，
+ * 所以平时用 1024，只给正在近看的那一枚换成 2048，离开时再换回来。
+ * @returns {boolean} 是否真的换了
+ */
+export function setEngravingSize(badge, size) {
+  const back = badge?.getObjectByName('back');
+  const opts = back?.userData.engraving;
+  if (!opts || back.userData.engravingSize === size || typeof document === 'undefined') return false;
+  const next = createEngraving({ ...opts, size });
+  const m = back.material;
+  for (const key of ['map', 'bumpMap', 'roughnessMap']) {
+    m[key]?.dispose();
+    m[key] = next[key];
+  }
+  m.needsUpdate = true;
+  back.userData.engravingSize = size;
+  return true;
 }

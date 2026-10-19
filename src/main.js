@@ -1,7 +1,7 @@
 import './style.css';
 import { Group } from 'three';
 import { BRANDS, getBrand } from './brands/index.js';
-import { buildBadge } from './engine/badge.js';
+import { buildBadge, setEngravingSize } from './engine/badge.js';
 import { partitionBadges, validateBrand } from './engine/validate.js';
 import { loadDaily, loadProgress, sourceInfo } from './data/progress.js';
 import { createHeatmap, markersFrom } from './viewer/heatmap.js';
@@ -15,6 +15,7 @@ import { createGrid, describeState } from './viewer/grid.js';
 import { createInspector } from './viewer/inspector.js';
 import { playAward } from './viewer/award-animation.js';
 import { EXPORT_FILL, downloadDataURL, renderBadgePNG } from './viewer/export.js';
+import { createAccumulator, signature } from './viewer/accumulate.js';
 import { Tweens } from './viewer/anim.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -159,6 +160,7 @@ async function main() {
   }
 
   const stage = createStage($('#stage'));
+  const accum = createAccumulator(stage, $('#stage-accum'));
   const tweens = new Tweens();
   const items = valid.map((config) => ({ config, state: progress[config.id], badge: null, pivot: null, holder: null }));
 
@@ -473,7 +475,10 @@ async function main() {
   function open(item, { award = true, viaKeyboard = false } = {}) {
     if (mode === 'inspect' && inspector.current === item) return;
     clearTimeout(closeTimer);
-    if (inspector.current && inspector.current !== item) stage.scene.remove(inspector.current.holder);
+    if (inspector.current && inspector.current !== item) {
+      stage.scene.remove(inspector.current.holder);
+      setEngravingSize(inspector.current.badge, 1024);
+    }
     ensureBuilt(item);
     mode = 'inspect';
     document.body.classList.add('is-inspecting');
@@ -515,7 +520,10 @@ async function main() {
     history.replaceState(null, '', location.pathname + location.search);
     closeTimer = setTimeout(() => {
       overlay.hidden = true;
-      if (item) stage.scene.remove(item.holder);
+      if (item) {
+        stage.scene.remove(item.holder);
+        setEngravingSize(item.badge, 1024); // 离开近看，换回省显存的版本
+      }
       stopLoop();
     }, 320);
     item?.tile.focus({ preventScroll: true });
@@ -615,10 +623,22 @@ async function main() {
     tweens.step(dt);
     inspector.update(dt);
     const t = now / 1000;
-    for (const m of inspector.current?.badge.userData.pulses ?? []) {
+    const current = inspector.current;
+    for (const m of current?.badge.userData.pulses ?? []) {
       m.emissiveIntensity = 0.06 + 0.3 * (0.5 + 0.5 * Math.sin(t * 3.4));
     }
-    stage.renderer.render(stage.scene, stage.camera);
+    // 静止时超采样；呼吸发光不算移动
+    const { camera, sweep } = stage;
+    const h = current?.holder;
+    const still = accum.render(
+      signature([
+        ...(h ? [h.position.x, h.position.y, h.position.z, h.scale.x, current.pivot.rotation.x, current.pivot.rotation.y] : []),
+        camera.position.x, camera.position.y, camera.position.z, camera.zoom,
+        sweep.intensity, sweep.position.x, sweep.position.y,
+      ]),
+    );
+    // 停稳一小会儿后，背面刻字换成 2048 的清晰版本。上传大贴图会卡一下，静止时看不出来
+    if (still === 12 && current && setEngravingSize(current.badge, 2048)) accum.restart();
   }
   function startLoop() {
     lastT = performance.now();
@@ -626,6 +646,7 @@ async function main() {
   }
   function stopLoop() {
     stage.renderer.setAnimationLoop(null);
+    accum.reset();
   }
 
   // 供自动化验证使用的小接口

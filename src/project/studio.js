@@ -2,7 +2,7 @@
 // scripts/assets.mjs 用它生成 README 横幅、动图帧和项目标志。
 import { Group } from 'three';
 import { BRANDS, getBrand } from '../brands/index.js';
-import { buildBadge } from '../engine/badge.js';
+import { buildBadge, setEngravingSize } from '../engine/badge.js';
 import { normalizeProgress } from '../data/normalize.js';
 import mockClaudeCode from '../data/mock-claude-code.js';
 import mockCodex from '../data/mock-codex.js';
@@ -22,8 +22,9 @@ const MOCKS = { 'claude-code': mockClaudeCode, codex: mockCodex };
  * @param {number} [o.size]  输出像素
  * @param {string} [o.lang]
  * @param {boolean} [o.unlocked] 覆盖解锁状态（默认用示例数据）
+ * @param {number} [o.engraving]  背面刻字贴图边长（默认 2048，素材都按近看的清晰度出）
  */
-async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, lang = 'en', unlocked, tier, showcase = false, fill = 0.92, background = null }) {
+async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, lang = 'en', unlocked, tier, showcase = false, fill = 0.92, background = null, engraving = 2048 }) {
   let brand, config, state;
   if (brandId === 'logo') {
     brand = logoBrand;
@@ -44,6 +45,7 @@ async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, la
     if (tier !== undefined) state = { ...state, unlocked: true, tier, earnedAt: state.earnedAt ?? '2026-05-02' };
   }
   const badge = buildBadge(config, brand, state, { lang });
+  setEngravingSize(badge, engraving);
   stage.applyEnvironment(badge);
   const pivot = new Group();
   const holder = new Group();

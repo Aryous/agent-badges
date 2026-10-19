@@ -68,6 +68,8 @@
     <div class="overlay" id="overlay" hidden>
     <div class="export-frame" id="export-frame" data-bg="transparent" aria-hidden="true"></div>
     <canvas id="stage" data-i18n-aria="inspect.stage"></canvas>
+    <!-- 静止时的超采样画面，叠在 3D 画布上方（不接收鼠标，拖动仍落在 3D 画布上） -->
+    <canvas id="stage-accum" aria-hidden="true"></canvas>
     <section class="inspector" id="inspector" aria-live="polite">
       <button class="btn-back" data-close type="button" data-i18n-aria="inspect.backAria">
         <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
