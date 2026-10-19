@@ -149,6 +149,7 @@ npx agent-badges                    # 采集本机数据，打开徽章墙
 npx agent-badges collect            # 只采集，在终端打印汇总
 npx agent-badges collect --json     # 同样的汇总，JSON 格式
 npx agent-badges export ./my-wall   # 导出可离线打开的静态网页（含你的统计数字）
+npx agent-badges profile ./me       # 往 GitHub 主页仓库写入徽章图和公开版徽章墙
 npx agent-badges shelf              # 把已解锁的徽章保存成 PNG，放进 GitHub 个人主页
 npx agent-badges card               # 生成成就卡片 SVG，放进 GitHub 个人主页
 ```
@@ -161,7 +162,8 @@ npx agent-badges card               # 生成成就卡片 SVG，放进 GitHub 个
 | `--json` | 以 JSON 输出汇总（`collect`） |
 | `--lang en\|zh` | 汇总、陈列图和卡片的语言（汇总默认跟随系统，陈列图和卡片默认英文） |
 | `--out <文件>` | `shelf` 或 `card` 的保存位置 |
-| `--theme dark\|light`、`--name` | 成就卡片的选项 |
+| `--name <名字>` | 卡片和公开版徽章墙上的名字（`profile` 默认用仓库所有者） |
+| `--theme dark\|light` | 卡片配色 |
 
 | 环境变量 | 默认值 |
 | --- | --- |
@@ -173,9 +175,28 @@ npx agent-badges card               # 生成成就卡片 SVG，放进 GitHub 个
 
 ## 放到 GitHub 个人主页
 
-下面两种图都可以：提交到你的个人主页仓库（`<用户名>/<用户名>`），在它的 README 里引用。它们都是静态图片，想更新时重新运行命令即可。也可以直接让 Agent「更新我 GitHub 主页的徽章」。
+个人主页的 README 在和你用户名同名的仓库里（`<用户名>/<用户名>`）。下面的命令都只往这个目录里写文件，不会替你提交或推送。图片是静态的，想更新时重新运行命令即可。也可以直接让 Agent「更新我 GitHub 主页的徽章」。
 
-### 徽章陈列图
+### 徽章图 + 公开版徽章墙
+
+```bash
+npx agent-badges profile 路径/<用户名> --lang zh
+```
+
+会往主页仓库写两个文件：
+
+- `agent-badges-shelf.png`：下面介绍的徽章陈列图。
+- `index.html`：给访客看的 3D 徽章墙。在仓库里开启 GitHub Pages（Settings → Pages → Deploy from a branch → `main` / 根目录）后，网址是 `https://<用户名>.github.io/<用户名>/`。
+
+命令会打印 README 里要写的一行，点图片就会打开这个网页：
+
+```html
+<a href="https://<用户名>.github.io/<用户名>/"><img src="./agent-badges-shelf.png" alt="Agent Badges" width="720"></a>
+```
+
+这个网页是公开的，内嵌的数据也一样公开：每天的 Token 用量和对话轮数（热力图）、徽章进度和解锁日期。网页里只放页面上看得到的东西：未解锁的隐藏徽章不放，更新时间只到日期，详细账本（一天中几点在用、工具调用、模型哈希）不会离开你的电脑。旧版本会留在仓库的 git 历史里。实际效果：[aryous.github.io/Aryous](https://aryous.github.io/Aryous/)。
+
+### 只要徽章图
 
 ```bash
 npx agent-badges shelf --out 路径/<用户名>/agent-badges-shelf.png --lang zh
@@ -223,7 +244,7 @@ npx agent-badges card --name "你的名字" --lang zh
 - **保存了什么。** `~/.agent-badges` 里是按天汇总的账本，只有数字、日期和哈希。工具清理旧记录之后，已经拿到的徽章也不会消失。
 - **有测试。** 测试会在伪造的 `~/.claude` 和 `~/.codex` 里塞入假密钥、对话、路径和会话标题，真跑一遍采集和导出，确认它们不会出现在任何输出里。
 
-在线演示和 npm 包里都没有任何个人数据。只有 `export`、`card` 和 `shelf` 会写出和你使用情况有关的文件，而且只写到你指定的位置。
+在线演示和 npm 包里都没有任何个人数据。只有 `export`、`card`、`shelf` 和 `profile` 会写出和你使用情况有关的文件，而且只写到你指定的位置。`profile` 生成的网页就是用来公开的，[里面有什么](#徽章图--公开版徽章墙)写在上面。
 
 ## 统计口径
 

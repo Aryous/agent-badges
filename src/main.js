@@ -59,12 +59,18 @@ function applyPreview(configs, progress) {
 }
 
 const params = new URLSearchParams(location.search);
-const { brand, badges: badgeConfigs, series: SERIES } = getBrand(params.get('brand'));
+// 公开版（npx agent-badges profile 生成、放在 GitHub Pages 上给别人看）：
+// 只列有数据的工具，不用示例数据冒充；文字改成「某某的徽章」
+const PUBLIC = window.__AGENT_BADGES_PUBLIC__ ?? null;
+const AVAILABLE = PUBLIC ? BRANDS.filter((b) => window.__AGENT_BADGES_DATA__?.[b.brand.id]) : BRANDS;
+const wantedBrand = params.get('brand');
+const { brand, badges: badgeConfigs, series: SERIES } =
+  AVAILABLE.find((b) => b.brand.id === wantedBrand) ?? (PUBLIC && AVAILABLE[0]) ?? getBrand(wantedBrand);
 
 /** 顶栏的品牌切换：切换时保留其他参数（如 preview），去掉锚点。 */
 function renderBrandSwitch() {
   const nav = $('[data-brands]');
-  for (const b of BRANDS) {
+  for (const b of AVAILABLE) {
     const a = document.createElement('a');
     const p = new URLSearchParams(location.search);
     p.set('brand', b.brand.id);
@@ -113,9 +119,23 @@ async function main() {
   }
   if (notices.length) showNotice(notices.join('\n'));
 
-  document.title = t('app.title', { brand: brand.name });
+  document.title = PUBLIC ? t('app.publicTitle', { name: PUBLIC.name || 'Agent Badges', brand: brand.name }) : t('app.title', { brand: brand.name });
   const sourceEl = $('[data-source]');
-  if (source.kind === 'local') {
+  if (PUBLIC) {
+    // 公开版只带日期（YYYY-MM-DD），按本地日期解析，避免时区把日子挪一天
+    const at = new Date(`${source.generatedAt}T00:00:00`);
+    sourceEl.textContent = t('source.public', {
+      name: PUBLIC.name || 'Agent Badges',
+      m: at.getMonth() + 1,
+      d: at.getDate(),
+      date: at.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    });
+    const a = document.createElement('a');
+    a.href = PUBLIC.home;
+    a.className = 'source-link';
+    a.textContent = t('source.getYours');
+    sourceEl.append(' · ', a);
+  } else if (source.kind === 'local') {
     const at = new Date(source.generatedAt);
     const time = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
     sourceEl.textContent = t('source.local', {
@@ -156,7 +176,7 @@ async function main() {
   // ---------- 档案 + 热力图 ----------
   // 热力图把所有工具叠在一起看，所以每个工具的按天用量和解锁日期都要读
   const others = await Promise.all(
-    BRANDS.map(async (b) => {
+    AVAILABLE.map(async (b) => {
       const isCurrent = b.brand.id === brand.id;
       const list = isCurrent ? valid : partitionBadges(b.badges, b.brand).valid;
       const p = isCurrent ? progress : (await loadProgress(b.brand.id, list, undefined, { forceMock })).progress;
@@ -179,6 +199,8 @@ async function main() {
     onShare: (e) => openPoster({ viaKeyboard: e?.detail === 0 }),
     onShelf: (e) => openShelf({ viaKeyboard: e?.detail === 0 }),
   });
+  // 「GitHub 主页图」是给本人用的，公开版不显示
+  if (PUBLIC) profile.el.querySelector('[data-shelf]').hidden = true;
   const heatmap = createHeatmap({
     root: $('#heat-slot'),
     series: heatSeries,

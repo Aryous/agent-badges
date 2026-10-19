@@ -29,6 +29,7 @@ const HELP = t(
   npx agent-badges export <目录>   导出可离线打开的静态网页
   npx agent-badges card            生成成就卡片 SVG（可放进 GitHub 个人主页）
   npx agent-badges shelf           在浏览器里渲染已解锁徽章，保存为 PNG（可放进 GitHub 个人主页）
+  npx agent-badges profile <目录>  往 GitHub 主页仓库写入徽章图和公开版徽章墙（GitHub Pages）
 
 选项
   --brand <claude-code|codex>      只采集 / 只看某个工具
@@ -37,7 +38,7 @@ const HELP = t(
   --json                           以 JSON 输出汇总（collect）
   --out <文件>                     保存位置（默认 agent-badges-card.svg / agent-badges-shelf.png）
   --theme <dark|light>             卡片配色（默认 dark）
-  --name <名字>                    卡片标题里的名字
+  --name <名字>                    卡片和公开版徽章墙上的名字
   --lang <en|zh>                   输出语言（卡片和陈列图默认 en，汇总默认跟随系统）
   -v, --version / -h, --help
 
@@ -50,6 +51,7 @@ Usage
   npx agent-badges export <dir>    export a static page you can open offline
   npx agent-badges card            write an achievement card SVG for your GitHub profile
   npx agent-badges shelf           render your unlocked badges in the browser and save a PNG for your profile
+  npx agent-badges profile <dir>   write the badge image and a public badge wall (GitHub Pages) into your profile repo
 
 Options
   --brand <claude-code|codex>      only one tool
@@ -58,7 +60,7 @@ Options
   --json                           print the summary as JSON (collect)
   --out <file>                     where to save it (default agent-badges-card.svg / agent-badges-shelf.png)
   --theme <dark|light>             card colors (default dark)
-  --name <name>                    name shown on the card
+  --name <name>                    name shown on the card and the public badge wall
   --lang <en|zh>                   output language (card and shelf default to en, summary to your system)
   -v, --version / -h, --help
 
@@ -80,14 +82,15 @@ export function parseArgs(argv) {
     else if (a === '--theme') opts.theme = argv[++i];
     else if (a === '--name') opts.name = argv[++i] ?? '';
     else if (a === '--lang') opts.cardLang = opts.outLang = argv[++i];
-    else if (a === 'collect' || a === 'export' || a === 'open' || a === 'card' || a === 'shelf') opts.command = a;
-    else if (opts.command === 'export' && !opts.dir) opts.dir = a;
+    else if (a === 'collect' || a === 'export' || a === 'open' || a === 'card' || a === 'shelf' || a === 'profile') opts.command = a;
+    else if ((opts.command === 'export' || opts.command === 'profile') && !opts.dir) opts.dir = a;
     else throw new Error(t(`不认识的参数：${a}`, `Unknown argument: ${a}`));
   }
   if (opts.brand && !['claude-code', 'codex'].includes(opts.brand)) throw new Error(t(`不支持的工具：${opts.brand}`, `Unsupported tool: ${opts.brand}`));
   if (!['dark', 'light'].includes(opts.theme)) throw new Error(t(`不支持的配色：${opts.theme}`, `Unsupported theme: ${opts.theme}`));
   if (!['en', 'zh'].includes(opts.cardLang)) throw new Error(t(`不支持的语言：${opts.cardLang}`, `Unsupported language: ${opts.cardLang}`));
   if (opts.command === 'export' && !opts.dir) throw new Error(t('export 需要一个目录', 'export needs a directory'));
+  if (opts.command === 'profile' && !opts.dir) throw new Error(t('profile 需要主页仓库的目录', 'profile needs the directory of your profile repository'));
   return opts;
 }
 
@@ -168,7 +171,7 @@ const SHELF_TIMEOUT = 120_000;
  * 陈列图：徽章要用 WebGL 渲染，所以交给浏览器。
  * 打开本地页面 → 页面渲染已解锁的徽章 → 把 PNG 交回这里 → 写文件、退出。
  */
-async function writeShelf(data, opts) {
+async function writeShelf(data, opts, { snippet = true } = {}) {
   const { summarize } = await import('../src/collect/summary.js');
   const { createReceiver } = await import('../src/collect/receive.js');
   const unlocked = Object.entries(data).reduce((n, [id, d]) => n + summarize(id, d.progress).unlocked, 0);
@@ -215,15 +218,54 @@ async function writeShelf(data, opts) {
     await new Promise((r) => setTimeout(r, 200));
     shut();
   }
-  const name = basename(file);
   console.log(t(`\n徽章陈列图：${file}`, `\nShelf saved to ${file}`));
+  if (!snippet) return;
   console.log(t('放进 GitHub 个人主页 README：', 'Add it to your profile README:'));
-  console.log(`  <img src="./${name}" alt="Agent Badges" width="720">`);
+  console.log(`  <img src="./${basename(file)}" alt="Agent Badges" width="720">`);
+}
+
+const PROJECT_SITE = 'https://aryous.github.io/agent-badges/';
+
+/**
+ * 个人主页：往主页仓库写两样东西，一起提交、一起推送。
+ *   index.html               公开版徽章墙（开启 GitHub Pages 后可访问）
+ *   agent-badges-shelf.png   README 里的徽章图，点它跳到上面的网页
+ * 不改 README，不提交，不推送。
+ */
+async function writeProfile(data, opts) {
+  const { publicData, pagesForDir } = await import('../src/collect/public.js');
+  const { injectData } = await import('../src/collect/inject.js');
+  const dir = resolve(opts.dir);
+  if (!existsSync(dir)) throw new Error(t(`目录不存在：${dir}`, `No such directory: ${dir}`));
+  const pages = pagesForDir(dir);
+  const name = opts.name || pages?.owner || '';
+
+  const page = join(dir, 'index.html');
+  writeFileSync(page, injectData(appTemplate(), publicData(data), { name, home: PROJECT_SITE }));
+  console.log(t(`\n公开版徽章墙：${page}`, `\nPublic badge wall: ${page}`));
+  await writeShelf(data, { ...opts, out: join(dir, 'agent-badges-shelf.png') }, { snippet: false });
+
+  const url = pages?.url ?? 'https://<you>.github.io/<repo>/';
+  console.log(t('\nREADME 里这样写，点图片就会打开徽章墙：', '\nIn the README, link the image to the badge wall:'));
+  console.log(`  <a href="${url}"><img src="./agent-badges-shelf.png" alt="Agent Badges" width="720"></a>`);
+  console.log(
+    t(
+      `\n网页会公开你每天的 Token 用量和对话轮数（热力图）、徽章进度和解锁日期；推送后旧版本会留在 git 历史里。\n第一次需要开启 GitHub Pages：仓库 Settings → Pages → Deploy from a branch → main / (root)`,
+      `\nThe page makes your daily token counts and turns (the heatmap), badge progress and unlock dates public, and old versions stay in git history.\nFirst time only, turn on GitHub Pages: repo Settings → Pages → Deploy from a branch → main / (root)`,
+    ),
+  );
+  if (pages) console.log(`  gh api -X POST repos/${pages.owner}/${pages.repo}/pages -f 'source[branch]=main' -f 'source[path]=/'`);
+  console.log(t('然后提交并推送这两个文件。', 'Then commit and push both files.'));
+}
+
+function appTemplate() {
+  if (!existsSync(APP)) throw new Error(t('没有找到页面文件，请先运行 npm run build', 'App not built. Run npm run build first.'));
+  return readFileSync(APP, 'utf8');
 }
 
 function appHtml(data) {
-  if (!existsSync(APP)) throw new Error(t('没有找到页面文件，请先运行 npm run build', 'App not built. Run npm run build first.'));
-  return import('../src/collect/inject.js').then(({ injectData }) => injectData(readFileSync(APP, 'utf8'), data));
+  const html = appTemplate();
+  return import('../src/collect/inject.js').then(({ injectData }) => injectData(html, data));
 }
 
 function openBrowser(url) {
@@ -263,6 +305,7 @@ async function main() {
   if (opts.command === 'collect') return;
   if (opts.command === 'card') return writeCard(data, opts);
   if (opts.command === 'shelf') return writeShelf(data, opts);
+  if (opts.command === 'profile') return writeProfile(data, opts);
 
   const html = await appHtml(data);
   if (opts.command === 'export') {

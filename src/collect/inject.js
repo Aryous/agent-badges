@@ -6,7 +6,12 @@ export function dataScript(dataByBrand) {
   return `<script>window.__AGENT_BADGES_DATA__ = ${json};</script>`;
 }
 
-export function injectData(html, dataByBrand) {
-  const tag = dataScript(dataByBrand);
-  return html.includes('</head>') ? html.replace('</head>', `${tag}\n</head>`) : tag + html;
+/**
+ * @param {object} [publicMeta]  公开版（profile）才有：{ name, home }，页面据此切换成「给别人看」的样子
+ */
+export function injectData(html, dataByBrand, publicMeta = null) {
+  let tag = dataScript(dataByBrand);
+  if (publicMeta) tag += `\n<script>window.__AGENT_BADGES_PUBLIC__ = ${JSON.stringify(publicMeta).replace(/</g, '\\u003c')};</script>`;
+  // 用函数做替换：数据里的 $& $' 之类不会被当成替换模式
+  return html.includes('</head>') ? html.replace('</head>', () => `${tag}\n</head>`) : tag + html;
 }

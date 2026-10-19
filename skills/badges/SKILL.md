@@ -1,6 +1,6 @@
 ---
 name: badges
-description: Check the user's Claude Code and Codex achievement badges with the agent-badges CLI — badges just unlocked, badges almost unlocked, and totals. Use when the user asks about their badges, achievements, streaks or usage milestones ("check my badges", "what did I unlock", "how close am I to 100M tokens", "我的徽章", "解锁了什么"). Can also open the 3D badge wall, or put the user's badges on their GitHub profile ("update my GitHub profile badges", "更新主页徽章"). Not for designing badges or editing this project's code.
+description: Check the user's Claude Code and Codex achievement badges with the agent-badges CLI — badges just unlocked, badges almost unlocked, and totals. Use when the user asks about their badges, achievements, streaks or usage milestones ("check my badges", "what did I unlock", "how close am I to 100M tokens", "我的徽章", "解锁了什么"). Can also open the 3D badge wall, or put the user's badges on their GitHub profile with a public badge wall ("update my GitHub profile badges", "更新主页徽章"). Not for designing badges or editing this project's code.
 license: MIT
 compatibility: Requires Node.js 22.15+ and network access the first time (npx downloads the agent-badges package from npm). Works in Claude Code, Codex and other agents that can run shell commands.
 allowed-tools: Bash(npx -y agent-badges@latest *)
@@ -50,23 +50,23 @@ Then offer one of these, without running them unasked:
 When the user wants their badges on their GitHub profile:
 
 1. Ask where their profile repository is checked out (the repo named after their username, `<user>/<user>`) unless they already said. Don't guess or search their disk.
-2. Run, with `--lang zh` only if they want Chinese labels:
+2. Ask which they want, unless it's already clear:
+   - **Image + public badge wall (default):** the README image links to their 3D badge wall on GitHub Pages.
+   - **Image only:** just the PNG, nothing else made public.
+3. Run one of these, adding `--lang zh` only if they want Chinese labels on the image:
 
    ```bash
+   npx -y agent-badges@latest profile <profile-repo>
    npx -y agent-badges@latest shelf --out <profile-repo>/agent-badges-shelf.png
    ```
 
-   It opens a tab in the user's browser, renders their unlocked badges with WebGL, saves a transparent PNG and exits (up to two minutes). Tell the user a browser tab will open. It needs a desktop browser; on a remote machine with no browser, offer the numbers-only card instead: `npx -y agent-badges@latest card --out <profile-repo>/agent-badges-card.svg`.
-   In a sandbox it also needs to listen on 127.0.0.1 and write outside the workspace; request escalation for this exact command.
-3. Tell the user to add this line to the profile README (the CLI prints it too):
+   Both open a tab in the user's browser, render their unlocked badges with WebGL and save a transparent PNG (up to two minutes). Tell the user a browser tab will open. `profile` also writes `<profile-repo>/index.html`, the public badge wall. In a sandbox they need to listen on 127.0.0.1 and write outside the workspace; request escalation for this exact command.
+   With no desktop browser (a remote machine), offer the numbers-only card instead: `npx -y agent-badges@latest card --out <profile-repo>/agent-badges-card.svg`.
+4. **Before the badge wall goes public for the first time,** tell the user in one or two lines what it publishes: daily token counts and turns (the heatmap), badge progress and unlock dates. Old versions stay in git history after they push. Locked hidden badges and anything beyond what the page shows are left out.
+5. Tell the user the README line the CLI printed: for `profile`, the image wrapped in a link to their GitHub Pages URL; for `shelf`, the image alone.
+6. **Ask before committing or pushing** the profile repository, and before turning on GitHub Pages (the CLI prints a `gh api` command for it). Never do any of these unasked.
 
-   ```html
-   <img src="./agent-badges-shelf.png" alt="Agent Badges" width="720">
-   ```
-
-4. **Ask before committing or pushing** the profile repository. Never do either unasked.
-
-The image shows unlocked badges only, with names and tiers. No dates, token counts or other usage numbers. To refresh it later, run the same command again.
+To refresh later, run the same command again, then commit and push.
 
 ## Privacy questions
 

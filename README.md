@@ -149,6 +149,7 @@ npx agent-badges                    # collect local stats and open your badge wa
 npx agent-badges collect            # collect only, print a summary in the terminal
 npx agent-badges collect --json     # the same summary as JSON
 npx agent-badges export ./my-wall   # a static page you can open offline (contains your stats)
+npx agent-badges profile ./me       # badge image + public badge wall for your GitHub profile repo
 npx agent-badges shelf              # your unlocked badges as a PNG for your GitHub profile
 npx agent-badges card               # an achievement card SVG for your GitHub profile
 ```
@@ -161,7 +162,8 @@ npx agent-badges card               # an achievement card SVG for your GitHub pr
 | `--json` | Print the summary as JSON (`collect`) |
 | `--lang en\|zh` | Language of the summary, the shelf and the card (the summary follows your system by default, the shelf and card default to English) |
 | `--out <file>` | Where `shelf` or `card` saves its file |
-| `--theme dark\|light`, `--name` | Card options |
+| `--name <name>` | Name on the card and the public badge wall (`profile` defaults to the repo owner) |
+| `--theme dark\|light` | Card colors |
 
 | Environment variable | Default |
 | --- | --- |
@@ -173,9 +175,28 @@ The first run reads every session log you have, which can take a while if you ha
 
 ## Show it on your GitHub profile
 
-Commit either image to your profile repository (`<you>/<you>`) and reference it from its README. Both are static images, so re-run the command when you want to refresh them. Or ask your agent to "update my GitHub profile badges".
+Your profile README lives in the repository named after you (`<you>/<you>`). Everything below writes into that folder; nothing is committed or pushed for you. The images are static, so re-run the command when you want to refresh them. Or ask your agent to "update my GitHub profile badges".
 
-### Badge shelf
+### Badge image + public badge wall
+
+```bash
+npx agent-badges profile path/to/<you>
+```
+
+This writes two files into your profile repo:
+
+- `agent-badges-shelf.png`: the badge image described below.
+- `index.html`: your 3D badge wall, made for visitors. With GitHub Pages turned on for the repo (Settings → Pages → Deploy from a branch → `main` / root) it's at `https://<you>.github.io/<you>/`.
+
+It prints the README line, with the image linking to that page:
+
+```html
+<a href="https://<you>.github.io/<you>/"><img src="./agent-badges-shelf.png" alt="Agent Badges" width="720"></a>
+```
+
+The page is public, and so is everything embedded in it: your daily token counts and turns (the heatmap), badge progress and unlock dates. Only what the page shows goes in: locked hidden badges are left out, the update time is just a date, and the detailed ledger (hours of the day, tool calls, model hashes) never leaves your machine. Old versions stay in your repo's git history. See it live: [aryous.github.io/Aryous](https://aryous.github.io/Aryous/).
+
+### Badge image only
 
 ```bash
 npx agent-badges shelf --out path/to/<you>/agent-badges-shelf.png
@@ -224,7 +245,7 @@ It reads the logs your tools already keep on your machine, so the rules are stri
 - **What is saved.** `~/.agent-badges` holds a per-day ledger of numbers, dates and hashes, so badges you earned stay earned even after the tools clean up old logs.
 - **Tested.** The test suite plants fake secrets, prompts, paths and thread titles in fake `~/.claude` and `~/.codex` folders, runs the real collector and export, and checks none of them appear in any output.
 
-The public demo and the npm package contain no personal data. Only `export`, `card` and `shelf` write files about your usage, and only where you tell them to.
+The public demo and the npm package contain no personal data. Only `export`, `card`, `shelf` and `profile` write files about your usage, and only where you tell them to. `profile` makes a page meant to be published; see [what it contains](#badge-image--public-badge-wall).
 
 ## How badges are counted
 
