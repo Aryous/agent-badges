@@ -34,3 +34,63 @@ export function medallion({ radius, color, metal, metalColor, pattern = 'sunburs
     { kind: 'ring', radius: radius + 0.006, width: 0.03, material: metal, color: metalColor, height: 0.034 },
   ];
 }
+
+/** 把一个浮雕的平面尺寸缩放 k 倍（高度不变）。 */
+export function scaleRelief(item, k) {
+  const out = { ...item };
+  for (const key of ['center', 'from', 'to']) if (out[key]) out[key] = out[key].map((v) => v * k);
+  for (const key of ['cell', 'width', 'radius', 'size', 'scale', 'half']) if (typeof out[key] === 'number') out[key] *= k;
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Token 徽章的顶级（100B）：三款彩蛋，随机解锁一款（由达到这一级的日期决定，见 data/normalize.js）。
+// 延续 Apple Watch 运动徽章的克制：不镶钻、不堆装饰，靠异形外轮廓 + 特殊材质区分。
+// 顶级更安静：底面和圆盘不加纹理，里面的内容整体内缩，给花边 / 星芒的凹口留出呼吸空间。
+
+const TOKEN_TOP = [
+  {
+    id: 'ivory-gold',
+    name: { zh: '白瓷金', en: 'Ivory Gold' },
+    metal: 'gold',
+    accent: 'navy',
+    shape: { type: 'starburst', points: 24, radius: 1.05, innerRadius: 0.985, tipRoundness: 0.05, valleyRoundness: 0.03, depth: 0.26, bevel: 0.05 },
+    face: { material: 'ceramic', color: 'ivory' },
+    inner: 0.93,
+  },
+  {
+    id: 'onyx-gold',
+    name: { zh: '黑瓷金', en: 'Onyx Gold' },
+    metal: 'gold',
+    accent: 'forest',
+    shape: { type: 'polygon', sides: 8, radius: 1.06, cornerRadius: 0.12, rotation: Math.PI / 8, depth: 0.26, bevel: 0.05 },
+    // 亮面的蓝黑（不用纯黑：纯黑金属像锅底）
+    face: { material: 'enamel', color: 'onyx' },
+    inner: 0.94,
+  },
+  {
+    id: 'sapphire',
+    name: { zh: '蓝宝石', en: 'Sapphire' },
+    metal: 'silver',
+    accent: 'cobalt',
+    shape: { type: 'starburst', points: 16, radius: 1.08, innerRadius: 0.95, tipRoundness: 0.09, valleyRoundness: 0.05, depth: 0.26, bevel: 0.05 },
+    face: { material: 'enamel', color: 'midnight' },
+    inner: 0.9,
+  },
+];
+
+const withoutPattern = ({ pattern: _p, ...rest }) => rest;
+
+/**
+ * 由 Token 徽章本身的造型生成顶级的三款：换外形和底面材质，去掉纹理和方形外框才需要的四角铆钉，内容内缩。
+ * @param {object} base  不含顶级的 Token 徽章配置
+ */
+export function tokenTopVariants(base) {
+  return TOKEN_TOP.map(({ face, inner, ...v }) => ({
+    ...v,
+    layers: base.layers.map((l) => (l.kind === 'face' ? withoutPattern({ ...l, ...face }) : l)),
+    relief: base.relief
+      .filter((r) => !(r.kind === 'circle' && r.radius < 0.04 && r.color === '$metal'))
+      .map((r) => scaleRelief(r.kind === 'circle' && r.color === '$accent' ? withoutPattern(r) : r, inner)),
+  }));
+}

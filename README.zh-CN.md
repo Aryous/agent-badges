@@ -62,7 +62,7 @@ Agent Badges 带有一个给 Claude Code 和 Codex 用的技能（Skill）。直
 
 上次之后新解锁：Bash 狂人。
 Claude Code：已解锁 15 / 19。
-快解锁了：连接者 2 / 3 · 子代理指挥官 3 / 5 · Token 里程碑 48M / 100M。
+快解锁了：连接者 2 / 3 · 子代理指挥官 3 / 5 · Token 里程碑 4.8B / 10B。
 
 要我打开 3D 徽章墙，或者生成一张 GitHub 个人主页的成就卡片吗？
 ```

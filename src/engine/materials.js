@@ -17,7 +17,7 @@ const PRESETS = {
   'polished-metal': (c) => ({
     color: c,
     metalness: 1,
-    roughness: 0.16,
+    roughness: 0.12,
     clearcoat: 0.3,
     clearcoatRoughness: 0.08,
   }),

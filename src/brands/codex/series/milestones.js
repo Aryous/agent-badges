@@ -1,7 +1,8 @@
 import { MEDALLION_H, around, codexMark, medallion, textRing } from '../helpers.js';
 import { CODEX_MARK } from '../icons.js';
+import { tokenTopVariants } from '../../shared/medal.js';
 
-// Codex 里程碑系列：起步与累计用量。分级徽章按 铜 → 银 → 金 → 白金 升级，
+// Codex 里程碑系列：起步与累计用量。分级徽章按 铜 → 银 → 金 → 白金 升级（Token 徽章还有顶级彩蛋），
 // 外圈和数字跟着等级换金属，中心圆盘每级换一种珐琅色（$accent）。
 
 const firstThread = {
@@ -72,28 +73,19 @@ const threads = {
 };
 
 // ---------------------------------------------------------------------------
-// Token 里程碑：圆角菱形（像一枚筹码）；Codex 云从 >_ 里吐出一串由大到小的方块 token，
-// 像一条往上飘的数据流。
+// Token 里程碑：圆角菱形（像一枚筹码）；中心圆盘只放数值和一个小的 Codex 图标，留足呼吸空间。
 
-/** 从云的右侧往右上方飘的 token 方块：[x, y, 边长]，金属与雪白交替。 */
-const STREAM = [
-  [0.1, -0.12, 0.12],
-  [0.235, -0.015, 0.1],
-  [0.33, 0.1, 0.08],
-  [0.385, 0.205, 0.062],
-];
-
-const tokens = {
+const tokensBase = {
   id: 'tokens',
   title: 'Token 里程碑',
   titleEn: '{label} TOKENS',
   description: '累计消耗的 Token。云里一直在下雨，下的全是字。',
   criteria: { metric: 'tokens.total' },
   tiers: [
-    { threshold: 1_000_000, metal: 'bronze', accent: 'amber', label: '1M' },
-    { threshold: 10_000_000, metal: 'silver', accent: 'sky', label: '10M' },
-    { threshold: 100_000_000, metal: 'gold', accent: 'aqua', label: '100M' },
-    { threshold: 1_000_000_000, metal: 'platinum', accent: 'magenta', label: '1B' },
+    { threshold: 10_000_000, metal: 'bronze', accent: 'amber', label: '10M' },
+    { threshold: 100_000_000, metal: 'silver', accent: 'sky', label: '100M' },
+    { threshold: 1_000_000_000, metal: 'gold', accent: 'aqua', label: '1B' },
+    { threshold: 10_000_000_000, metal: 'platinum', accent: 'magenta', label: '10B' },
   ],
   shape: { type: 'polygon', sides: 4, radius: 1.13, cornerRadius: 0.26, rotation: Math.PI / 2, depth: 0.22, bevel: 0.045 },
   layers: [
@@ -107,21 +99,17 @@ const tokens = {
     })),
     ...textRing({ top: 'CODEX', bottom: '{label} TOKENS', radius: 0.66, size: 0.085, metal: 'polished-metal', color: '$metal' }),
     ...medallion({ radius: 0.53, color: '$accent', metal: 'polished-metal', metalColor: '$metal' }),
-    { kind: 'text', text: '{label}', size: 0.16, center: [-0.09, 0.25], tracking: 0.06, material: 'polished-metal', color: '$metal', height: 0.055, z: MEDALLION_H },
-    ...codexMark({ size: 0.22, center: [-0.14, -0.17], height: 0.07 }),
-    ...STREAM.map(([x, y, s], i) => ({
-      kind: 'pixels',
-      rows: ['#'],
-      cell: s,
-      center: [x, y],
-      material: i % 2 ? 'enamel' : 'polished-metal',
-      color: i % 2 ? 'snow' : '$metal',
-      height: 0.045,
-      z: MEDALLION_H,
-      bevel: s * 0.18,
-    })),
+    // 圆盘里只放数字和一个小一些的 Codex 图标，上下居中，四周留白
+    { kind: 'text', text: '{label}', size: 0.16, center: [0, 0.15], tracking: 0.06, material: 'polished-metal', color: '$metal', height: 0.055, z: MEDALLION_H },
+    ...codexMark({ size: 0.14, center: [0, -0.16], height: 0.06 }),
   ],
   back: { material: 'brushed-metal', color: '$metal' },
+};
+
+// 顶级 100B：三款彩蛋随机解锁一款（白瓷金 / 黑瓷金 / 蓝宝石），由达到这一级的日期决定
+const tokens = {
+  ...tokensBase,
+  tiers: [...tokensBase.tiers, { threshold: 100_000_000_000, label: '100B', salt: 'codex/tokens', variants: tokenTopVariants(tokensBase) }],
 };
 
 // ---------------------------------------------------------------------------

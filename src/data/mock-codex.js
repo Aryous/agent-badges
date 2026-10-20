@@ -6,7 +6,7 @@ export default async function mockCodex() {
     // 里程碑
     'first-thread': { unlocked: true, earnedAt: '2026-04-10', progress: { current: 1, target: 1 } },
     threads: { value: 420, earnedAt: '2026-06-02' }, // 银（100）
-    tokens: { value: 230_000_000, earnedAt: '2026-08-15' }, // 金（1 亿）
+    tokens: { value: 12_000_000_000, earnedAt: '2026-08-15' }, // 白金（100 亿），下一级是顶级彩蛋
     patches: { value: 64, earnedAt: '2026-05-01' }, // 铜（10）
 
     // 连续与习惯

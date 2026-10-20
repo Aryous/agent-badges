@@ -60,8 +60,8 @@ export async function loadProgress(brandId, badges, sources = SOURCES, options =
 // 示例数据的按天使用量：Claude Code 从 2025 年 3 月开始，Codex 从 2026 年 4 月开始，
 // 两者重叠的日子在热力图上显示双色。
 const MOCK_DAILY = {
-  'claude-code': { seed: 7, from: '2025-03-01', to: '2026-10-15', base: 60_000 },
-  codex: { seed: 11, from: '2026-04-10', to: '2026-10-15', base: 1_100_000, restRate: 0.45 },
+  'claude-code': { seed: 7, from: '2025-03-01', to: '2026-10-15', base: 2_000_000 },
+  codex: { seed: 11, from: '2026-04-10', to: '2026-10-15', base: 60_000_000, restRate: 0.45 },
 };
 
 /**

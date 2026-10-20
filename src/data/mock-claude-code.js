@@ -7,7 +7,7 @@ export default async function mockClaudeCode() {
     // 里程碑
     'first-session': { unlocked: true, earnedAt: '2025-03-02', progress: { current: 1, target: 1 } },
     sessions: { value: 327, earnedAt: '2025-06-18' }, // 银（100），下一级 1000
-    tokens: { value: 48_000_000, earnedAt: '2025-08-02' }, // 银（1000 万），下一级 1 亿
+    tokens: { value: 1_200_000_000, earnedAt: '2025-08-02' }, // 金（10 亿），下一级 100 亿
     'tool-calls': { value: 12_400, earnedAt: '2025-09-11' }, // 银（1 万）
 
     // 连续与习惯

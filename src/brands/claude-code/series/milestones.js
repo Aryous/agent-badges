@@ -1,4 +1,5 @@
 import { MEDALLION_H, clawd, medallion, textRing } from '../helpers.js';
+import { tokenTopVariants } from '../../shared/medal.js';
 
 // 里程碑系列：起步与累计用量。分级徽章按 铜 → 银 → 金 → 白金 升级，
 // 外圈和数字跟着等级换金属，中心圆盘每级换一种珐琅色（$accent），升级有惊喜感。
@@ -87,17 +88,17 @@ function coinStacks(heights) {
 /** 最矮那摞的顶面高度：小怪物坐在上面。 */
 const LOW_TOP = COIN_BASE + 2 * COIN_H + COIN_GAP;
 
-const tokens = {
+const tokensBase = {
   id: 'tokens',
   title: 'Token 里程碑',
   titleEn: '{label} TOKENS',
   description: '累计处理的 Token。一枚一枚攒起来，就成了一座小金山。',
   criteria: { metric: 'tokens.total' },
   tiers: [
-    { threshold: 1_000_000, metal: 'bronze', accent: 'amber', label: '1M' },
-    { threshold: 10_000_000, metal: 'silver', accent: 'sapphire', label: '10M' },
-    { threshold: 100_000_000, metal: 'gold', accent: 'aqua', label: '100M' },
-    { threshold: 1_000_000_000, metal: 'platinum', accent: 'amethyst', label: '1B' },
+    { threshold: 10_000_000, metal: 'bronze', accent: 'amber', label: '10M' },
+    { threshold: 100_000_000, metal: 'silver', accent: 'sapphire', label: '100M' },
+    { threshold: 1_000_000_000, metal: 'gold', accent: 'aqua', label: '1B' },
+    { threshold: 10_000_000_000, metal: 'platinum', accent: 'amethyst', label: '10B' },
   ],
   shape: { type: 'circle', radius: 1, depth: 0.26, bevel: 0.05, reeded: { count: 160, depth: 0.012 } },
   layers: [
@@ -114,6 +115,12 @@ const tokens = {
     ...clawd({ cell: 0.0125, center: [STACK_X[0], LOW_TOP + 0.0125 * 5 + 0.004], height: 0.045 }),
   ],
   back: { material: 'brushed-metal', color: '$metal' },
+};
+
+// 顶级 100B：三款彩蛋随机解锁一款（白瓷金 / 黑瓷金 / 蓝宝石），由达到这一级的日期决定
+const tokens = {
+  ...tokensBase,
+  tiers: [...tokensBase.tiers, { threshold: 100_000_000_000, label: '100B', salt: 'claude-code/tokens', variants: tokenTopVariants(tokensBase) }],
 };
 
 // ---------------------------------------------------------------------------

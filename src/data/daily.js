@@ -55,7 +55,8 @@ export function mockDaily({ seed = 1, from, to, base = 400_000, restRate = 0.18 
     // 长尾分布：大多数日子普通，少数日子很猛
     const burst = Math.exp(rand() * 2.4 - 0.6);
     const tokens = Math.round(base * burst * (weekend ? 0.6 : 1));
-    out[date] = [tokens, Math.max(1, Math.round(tokens / 18_000))];
+    // 轮数跟着 Token 走：普通的一天二十来轮
+    out[date] = [tokens, Math.max(1, Math.round((tokens / base) * 22))];
   }
   return out;
 }

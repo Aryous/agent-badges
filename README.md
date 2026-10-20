@@ -62,7 +62,7 @@ Agent Badges comes with a skill for Claude Code and Codex. Ask in plain words, s
 
 New since last time: Bash Maniac.
 Claude Code: 15 / 19 unlocked.
-Almost there: MCP Connector 2 / 3 · Subagent Commander 3 / 5 · 100M Tokens 48M / 100M.
+Almost there: MCP Connector 2 / 3 · Subagent Commander 3 / 5 · 10B Tokens 4.8B / 10B.
 
 Want me to open the 3D badge wall, or make a card for your GitHub profile?
 ```

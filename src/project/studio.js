@@ -11,6 +11,9 @@ import { renderBadgePNG } from '../viewer/export.js';
 import { LOGO_STATE, logoBadge, logoBrand } from './logo.js';
 
 const stage = createStage(document.querySelector('#stage'));
+
+/** 展示用的等级：最高一级；最高一级是随机款式的彩蛋时，展示它下面一级，留住惊喜。 */
+const showcaseTier = (tiers) => (tiers.at(-1).variants ? tiers.length - 2 : tiers.length - 1);
 const MOCKS = { 'claude-code': mockClaudeCode, codex: mockCodex };
 
 /**
@@ -39,7 +42,7 @@ async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, la
     if (showcase) {
       state = config.hidden
         ? { ...state, unlocked: false, earnedAt: null, tier: null }
-        : { ...state, unlocked: true, earnedAt: state.earnedAt ?? '2026-10-24', tier: config.tiers ? config.tiers.length - 1 : null };
+        : { ...state, unlocked: true, earnedAt: state.earnedAt ?? '2026-10-24', tier: config.tiers ? showcaseTier(config.tiers) : null };
     }
     if (unlocked !== undefined) state = { ...state, unlocked, earnedAt: state.earnedAt ?? '2026-05-02' };
     if (tier !== undefined) state = { ...state, unlocked: true, tier, earnedAt: state.earnedAt ?? '2026-05-02' };

@@ -23,12 +23,13 @@ export default {
     mint: '#2FB47F',
     violet: '#462584',
     lilac: '#8F6BE6',
-    gold: '#D9B061',
-    silver: '#C9CED6',
+    gold: '#F2C46B',
+    silver: '#EEF0F2',
     rose: '#E0A68F',
     // 分级金属
-    bronze: '#C0825A',
-    platinum: '#E4E7EC',
+    bronze: '#D58C5F',
+    platinum: '#CBC6BE',
+    onyx: '#1C2129', // 蓝黑亮面（Token 顶级「黑瓷金」）：不用纯黑，纯黑金属像锅底
     // 扩展色（新系列可用；深色做环带，亮色做圆盘或点缀）
     midnight: '#141F4D',
     navy: '#1E2F6E',
