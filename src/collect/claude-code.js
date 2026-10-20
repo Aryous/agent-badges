@@ -3,6 +3,7 @@
 // 只读取两类文件（其余一律不打开）：
 //   <CLAUDE_CONFIG_DIR 或 ~/.claude>/stats-cache.json           汇总统计，只取数字字段
 //   <CLAUDE_CONFIG_DIR 或 ~/.claude>/projects/<项目>/<会话>.jsonl  会话记录，每行只取白名单元数据
+//   <CLAUDE_CONFIG_DIR 或 ~/.claude>/projects/<项目>/<会话>/subagents/**/*.jsonl  子代理的会话记录，同上
 // 明确不读：settings.json、.credentials.json、MCP 配置、history.jsonl、
 //           shell-snapshots、session-env、paste-cache、file-history 等。
 import { createReadStream, existsSync, readdirSync, statSync } from 'node:fs';
@@ -27,15 +28,34 @@ export function sourceDir(env = process.env) {
   return env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude');
 }
 
-/** 只列出 projects/<项目>/ 下一层的 .jsonl（子代理记录在更深的目录里，不重复计算）。 */
-function transcriptFiles(dir) {
+/**
+ * 会话记录文件：
+ *   projects/<项目>/<会话>.jsonl                                  主会话
+ *   projects/<项目>/<会话>/subagents/agent-<id>.jsonl                      子代理（Agent）
+ *   projects/<项目>/<会话>/subagents/workflows/wf_<id>/agent-<id>.jsonl    Workflow 里的子代理
+ * 子代理是独立的 API 调用，Token 不在主会话里；同一条回复出现在多个文件时按消息 id 去重。
+ * Workflow 的 journal.jsonl 是流程日志，没有用量，不读。
+ */
+export function transcriptFiles(dir) {
   const root = join(dir, 'projects');
   if (!existsSync(root)) return [];
   const files = [];
-  for (const p of readdirSync(root)) {
-    const sub = join(root, p);
-    if (!statSync(sub).isDirectory()) continue;
-    for (const f of readdirSync(sub)) if (f.endsWith('.jsonl')) files.push(join(sub, f));
+  const isDir = (p) => statSync(p).isDirectory();
+  const walkSubagents = (d) => {
+    for (const f of readdirSync(d)) {
+      const p = join(d, f);
+      if (isDir(p)) walkSubagents(p);
+      else if (f.endsWith('.jsonl') && f !== 'journal.jsonl') files.push(p);
+    }
+  };
+  for (const proj of readdirSync(root)) {
+    const projDir = join(root, proj);
+    if (!isDir(projDir)) continue;
+    for (const f of readdirSync(projDir)) {
+      const p = join(projDir, f);
+      if (f.endsWith('.jsonl')) files.push(p);
+      else if (isDir(p) && existsSync(join(p, 'subagents'))) walkSubagents(join(p, 'subagents'));
+    }
   }
   return files;
 }

@@ -257,7 +257,8 @@ The public demo and the npm package contain no personal data. Only `export`, `ca
 | | Claude Code | Codex |
 | --- | --- | --- |
 | Sessions / threads | Sessions in your Claude Code logs (sub-agent logs excluded) | Threads you started (VS Code, CLI, `exec`); sub-agents and auto-review excluded |
-| Tokens | Input + output + cache writes (cache reads excluded), each message once | Uncached input + output, each response once |
+| Tokens | Input + output + cache writes + cache reads (same as ccusage), including sub-agent logs; each message once, with the most complete counts | Input (cache reads included) + output, each response once; history a forked or sub-agent thread copies from its parent counts once |
+| Tool calls | Main session only (sub-agent calls excluded) | — |
 | Night Owl / Early Bird | Local time of the messages you send (00:00–05:00 / 05:00–07:00) | Local time of the turns you start |
 | Marathon | Active time in one session; gaps over 30 minutes don't count | Same |
 | Streaks | Consecutive days with any activity | Same |

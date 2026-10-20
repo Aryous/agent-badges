@@ -83,7 +83,9 @@ export function extractFacts(rec, { hash = fnv1a } = {}) {
       kind: 'assistant',
       messageId: typeof msg.id === 'string' ? msg.id : null,
       model: modelFamily(msg.model),
-      tokens: num(u.input_tokens) + num(u.output_tokens) + num(u.cache_creation_input_tokens),
+      // 行业通用口径（与 ccusage、CC Switch 一致）：输入 + 输出 + 缓存写入 + 缓存命中。
+      // <synthetic> 是 Claude Code 自己生成的占位回复（如 API 报错），不是真实调用
+      usage: msg.model === '<synthetic>' ? [0, 0, 0, 0] : [u.input_tokens, u.output_tokens, u.cache_creation_input_tokens, u.cache_read_input_tokens].map(num),
       tools,
     };
   }
@@ -111,6 +113,8 @@ export function extractFacts(rec, { hash = fnv1a } = {}) {
 
   return null;
 }
+
+const sum = (a) => a.reduce((x, y) => x + y, 0);
 
 function num(v) {
   return Number.isFinite(v) ? v : 0;
@@ -149,7 +153,7 @@ const IDLE_GAP_MS = 30 * 60 * 1000; // 两条记录间隔超过 30 分钟视为�
 export function aggregateDays(facts) {
   const days = {};
   const day = (ts) => (days[localDate(ts)] ??= emptyDay());
-  const seenMessages = new Set();
+  const replies = new Map(); // 消息 id → { ts, usage }
   const seenTools = new Set();
   const sessions = new Map(); // sessionId → { first, last, activeMs }
   const agentsPerMessage = new Map(); // messageId → { ts, count }
@@ -178,12 +182,17 @@ export function aggregateDays(facts) {
     }
 
     if (f.kind === 'assistant') {
-      // 同一条消息会按内容块拆成多条记录，usage 重复出现，要按消息 id 去重
-      const first = !f.messageId || !seenMessages.has(f.messageId);
-      if (f.messageId) seenMessages.add(f.messageId);
-      if (first) d.tokens += f.tokens;
+      // 同一条回复会按内容块拆成多条记录，每条都带 usage；流式输出时前几条的输出数还不完整。
+      // 按消息 id 合并，每个字段取最大值，最后再记到这条回复第一次出现的那天
+      if (!f.messageId) d.tokens += sum(f.usage);
+      else {
+        const m = replies.get(f.messageId);
+        if (!m) replies.set(f.messageId, { ts: f.ts, usage: [...f.usage] });
+        else f.usage.forEach((v, i) => (m.usage[i] = Math.max(m.usage[i], v)));
+      }
       if (f.model && !d.models.includes(f.model)) d.models.push(f.model);
-      for (const t of f.tools) {
+      // 子代理的工具调用暂不计入工具类徽章：以前不读子代理记录，口径保持不变（Token 和模型照常计入）
+      for (const t of f.sidechain ? [] : f.tools) {
         if (t.id) {
           if (seenTools.has(t.id)) continue;
           seenTools.add(t.id);
@@ -207,6 +216,7 @@ export function aggregateDays(facts) {
     if (f.kind === 'plan') d.plan = true;
   }
 
+  for (const r of replies.values()) day(r.ts).tokens += sum(r.usage);
   for (const s of sessions.values()) day(s.first).sessions += 1;
   for (const e of agentsPerMessage.values()) {
     const d = day(e.ts);

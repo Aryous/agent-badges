@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import badges from '../src/brands/codex/badges.js';
 import {
   aggregateCodexDays,
+  applyStreams,
   computeCodexProgress,
+  mergeDays,
   extractRolloutFacts,
   mergeCodexLedger,
   originKind,
@@ -61,9 +63,9 @@ describe('隐私：白名单提取', () => {
 });
 
 describe('统计口径', () => {
-  it('Token：未缓存输入 + 输出，同一响应只计一次', () => {
+  it('Token 按行业通用口径：输入（Codex 的输入已含缓存命中）+ 输出，同一响应只计一次', () => {
     const s = session([meta(at('2026-05-01', 10)), usage(at('2026-05-01', 10), 'r1', 1000, 800, 50), usage(at('2026-05-01', 10), 'r1', 1000, 800, 50)]);
-    expect(run([s]).ledger.days['2026-05-01'].tokens).toBe(250);
+    expect(run([s]).ledger.days['2026-05-01'].tokens).toBe(1050);
   });
 
   // 旧版 Codex（2026-09 之前）没有 token_usage_record，用量只在 token_count 事件里
@@ -84,7 +86,7 @@ describe('统计口径', () => {
       tc(at('2026-05-20', 10, 2), [2000, 1900, 30], [3000, 2700, 80]),
     ]);
     const { ledger } = run([s]);
-    expect(ledger.days['2026-05-20'].tokens).toBe(250 + 130);
+    expect(ledger.days['2026-05-20'].tokens).toBe(1050 + 2030);
     expect(JSON.stringify(ledger)).not.toContain(SECRET);
   });
 
@@ -94,7 +96,27 @@ describe('统计口径', () => {
       usage(at('2026-09-11', 10, 1), 'r1', 1000, 800, 50),
       tc(at('2026-09-11', 10, 1), [1000, 800, 50], [1000, 800, 50]),
     ]);
-    expect(run([s]).ledger.days['2026-09-11'].tokens).toBe(250);
+    expect(run([s]).ledger.days['2026-09-11'].tokens).toBe(1050);
+  });
+
+  it('Token（旧版）：分叉 / 子代理会话开头复制的父会话用量不重复计（按「本次用量 + 累计值」跨会话去重）', () => {
+    const parent = session([
+      meta(at('2026-05-20', 10)),
+      tc(at('2026-05-20', 10, 1), [100, 0, 10], [100, 0, 10]),
+      tc(at('2026-05-20', 10, 2), [200, 0, 20], [300, 0, 30]),
+    ]);
+    const child = session([
+      meta(at('2026-05-20', 11), JSON.stringify({ subagent: { thread_spawn: { parent_thread_id: 'p' } } })),
+      tc(at('2026-05-20', 11, 1), [200, 0, 20], [300, 0, 30]), // 复制来的
+      tc(at('2026-05-20', 11, 2), [400, 0, 40], [700, 0, 70]), // 子会话自己的
+    ]);
+    const expected = 110 + 220 + 440;
+    expect(run([parent, child]).ledger.days['2026-05-20'].tokens).toBe(expected);
+    // 按文件分别汇总（采集时的增量缓存）再合并，结果一样
+    const streams = [];
+    const days = mergeDays(aggregateCodexDays([parent], [], { streamsOut: streams }), aggregateCodexDays([child], [], { streamsOut: streams }));
+    applyStreams(days, streams);
+    expect(days['2026-05-20'].tokens).toBe(expected);
   });
 
   it('线程数只算自己发起的会话（vscode / cli / exec），审查子代理不算但解锁审查官', () => {

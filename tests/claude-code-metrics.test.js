@@ -21,11 +21,11 @@ const toolResult = (sessionId, ts) => ({
   type: 'user', sessionId, timestamp: ts, toolUseResult: { stdout: SECRET },
   message: { content: [{ type: 'tool_result', content: SECRET }] },
 });
-const assistant = (sessionId, ts, { id = `m-${ts}`, model = 'claude-opus-5-5', tools = [], tokens = 100 } = {}) => ({
-  type: 'assistant', sessionId, timestamp: ts,
+const assistant = (sessionId, ts, { id = `m-${ts}`, model = 'claude-opus-5-5', tools = [], tokens = 100, usage = null, sidechain = false } = {}) => ({
+  type: 'assistant', sessionId, timestamp: ts, isSidechain: sidechain,
   message: {
     id, model,
-    usage: { input_tokens: tokens, output_tokens: tokens, cache_creation_input_tokens: 0, cache_read_input_tokens: 999999 },
+    usage: usage ?? { input_tokens: tokens, output_tokens: tokens, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
     content: [{ type: 'text', text: SECRET }, ...tools.map((name, i) => ({ type: 'tool_use', id: `${id}-t${i}`, name, input: { command: `echo ${SECRET}` } }))],
   },
 });
@@ -66,13 +66,55 @@ describe('隐私：白名单提取', () => {
 });
 
 describe('统计口径', () => {
-  it('同一条消息拆成多条记录时，Token 和工具调用只算一次；不计缓存读取', () => {
+  it('同一条消息拆成多条记录时，Token 和工具调用只算一次', () => {
     const a = assistant('s1', at('2026-05-01', 10), { id: 'msg-1', tools: ['Bash'], tokens: 50 });
     const { ledger } = run([a, a, a]);
     const d = ledger.days['2026-05-01'];
     expect(d.tokens).toBe(100);
     expect(d.toolCalls).toBe(1);
     expect(d.bashCalls).toBe(1);
+  });
+
+  it('Token 按行业通用口径：输入 + 输出 + 缓存写入 + 缓存命中', () => {
+    const usage = { input_tokens: 10, output_tokens: 200, cache_creation_input_tokens: 3000, cache_read_input_tokens: 40000 };
+    const { ledger } = run([assistant('s1', at('2026-05-01', 10), { usage })]);
+    expect(ledger.days['2026-05-01'].tokens).toBe(43210);
+  });
+
+  it('同一条回复的多行记录：每个字段各取最大值（流式输出时前几行的输出数不完整）', () => {
+    const line = (out, read) => assistant('s1', at('2026-05-01', 10), { id: 'msg-2', usage: { input_tokens: 5, output_tokens: out, cache_creation_input_tokens: 0, cache_read_input_tokens: read } });
+    const { ledger } = run([line(1, 900), line(80, 0), line(30, 900)]);
+    expect(ledger.days['2026-05-01'].tokens).toBe(5 + 80 + 900);
+  });
+
+  it('子代理记录（isSidechain）的 Token 计入，但不算人发出的一轮，也不新增会话', () => {
+    const { ledger } = run([
+      user('s1', at('2026-05-01', 10)),
+      assistant('s1', at('2026-05-01', 10, 1), { id: 'main', tokens: 10 }),
+      { ...user('s1', at('2026-05-01', 10, 2), '去查一下'), isSidechain: true },
+      assistant('s1', at('2026-05-01', 10, 3), { id: 'sub', tokens: 7, sidechain: true }),
+    ]);
+    const d = ledger.days['2026-05-01'];
+    expect(d.tokens).toBe(20 + 14);
+    expect(d.humanTurns).toBe(1);
+    expect(d.sessions).toBe(1);
+  });
+
+  it('子代理的工具调用暂不计入工具类徽章（只算主会话，和以前一致）', () => {
+    const { ledger } = run([
+      assistant('s1', at('2026-05-01', 10), { id: 'main', tools: ['Bash'] }),
+      assistant('s1', at('2026-05-01', 10, 1), { id: 'sub', tools: ['Bash', 'Skill', 'Read'], sidechain: true }),
+    ]);
+    const d = ledger.days['2026-05-01'];
+    expect(d).toMatchObject({ toolCalls: 1, bashCalls: 1, skillCalls: 0 });
+  });
+
+  it('<synthetic> 不是真实调用（如 API 报错时的占位回复），不计 Token', () => {
+    const { ledger } = run([
+      user('s1', at('2026-05-01', 10)),
+      assistant('s1', at('2026-05-01', 10, 1), { model: '<synthetic>', usage: { input_tokens: 0, output_tokens: 99, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } }),
+    ]);
+    expect(ledger.days['2026-05-01'].tokens).toBe(0);
   });
 
   it('工具结果不算「人发出的一轮」，也不计入作息小时', () => {

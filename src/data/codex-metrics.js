@@ -43,6 +43,10 @@ export function originKind(source) {
   return 'other';
 }
 
+const USAGE_FIELDS = ['input_tokens', 'cached_input_tokens', 'cache_write_input_tokens', 'output_tokens', 'reasoning_output_tokens', 'total_tokens'];
+/** 行业通用口径（与 ccusage、CC Switch 一致）：Codex 的 input_tokens 已含缓存命中，推理计在 output_tokens 里。 */
+const usageTokens = (u) => num(u.input_tokens) + num(u.output_tokens);
+
 const isReviewModel = (m) => typeof m === 'string' && m.includes('review');
 
 /** 会话记录的一行 → 白名单事实（null 表示对统计没用）。 */
@@ -68,17 +72,14 @@ export function extractRolloutFacts(rec, { hash = fnv1a } = {}) {
     }
     case 'event_msg':
       if (p.type === 'task_started') return { ts, kind: 'task' };
-      // 旧版 Codex 没有 token_usage_record，用量只在 token_count 里：取这次的 last，
-      // 再带上累计值做指纹，同一次用量的重复播报（累计值不变）在汇总时跳过
+      // 旧版 Codex 没有 token_usage_record，用量只在 token_count 里：取这次的 last。
+      // 「本次用量 + 累计值」做指纹：同一次用量的重复播报、分叉 / 子代理会话开头复制的父会话记录，
+      // 指纹都和原来那条一样，汇总时跨会话去重
       if (p.type === 'token_count' && p.info && typeof p.info === 'object') {
         const last = p.info.last_token_usage ?? {};
         const total = p.info.total_token_usage ?? {};
-        return {
-          ts,
-          kind: 'usage-stream',
-          tokens: Math.max(0, num(last.input_tokens) - num(last.cached_input_tokens)) + num(last.output_tokens),
-          total: [total.input_tokens, total.cached_input_tokens, total.output_tokens].map(num).join('/'),
-        };
+        const sig = (u) => USAGE_FIELDS.map((k) => num(u[k])).join('/');
+        return { ts, kind: 'usage-stream', tokens: usageTokens(last), total: sig(total), key: hash(`${sig(total)}|${sig(last)}`) };
       }
       return null;
     case 'response_item':
@@ -92,8 +93,7 @@ export function extractRolloutFacts(rec, { hash = fnv1a } = {}) {
         ts,
         kind: 'usage',
         id: typeof p.response_id === 'string' ? p.response_id : null,
-        // 与 Claude Code 同口径：未缓存的输入 + 输出（缓存读取不计）
-        tokens: Math.max(0, num(u.input_tokens) - num(u.cached_input_tokens)) + num(u.output_tokens),
+        tokens: usageTokens(u),
       };
     }
     case 'compacted':
@@ -145,10 +145,16 @@ const IDLE_GAP_MS = 30 * 60 * 1000;
  * @param {object[][]} sessions  每个会话记录文件的事实数组
  * @param {object[]}   threads   会话索引库的事实数组
  */
-export function aggregateCodexDays(sessions, threads) {
+/**
+ * @param {object} [opts]
+ * @param {Array}  [opts.streamsOut]  传入时，旧版 token_count 用量不直接计入，而是以 [指纹, 日期, Token] 放进这里，
+ *   由调用方合并所有文件后用 applyStreams 统一去重（采集时按文件缓存，跨文件去重只能放到最后做）
+ */
+export function aggregateCodexDays(sessions, threads, { streamsOut = null } = {}) {
   const days = {};
   const day = (ts) => (days[localDate(ts)] ??= emptyDay());
   const seenUsage = new Set();
+  const seenStreams = new Set();
 
   for (const facts of sessions) {
     const sorted = facts.filter((f) => f && f.ts !== null).sort((a, b) => a.ts - b.ts);
@@ -180,7 +186,11 @@ export function aggregateCodexDays(sessions, threads) {
       }
       if (f.kind === 'usage-stream' && !hasRecords && f.total !== lastTotal) {
         lastTotal = f.total;
-        d.tokens += f.tokens;
+        if (streamsOut) streamsOut.push([f.key, localDate(f.ts), f.tokens]);
+        else if (!seenStreams.has(f.key)) {
+          seenStreams.add(f.key);
+          d.tokens += f.tokens;
+        }
       }
       if (f.kind === 'tool') {
         if (f.name === 'apply_patch') d.patches += 1;
@@ -216,6 +226,17 @@ export function aggregateCodexDays(sessions, threads) {
  * 合并两份按天汇总（用于把各个会话文件的缓存结果加起来）：
  * 计数相加，标记取或，最长会话取最大，模型取并集。
  */
+/** 把 aggregateCodexDays 交出来的旧版用量按指纹去重后计入（就地修改 days）。 */
+export function applyStreams(days, streams) {
+  const seen = new Set();
+  for (const [key, date, tokens] of streams) {
+    if (seen.has(key)) continue;
+    seen.add(key);
+    (days[date] ??= emptyDay()).tokens += tokens;
+  }
+  return days;
+}
+
 export function mergeDays(a, b) {
   const out = structuredClone(a);
   for (const [date, d] of Object.entries(b)) {

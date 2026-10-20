@@ -12,7 +12,7 @@ import { zstdDecompressSync } from 'node:zlib';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import badges from '../brands/codex/badges.js';
-import { aggregateCodexDays, computeCodexProgress, extractRolloutFacts, mergeCodexLedger, mergeDays, threadFacts } from '../data/codex-metrics.js';
+import { aggregateCodexDays, applyStreams, computeCodexProgress, extractRolloutFacts, mergeCodexLedger, mergeDays, threadFacts } from '../data/codex-metrics.js';
 import { localDate } from '../data/metrics-common.js';
 import { hash, readJSON, saveBrand, writeJSON } from './common.js';
 
@@ -95,14 +95,18 @@ async function threadRows(dir) {
  * 把它按天汇总的数字缓存起来（键是路径的哈希，不存路径本身）。
  * 大小或修改时间变了才重新解析。
  */
-/** 统计口径变了就加一，旧缓存作废、所有会话记录重新解析。2：认出旧版 token_count 用量。 */
-const CACHE_VERSION = 2;
+/**
+ * 统计口径变了就加一，旧缓存作废、所有会话记录重新解析。
+ * 2：认出旧版 token_count 用量。3：行业通用口径（含缓存命中）；旧版用量跨文件去重。
+ */
+const CACHE_VERSION = 3;
 
 function rolloutDays(files, cachePath, onProgress) {
   const cache = readJSON(cachePath);
   const old = cache?.version === CACHE_VERSION ? cache.files : {};
   const next = {};
   let days = {};
+  const allStreams = []; // 旧版 token_count 用量：分叉 / 子代理会话会复制父会话的记录，全部文件读完再统一去重
   let parsed = 0;
   let facts = 0;
   files.forEach((file, i) => {
@@ -113,12 +117,15 @@ function rolloutDays(files, cachePath, onProgress) {
       const f = factsOf(file);
       facts += f.length;
       parsed += 1;
-      entry = { size, mtimeMs, days: aggregateCodexDays([f], []) };
+      const streams = [];
+      entry = { size, mtimeMs, days: aggregateCodexDays([f], [], { streamsOut: streams }), streams };
     }
     next[key] = entry;
     days = mergeDays(days, entry.days);
+    allStreams.push(...entry.streams);
     onProgress?.(i + 1, files.length);
   });
+  applyStreams(days, allStreams);
   writeJSON(cachePath, { version: CACHE_VERSION, files: next });
   return { days, parsed, facts };
 }

@@ -90,13 +90,13 @@ describe('CLI', () => {
     const cx = results.find((r) => r.brandId === 'codex');
     expect(cc.progress['night-owl']).toMatchObject({ unlocked: true, earnedAt: '2026-05-02' });
     expect(cc.ledger.days['2026-05-02'].tokens).toBe(1000);
-    // 两个会话文件（一个 zstd 压缩）各打一次补丁，Token 按未缓存输入 + 输出计
+    // 两个会话文件（一个 zstd 压缩）各打一次补丁，Token 按行业通用口径：输入（含缓存命中）+ 输出
     expect(cx.progress.patches.value).toBe(2);
-    expect(cx.ledger.days['2026-05-03'].tokens).toBe(1400);
+    expect(cx.ledger.days['2026-05-03'].tokens).toBe(2200);
     expect(cx.progress['deep-thinker'].unlocked).toBe(true);
     // 热力图用的按天数据：只有日期和数字
     expect(cc.data.daily).toEqual({ '2026-05-02': [1000, 1] });
-    expect(cx.data.daily['2026-05-03'][0]).toBe(1400);
+    expect(cx.data.daily['2026-05-03'][0]).toBe(2200);
   });
 
   it('第二次采集走缓存，结果不变', async () => {
