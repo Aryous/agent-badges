@@ -1,6 +1,6 @@
 {
   "name": "agent-badges",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Turn your local Claude Code and Codex history into Apple Watch–style 3D achievement badges. Offline, private, no upload.",
   "type": "module",
   "license": "MIT",

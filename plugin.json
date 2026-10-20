@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "agent-badges",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Check your Claude Code and Codex achievement badges: new unlocks, what's almost unlocked, and your totals. Runs the agent-badges CLI locally.",
   "author": {
     "name": "Aryous",
