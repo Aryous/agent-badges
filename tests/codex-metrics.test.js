@@ -66,6 +66,37 @@ describe('统计口径', () => {
     expect(run([s]).ledger.days['2026-05-01'].tokens).toBe(250);
   });
 
+  // 旧版 Codex（2026-09 之前）没有 token_usage_record，用量只在 token_count 事件里
+  const tc = (ts, last, total) => {
+    const u = ([input, cached, out]) => ({ input_tokens: input, cached_input_tokens: cached, output_tokens: out, total_tokens: input + out });
+    return {
+      type: 'event_msg', timestamp: ts,
+      payload: { type: 'token_count', info: { total_token_usage: u(total), last_token_usage: u(last), model_context_window: 1 }, rate_limits: { plan_type: SECRET } },
+    };
+  };
+
+  it('Token（旧版）：没有 token_usage_record 时用 token_count，重复播报只计一次', () => {
+    const s = session([
+      meta(at('2026-05-20', 10)),
+      { type: 'event_msg', timestamp: at('2026-05-20', 10), payload: { type: 'token_count', info: null } },
+      tc(at('2026-05-20', 10, 1), [1000, 800, 50], [1000, 800, 50]),
+      tc(at('2026-05-20', 10, 1), [1000, 800, 50], [1000, 800, 50]), // 同一次的重复播报
+      tc(at('2026-05-20', 10, 2), [2000, 1900, 30], [3000, 2700, 80]),
+    ]);
+    const { ledger } = run([s]);
+    expect(ledger.days['2026-05-20'].tokens).toBe(250 + 130);
+    expect(JSON.stringify(ledger)).not.toContain(SECRET);
+  });
+
+  it('Token：同一会话里既有 token_usage_record 又有 token_count 时只用前者，不重复计', () => {
+    const s = session([
+      meta(at('2026-09-11', 10)),
+      usage(at('2026-09-11', 10, 1), 'r1', 1000, 800, 50),
+      tc(at('2026-09-11', 10, 1), [1000, 800, 50], [1000, 800, 50]),
+    ]);
+    expect(run([s]).ledger.days['2026-09-11'].tokens).toBe(250);
+  });
+
   it('线程数只算自己发起的会话（vscode / cli / exec），审查子代理不算但解锁审查官', () => {
     const threads = [
       { created_at_ms: ms('2026-05-01', 9), source: 'vscode', thread_source: 'user', model: 'gpt-a', approval_mode: 'never', reasoning_effort: 'ultra' },

@@ -221,11 +221,24 @@ export function aggregateDays(facts) {
  * 会话记录会被定期清理，所以把每次算出的按天汇总并入本地账本：
  * 本次能看到的日期以本次为准（重新计算），看不到的日期保留账本里的旧值。
  */
+/**
+ * 这一天是不是从 stats-cache 补进来的。旧账本没有 source 标记，靠特征认：
+ * 会话记录算出的日子只要有对话就有小时分布，stats-cache 补的日子永远没有。
+ */
+function fromStats(d) {
+  if (d.source === 'stats') return true;
+  return !d.source && d.longestSessionMin === 0 && !d.models?.length && Array.isArray(d.hours) && d.hours.every((h) => h === 0);
+}
+
 export function mergeLedger(ledger, freshDays, extra = {}) {
   const days = { ...(ledger?.days ?? {}) };
   for (const [date, d] of Object.entries(freshDays)) days[date] = d;
-  // stats-cache 里有、但账本和会话记录都没有的日期，用它补上（只有粗粒度计数）
-  for (const [date, d] of Object.entries(extra.statsDays ?? {})) days[date] ??= d;
+  // stats-cache 里有、但会话记录已经没有的日期，用它补上（只有粗粒度计数）。
+  // 以前从 stats-cache 补进来的日期也用新的口径更新；会话记录算出的日期不动
+  for (const [date, d] of Object.entries(extra.statsDays ?? {})) {
+    if (date in freshDays) continue;
+    if (!days[date] || fromStats(days[date])) days[date] = d;
+  }
   const firstSeen = [ledger?.firstSeen, extra.firstSeen, Object.keys(days).sort()[0]].filter(Boolean).sort()[0] ?? null;
   // 没有日期的模型使用记录（来自 stats-cache 的模型列表）
   const undatedModels = [...new Set([...(ledger?.undatedModels ?? []), ...(extra.undatedModels ?? [])])].sort();
@@ -235,9 +248,16 @@ export function mergeLedger(ledger, freshDays, extra = {}) {
 /** 把 stats-cache.json 里的每日活跃补进账本（只补账本里没有的日期，只取数字）。 */
 export function daysFromStatsCache(stats) {
   const out = {};
+  const isDate = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  const tokens = {};
+  for (const t of Array.isArray(stats?.dailyModelTokens) ? stats.dailyModelTokens : []) {
+    if (!isDate(t?.date) || !t.tokensByModel || typeof t.tokensByModel !== 'object') continue;
+    tokens[t.date] = Object.values(t.tokensByModel).reduce((s, n) => s + num(n), 0);
+  }
   for (const a of Array.isArray(stats?.dailyActivity) ? stats.dailyActivity : []) {
-    if (typeof a?.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(a.date)) continue;
-    out[a.date] = { ...emptyDay(), sessions: num(a.sessionCount), toolCalls: num(a.toolCallCount), humanTurns: num(a.messageCount) };
+    if (!isDate(a?.date)) continue;
+    // messageCount 把 Claude 的回复和工具结果都算进去了，不是对话轮数；算不出轮数就记 0（界面上不显示轮数）
+    out[a.date] = { ...emptyDay(), sessions: num(a.sessionCount), toolCalls: num(a.toolCallCount), tokens: tokens[a.date] ?? 0, source: 'stats' };
   }
   return out;
 }

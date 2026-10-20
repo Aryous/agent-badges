@@ -42,7 +42,7 @@ function rolloutFiles(dir) {
  * 只有这几类记录对统计有用。它们的类型标记都在行首附近，
  * 先用字符串粗筛，正文、命令输出这类大行连 JSON 解析都不做。
  */
-const WANTED = ['"session_meta"', '"turn_context"', '"task_started"', '"function_call"', '"custom_tool_call"', '"token_usage_record"', '"compacted"'];
+const WANTED = ['"session_meta"', '"turn_context"', '"task_started"', '"function_call"', '"custom_tool_call"', '"token_usage_record"', '"token_count"', '"compacted"'];
 const wanted = (line) => {
   const head = line.slice(0, 400);
   return WANTED.some((w) => head.includes(w));
@@ -95,9 +95,12 @@ async function threadRows(dir) {
  * 把它按天汇总的数字缓存起来（键是路径的哈希，不存路径本身）。
  * 大小或修改时间变了才重新解析。
  */
+/** 统计口径变了就加一，旧缓存作废、所有会话记录重新解析。2：认出旧版 token_count 用量。 */
+const CACHE_VERSION = 2;
+
 function rolloutDays(files, cachePath, onProgress) {
   const cache = readJSON(cachePath);
-  const old = cache?.version === 1 ? cache.files : {};
+  const old = cache?.version === CACHE_VERSION ? cache.files : {};
   const next = {};
   let days = {};
   let parsed = 0;
@@ -116,7 +119,7 @@ function rolloutDays(files, cachePath, onProgress) {
     days = mergeDays(days, entry.days);
     onProgress?.(i + 1, files.length);
   });
-  writeJSON(cachePath, { version: 1, files: next });
+  writeJSON(cachePath, { version: CACHE_VERSION, files: next });
   return { days, parsed, facts };
 }
 

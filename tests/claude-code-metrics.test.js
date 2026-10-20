@@ -8,6 +8,7 @@ import {
   mergeLedger,
   modelFamily,
 } from '../src/data/claude-code-metrics.js';
+import { dailySeries } from '../src/data/daily.js';
 
 const hash = (s) => `h:${s.length}:${s.charCodeAt(0)}`;
 const SECRET = 'sk-ant-SECRET-should-never-leak-123';
@@ -215,5 +216,28 @@ describe('账本合并', () => {
     const p = computeProgress(merged, badges, '2026-12-31');
     expect(p['model-collector'].unlocked).toBe(true);
     expect(p.anniversary).toMatchObject({ unlocked: true, earnedAt: '2026-12-30' });
+  });
+
+  const STATS = {
+    dailyActivity: [{ date: '2026-04-07', sessionCount: 1, toolCallCount: 114, messageCount: 454 }],
+    dailyModelTokens: [{ date: '2026-04-07', tokensByModel: { 'claude-opus-4-6': 80000, 'claude-sonnet-4-6': 1147 } }],
+  };
+
+  it('stats-cache：Token 取每天各模型之和；消息数不是对话轮数，不当轮数用', () => {
+    const d = daysFromStatsCache(STATS)['2026-04-07'];
+    expect(d).toMatchObject({ tokens: 81147, sessions: 1, toolCalls: 114, humanTurns: 0 });
+    const merged = mergeLedger(null, {}, { statsDays: daysFromStatsCache(STATS) });
+    expect(dailySeries('claude-code', merged)['2026-04-07']).toEqual([81147, 0]);
+  });
+
+  it('stats-cache：账本里旧版补进来的日期（没有 Token）会被更新；会话记录算出的日期不会被覆盖', () => {
+    const legacy = { ...daysFromStatsCache(STATS)['2026-04-07'], tokens: 0, humanTurns: 454 };
+    delete legacy.source;
+    const fromTranscripts = aggregateDays([extractFacts(user('s1', at('2026-04-08', 9)), { hash }), extractFacts(assistant('s1', at('2026-04-08', 9, 1), { tokens: 5 }), { hash })]);
+    const ledger = { version: 1, firstSeen: '2026-04-07', undatedModels: [], days: { '2026-04-07': legacy, ...fromTranscripts } };
+    const stats = { ...STATS, dailyActivity: [...STATS.dailyActivity, { date: '2026-04-08', sessionCount: 9, toolCallCount: 9, messageCount: 99 }] };
+    const merged = mergeLedger(ledger, {}, { statsDays: daysFromStatsCache(stats) });
+    expect(merged.days['2026-04-07']).toMatchObject({ tokens: 81147, humanTurns: 0 });
+    expect(merged.days['2026-04-08']).toMatchObject({ tokens: 10, humanTurns: 1 });
   });
 });

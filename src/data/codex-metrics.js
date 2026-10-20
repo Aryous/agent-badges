@@ -67,7 +67,20 @@ export function extractRolloutFacts(rec, { hash = fnv1a } = {}) {
       };
     }
     case 'event_msg':
-      return p.type === 'task_started' ? { ts, kind: 'task' } : null;
+      if (p.type === 'task_started') return { ts, kind: 'task' };
+      // 旧版 Codex 没有 token_usage_record，用量只在 token_count 里：取这次的 last，
+      // 再带上累计值做指纹，同一次用量的重复播报（累计值不变）在汇总时跳过
+      if (p.type === 'token_count' && p.info && typeof p.info === 'object') {
+        const last = p.info.last_token_usage ?? {};
+        const total = p.info.total_token_usage ?? {};
+        return {
+          ts,
+          kind: 'usage-stream',
+          tokens: Math.max(0, num(last.input_tokens) - num(last.cached_input_tokens)) + num(last.output_tokens),
+          total: [total.input_tokens, total.cached_input_tokens, total.output_tokens].map(num).join('/'),
+        };
+      }
+      return null;
     case 'response_item':
       if (p.type === 'function_call' || p.type === 'custom_tool_call') {
         return { ts, kind: 'tool', name: TOOL_ALLOWLIST.has(p.name) ? p.name : 'other' };
@@ -141,6 +154,9 @@ export function aggregateCodexDays(sessions, threads) {
     const sorted = facts.filter((f) => f && f.ts !== null).sort((a, b) => a.ts - b.ts);
     const origin = sorted.find((f) => f.kind === 'session')?.origin ?? 'other';
     const human = USER_ORIGINS.has(origin);
+    // 新版每次响应都有 token_usage_record，同时也有 token_count；有前者时不再看后者，避免重复计
+    const hasRecords = sorted.some((f) => f.kind === 'usage');
+    let lastTotal = null;
     let last = null;
     let activeMs = 0;
     for (const f of sorted) {
@@ -160,6 +176,10 @@ export function aggregateCodexDays(sessions, threads) {
       if (f.kind === 'usage') {
         if (f.id && seenUsage.has(f.id)) continue;
         if (f.id) seenUsage.add(f.id);
+        d.tokens += f.tokens;
+      }
+      if (f.kind === 'usage-stream' && !hasRecords && f.total !== lastTotal) {
+        lastTotal = f.total;
         d.tokens += f.tokens;
       }
       if (f.kind === 'tool') {
