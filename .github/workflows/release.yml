@@ -1,0 +1,54 @@
+name: Release
+
+# 发布到 npm：推送 v* 标签时自动运行，也可以在 Actions 页面手动触发（补发当前版本）。
+# 用 npm 的可信发布（OIDC）：npm 信任这个仓库的这个工作流，不需要令牌，也不需要两步验证码；
+# 公开仓库会自动附上来源证明（provenance）。在 npmjs.com 的包设置里登记的文件名必须是 release.yml。
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          # 需要 Node 内置的 zstd 解压和 SQLite（22.15+）；可信发布要求 Node 22.14+
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      # 可信发布要求 npm 11.5.1+
+      - run: npm install -g npm@11
+      - run: npm ci
+
+      - name: 检查版本
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
+            echo "标签 $GITHUB_REF_NAME 和 package.json 的版本 $VERSION 不一致" >&2
+            exit 1
+          fi
+          if npm view "agent-badges@$VERSION" version > /dev/null 2>&1; then
+            echo "agent-badges@$VERSION 已经在 npm 上，跳过发布"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 真正打包、安装、运行一次 CLI，防止发布包漏文件
+      - if: steps.version.outputs.skip != 'true'
+        run: npm run check:pack
+      # prepack 会再构建并跑一遍测试
+      - if: steps.version.outputs.skip != 'true'
+        run: npm publish
