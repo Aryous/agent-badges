@@ -46,33 +46,16 @@ const PANEL = 0.5; // 面板半边长
 const PANEL_Y = 0.0;
 const BAND_Y = 0.6; // 上下边条文字的中心高度
 
-/**
- * 圆角矩形面板：用很细的像素网格（默认 0.004）描出整块轮廓，挤出成单个几何体。
- * 单块几何体的光影是连续的；细网格的台阶小于 1 像素，看起来就是平滑圆角。
- */
-function roundRect(half, r, { cy = 0, cell = 0.004, ...item }) {
-  const n = Math.round((half * 2) / cell);
-  const inner = half - r;
-  const rows = [];
-  for (let j = 0; j < n; j++) {
-    const y = half - (j + 0.5) * cell;
-    let row = '';
-    for (let i = 0; i < n; i++) {
-      const x = -half + (i + 0.5) * cell;
-      const dx = Math.max(Math.abs(x) - inner, 0);
-      const dy = Math.max(Math.abs(y) - inner, 0);
-      row += dx * dx + dy * dy <= r * r ? '#' : '.';
-    }
-    rows.push(row);
-  }
-  return [{ kind: 'pixels', rows, cell, center: [0, cy], ...item }];
+/** 圆角矩形面板：直边加圆弧的矢量轮廓，挤出成单个几何体，放大到多近都没有台阶。 */
+function roundRect(half, radius, { cy = 0, ...item }) {
+  return [{ kind: 'rounded-rect', half, radius, center: [0, cy], ...item }];
 }
 
 /** 把一个浮雕基元的平面尺寸放大 k 倍（高度不变）。 */
 function scaleItem(item, k) {
   const out = { ...item };
   for (const key of ['center', 'from', 'to']) if (out[key]) out[key] = out[key].map((v) => v * k);
-  for (const key of ['cell', 'width', 'radius', 'size']) if (out[key] !== undefined) out[key] *= k;
+  for (const key of ['cell', 'width', 'radius', 'size', 'half']) if (out[key] !== undefined) out[key] *= k;
   return out;
 }
 

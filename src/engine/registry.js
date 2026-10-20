@@ -13,7 +13,7 @@ export const MATERIAL_TYPES = [
   'locked',          // 未解锁剪影
 ];
 
-export const RELIEF_KINDS = ['capsule', 'circle', 'ring', 'pixels', 'text-arc', 'text', 'gem', 'path'];
+export const RELIEF_KINDS = ['capsule', 'circle', 'ring', 'pixels', 'rounded-rect', 'text-arc', 'text', 'gem', 'path'];
 
 export const LAYER_KINDS = ['rim', 'face'];
 

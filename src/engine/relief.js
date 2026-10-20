@@ -12,6 +12,7 @@ import { svgShapes } from './svgpath.js';
 //   circle    圆片（也可用作中心圆盘）
 //   ring      圆环（细线装饰、圆盘描边）
 //   pixels    像素图（Claude Code 小怪物、像素数字）
+//   rounded-rect  圆角正方形（App 图标面板）
 //   text-arc  沿圆弧排布的立体文字
 //   text      水平排布的立体文字（中心大数字）
 //   gem       多面切割的宝石
@@ -46,6 +47,21 @@ function ring({ center = [0, 0], radius, width }) {
   return [outer];
 }
 
+/** 圆角正方形：half 为半边长，radius 为圆角半径。四条直边 + 四段圆弧，没有台阶。 */
+function roundedRect({ center = [0, 0], half, radius }) {
+  const [cx, cy] = center;
+  const r = Math.min(radius, half);
+  const k = half - r;
+  const s = new Shape();
+  s.moveTo(cx + k, cy - half);
+  s.absarc(cx + k, cy - k, r, -Math.PI / 2, 0, false);
+  s.absarc(cx + k, cy + k, r, 0, Math.PI / 2, false);
+  s.absarc(cx - k, cy + k, r, Math.PI / 2, Math.PI, false);
+  s.absarc(cx - k, cy - k, r, Math.PI, Math.PI * 1.5, false);
+  s.closePath();
+  return [s];
+}
+
 function pixels({ rows, cell, center = [0, 0] }) {
   return pixelShapes(rows, { cell, center });
 }
@@ -60,7 +76,7 @@ function path({ d, scale = 0.5, viewBox = 24, center = [0, 0], holesOnly = false
   return holesOnly ? shapes.flatMap((s) => s.holes.map((h) => new Shape(h.getPoints()))) : shapes;
 }
 
-const PRIMITIVES = { capsule, circle, ring, pixels, path };
+const PRIMITIVES = { capsule, circle, ring, pixels, path, 'rounded-rect': roundedRect };
 
 export function reliefShapes(item) {
   const make = PRIMITIVES[item.kind];
