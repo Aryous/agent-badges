@@ -97,7 +97,7 @@ function formatDate(iso) {
 export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
   const { palette } = brand;
   const locked = !state.unlocked;
-  let config = resolveTier(rawConfig, state.tier ?? 0);
+  let config = resolveTier(rawConfig, state.tier ?? 0, state.variant ?? 0);
   // 隐藏成就：未解锁前不透露图案和名字
   const masked = locked && config.hidden;
   if (masked) {

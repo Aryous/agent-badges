@@ -241,16 +241,29 @@ body {
 }
 
 [data-metal='bronze'] {
-  --metal: #c0825a;
+  --metal: #d58c5f;
 }
 [data-metal='silver'] {
-  --metal: #c9ced6;
+  --metal: #eef0f2;
 }
 [data-metal='gold'] {
-  --metal: #d9b061;
+  --metal: #f2c46b;
 }
 [data-metal='platinum'] {
-  --metal: #e4e7ec;
+  --metal: #cbc6be;
+}
+/* Token 顶级的三款彩蛋：底色 + 金属描边；还没抽到时三色拼成一个圆点 */
+[data-metal='ivory-gold'] {
+  --metal: radial-gradient(circle, #f3f0e8 52%, #f2c46b 56%);
+}
+[data-metal='onyx-gold'] {
+  --metal: radial-gradient(circle, #1c2129 52%, #f2c46b 56%);
+}
+[data-metal='sapphire'] {
+  --metal: radial-gradient(circle, #1d3c8f 52%, #eef0f2 56%);
+}
+[data-metal='secret'] {
+  --metal: conic-gradient(#f3f0e8 0 33%, #1c2129 0 66%, #1d3c8f 0);
 }
 
 /* ---------- 等级阶梯 ---------- */
@@ -586,6 +599,8 @@ button {
   line-height: 1.6;
   color: var(--muted);
   text-wrap: pretty;
+  /* 顶级彩蛋的说明另起一段 */
+  white-space: pre-line;
 }
 
 .info .meter {

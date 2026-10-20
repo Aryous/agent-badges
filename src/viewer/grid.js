@@ -1,4 +1,4 @@
-import { badgeTitle, seriesSubtitle, seriesTitle, tierName } from '../brands/shared/text.js';
+import { badgeTitle, seriesSubtitle, seriesTitle, tierKey, tierLabel } from '../brands/shared/text.js';
 import { formatBig, lang, t } from '../i18n.js';
 
 // 陈列墙：按系列分组的网格。徽章是预先渲染好的静态图，
@@ -12,9 +12,11 @@ export function describeState(config, state) {
   if (masked) return { title: '???', meta: t('state.hidden'), masked };
   const title = badgeTitle(config, lang, state.tier);
   if (config.tiers && state.unlocked) {
-    const tier = config.tiers[state.tier];
-    // 英文标题里已经带着数值（100 Sessions），只写等级名
-    const meta = lang === 'zh' ? `${tierName(tier.metal, 'zh')} · ${tier.label}` : tierName(tier.metal, 'en');
+    const raw = config.tiers[state.tier];
+    const tier = { ...raw, metal: tierKey(raw, state.variant) };
+    // 英文标题里已经带着数值（100 Sessions），只写等级名；顶级写抽到的款式
+    const name = tierLabel(raw, state.variant, lang);
+    const meta = lang === 'zh' ? `${name} · ${tier.label}` : name;
     return { title, meta, tier, masked };
   }
   if (state.unlocked) return { title, meta: fmtDate(state.earnedAt), masked };

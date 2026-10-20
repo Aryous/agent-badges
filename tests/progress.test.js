@@ -63,6 +63,37 @@ describe('分级徽章', () => {
     expect(p).toMatchObject({ tier: 2, progress: { target: 1000 } });
   });
 
+  describe('顶级的款式彩蛋', () => {
+    const top = { threshold: 1e4, label: '10K', salt: 'cc-sessions', variants: ['a', 'b', 'c'].map((id) => ({ id, name: { zh: id, en: id }, metal: 'gold' })) };
+    const withTop = [{ ...tiered[0], tiers: [...tiered[0].tiers, top] }];
+    const at = (earnedAt, value = 2e4) => normalizeProgress({ sessions: { value, earnedAt } }, withTop).sessions;
+
+    it('由达到顶级的日期决定抽到哪一款：同一天永远同一款', () => {
+      const v = at('2026-07-26').variant;
+      expect([0, 1, 2]).toContain(v);
+      for (let i = 0; i < 5; i++) expect(at('2026-07-26').variant).toBe(v);
+    });
+
+    it('日期不同会抽到不同的款，三款都有机会', () => {
+      const seen = new Set();
+      for (let d = 1; d <= 28; d++) seen.add(at(`2026-02-${String(d).padStart(2, '0')}`).variant);
+      expect(seen).toEqual(new Set([0, 1, 2]));
+    });
+
+    it('salt 不同（另一个品牌）各抽各的', () => {
+      const other = [{ ...withTop[0], tiers: [...tiered[0].tiers, { ...top, salt: 'codex-sessions' }] }];
+      const differs = Array.from({ length: 28 }, (_, d) => `2026-02-${String(d + 1).padStart(2, '0')}`).some(
+        (date) => normalizeProgress({ sessions: { value: 2e4, earnedAt: date } }, other).sessions.variant !== at(date).variant,
+      );
+      expect(differs).toBe(true);
+    });
+
+    it('还没到顶级、或这一级没有款式时为 null', () => {
+      expect(at('2026-07-26', 500).variant).toBeNull();
+      expect(normalizeProgress({ sessions: { value: 240, earnedAt: '2025-06-01' } }, tiered).sessions.variant).toBeNull();
+    });
+  });
+
   it('普通徽章也可以只给数值', () => {
     const plain = [{ id: 'x', criteria: { metric: 'm', target: 5 } }];
     expect(normalizeProgress({ x: { value: 7, earnedAt: '2025-01-01' } }, plain).x).toMatchObject({ unlocked: true, progress: { current: 5, target: 5 } });

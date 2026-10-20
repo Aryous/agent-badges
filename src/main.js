@@ -9,7 +9,7 @@ import { createProfile } from './viewer/profile.js';
 import { renderPoster } from './viewer/poster.js';
 import { renderShelf, shelfGroups } from './viewer/shelf.js';
 import { applyStatic, formatBig, lang, t } from './i18n.js';
-import { badgeDescription, badgeTitle, tierName } from './brands/shared/text.js';
+import { badgeDescription, badgeTitle, tierKey, tierLabel } from './brands/shared/text.js';
 import { createStage, supportsWebGL } from './viewer/scene.js';
 import { createGrid, describeState } from './viewer/grid.js';
 import { createInspector } from './viewer/inspector.js';
@@ -438,6 +438,11 @@ async function main() {
     titleEn.hidden = lang !== 'zh';
     titleEn.textContent = d.masked ? 'HIDDEN ACHIEVEMENT' : config.titleEn.replaceAll('{label}', d.tier?.label ?? config.tiers?.[0].label ?? '');
     $('[data-desc]').textContent = d.masked ? t('inspect.hiddenDesc', { brand: brand.name }) : badgeDescription(config, lang);
+    // 顶级彩蛋：告诉用户这一级有几款、抽到了哪一款（没抽到的不展示）
+    const topTier = config.tiers?.[state.tier ?? -1];
+    if (!d.masked && topTier?.variants && state.variant != null) {
+      $('[data-desc]').textContent += t('inspect.variant', { n: topTier.variants.length, name: tierLabel(topTier, state.variant, lang) });
+    }
 
     // 等级阶梯
     const ladder = $('[data-tiers]');
@@ -445,10 +450,12 @@ async function main() {
     ladder.innerHTML = '';
     for (const [i, tier] of (config.tiers ?? []).entries()) {
       const li = document.createElement('li');
-      li.dataset.metal = tier.metal;
       const earned = state.tier !== null && i <= state.tier;
+      // 有款式的那一级：抽到了写款式名，还没到写「隐藏款」
+      const variant = i === state.tier ? state.variant : null;
+      li.dataset.metal = tierKey(tier, variant);
       li.className = (earned ? 'is-earned' : '') + (i === state.tier ? ' is-current' : '');
-      li.innerHTML = `<span class="dot"></span><span>${tierName(tier.metal, lang).replace(/级$/, '')}</span><span>${tier.label}</span>`;
+      li.innerHTML = `<span class="dot"></span><span>${tierLabel(tier, variant, lang).replace(/级$/, '')}</span><span>${tier.label}</span>`;
       ladder.appendChild(li);
     }
 

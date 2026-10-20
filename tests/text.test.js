@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BRANDS } from '../src/brands/index.js';
-import { badgeTitle, badgeDescription, engravingLines, tierName } from '../src/brands/shared/text.js';
+import { badgeTitle, badgeDescription, engravingLines, tierLabel, tierName } from '../src/brands/shared/text.js';
+import { resolveTier } from '../src/engine/tiers.js';
 
 describe('中英文文字', () => {
   it('每枚徽章、每个系列都有英文名和英文说明', () => {
@@ -17,9 +18,9 @@ describe('中英文文字', () => {
 
   it('分级徽章的英文名带当前等级数值', () => {
     const tokens = BRANDS[0].badges.find((b) => b.id === 'tokens');
-    expect(badgeTitle(tokens, 'en', 1)).toBe('10M Tokens');
-    expect(badgeTitle(tokens, 'en', null)).toBe('1M Tokens');
-    expect(badgeTitle(tokens, 'en', 99)).toBe('1B Tokens');
+    expect(badgeTitle(tokens, 'en', 1)).toBe('100M Tokens');
+    expect(badgeTitle(tokens, 'en', null)).toBe('10M Tokens');
+    expect(badgeTitle(tokens, 'en', 99)).toBe('100B Tokens');
     expect(badgeTitle(tokens, 'zh', 1)).toBe('Token 里程碑');
     expect(badgeDescription(tokens, 'en')).toMatch(/^Tokens processed/);
     expect(tierName('gold', 'zh')).toBe('金级');
@@ -33,5 +34,29 @@ describe('中英文文字', () => {
     expect(engravingLines({ ...base, lang: 'en' })).toEqual(['CLAUDE CODE', 'Night Owl', 'ACHIEVEMENT UNLOCKED', '2026.05.02']);
     expect(engravingLines({ ...base, lang: 'en', unlocked: false, progress: { current: 0, target: 1 } })[3]).toBe('0 / 1');
     expect(engravingLines({ ...base, lang: 'en', hidden: true })[3]).toBe('KEEP EXPLORING');
+  });
+
+  it('分级徽章背面只刻数值和日期，不写金属名；顶级再加抽到的款式名', () => {
+    const tokens = BRANDS[0].badges.find((b) => b.id === 'tokens');
+    const base = { brandName: 'Claude Code', earnedAt: '2026.07.26', unlocked: true, progress: { current: 1, target: 1 } };
+    const gold = resolveTier(tokens, 2);
+    expect(engravingLines({ ...base, config: gold, tier: gold.tier, lang: 'zh' })).toEqual(['CLAUDE CODE', 'Token 里程碑', '1B TOKENS', '2026.07.26']);
+    expect(engravingLines({ ...base, config: tokens, tier: gold.tier, lang: 'en' })).toEqual(['CLAUDE CODE', '1B Tokens', 'ACHIEVEMENT UNLOCKED', '2026.07.26']);
+    const top = resolveTier(tokens, 4, 1);
+    const zh = engravingLines({ ...base, config: top, tier: top.tier, lang: 'zh' });
+    expect(zh[2]).toBe('100B TOKENS');
+    expect(zh[3]).toBe(`${top.tier.variant.name.zh} · 2026.07.26`);
+    expect(engravingLines({ ...base, config: tokens, tier: top.tier, lang: 'en' })[3]).toBe(`${top.tier.variant.name.en.toUpperCase()} · 2026.07.26`);
+  });
+
+  it('等级名：前几级写金属，有款式的那一级写抽到的款式，还没抽到写「隐藏款」', () => {
+    const tokens = BRANDS[0].badges.find((b) => b.id === 'tokens');
+    expect(tierLabel(tokens.tiers[1], null, 'zh')).toBe('银级');
+    expect(tierLabel(tokens.tiers[1], null, 'en')).toBe('Silver');
+    const top = tokens.tiers[4];
+    expect(tierLabel(top, 2, 'zh')).toBe(top.variants[2].name.zh);
+    expect(tierLabel(top, 2, 'en')).toBe(top.variants[2].name.en);
+    expect(tierLabel(top, null, 'zh')).toBe('隐藏款');
+    expect(tierLabel(top, null, 'en')).toBe('Secret');
   });
 });

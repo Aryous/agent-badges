@@ -37,18 +37,31 @@ export function validateBadge(config, brand) {
   if (config?.tiers) {
     const tiers = config.tiers;
     if (!Array.isArray(tiers) || !tiers.length) fail('tiers 不能为空');
+    const checkMetal = (where, t) => {
+      if (!brand.palette[t.metal]) fail(`${where} 的金属「${t.metal}」不在品牌色板中`);
+      if (t.accent && !brand.palette[t.accent]) fail(`${where} 的 accent「${t.accent}」不在品牌色板中`);
+    };
     tiers.forEach((t, i) => {
       if (!(t.threshold > 0)) fail(`tiers[${i}] 需要大于 0 的 threshold`);
       if (i > 0 && t.threshold <= tiers[i - 1].threshold) fail(`tiers[${i}] 的 threshold 必须递增`);
-      if (!brand.palette[t.metal]) fail(`tiers[${i}] 的金属「${t.metal}」不在品牌色板中`);
-      if (t.accent && !brand.palette[t.accent]) fail(`tiers[${i}] 的 accent「${t.accent}」不在品牌色板中`);
+      if (t.variants) {
+        if (!Array.isArray(t.variants) || !t.variants.length) fail(`tiers[${i}].variants 不能为空`);
+        t.variants.forEach((v, k) => {
+          if (!v.id || !v.name?.zh || !v.name?.en) fail(`tiers[${i}].variants[${k}] 需要 id 和中英文名`);
+          checkMetal(`tiers[${i}].variants[${k}]`, v);
+        });
+      } else checkMetal(`tiers[${i}]`, t);
     });
-    tiers.forEach((_, i) => {
-      const { tiers: _omit, tier: _t, ...plain } = resolveTier(config, i);
-      try {
-        validateBadge({ ...plain, criteria: { ...plain.criteria, target: plain.criteria?.target ?? tiers[0].threshold } }, brand);
-      } catch (e) {
-        fail(`第 ${i + 1} 级：${e.message.replace(/^\[徽章 [^\]]+\] /, '')}`);
+    // 每一级（有款式的每一款）都要能单独通过校验
+    tiers.forEach((t, i) => {
+      for (let k = 0; k < (t.variants?.length ?? 1); k++) {
+        const { tiers: _omit, tier: _t, ...plain } = resolveTier(config, i, k);
+        try {
+          validateBadge({ ...plain, criteria: { ...plain.criteria, target: plain.criteria?.target ?? tiers[0].threshold } }, brand);
+        } catch (e) {
+          const where = t.variants ? `第 ${i + 1} 级「${t.variants[k].name.zh}」` : `第 ${i + 1} 级`;
+          fail(`${where}：${e.message.replace(/^\[徽章 [^\]]+\] /, '')}`);
+        }
       }
     });
     return true;

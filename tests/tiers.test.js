@@ -60,6 +60,59 @@ describe('分级', () => {
   });
 });
 
+describe('分级的款式（variants）', () => {
+  const withVariants = {
+    ...tiered,
+    tiers: [
+      ...tiered.tiers,
+      {
+        threshold: 10000,
+        label: '10K',
+        variants: [
+          { id: 'ivory', name: { zh: '白瓷金', en: 'Ivory Gold' }, metal: 'gold', accent: 'cobalt', shape: { type: 'starburst', points: 24, radius: 1.05, innerRadius: 0.985 }, layers: [{ kind: 'rim', material: 'polished-metal', color: '$metal' }, { kind: 'face', material: 'ceramic', color: 'ivory', inset: 0.12 }] },
+          { id: 'sapphire', name: { zh: '蓝宝石', en: 'Sapphire' }, metal: 'silver', accent: 'cobalt' },
+        ],
+      },
+    ],
+  };
+
+  it('resolveTier：按款式替换外形和底层，再替换占位符；等级信息里带上款式', () => {
+    const c = resolveTier(withVariants, 3, 0);
+    expect(c.shape.type).toBe('starburst');
+    expect(c.layers[1]).toMatchObject({ material: 'ceramic', color: 'ivory' });
+    expect(c.layers[0].color).toBe('gold');
+    expect(c.relief[0].text).toBe('10K');
+    expect(c.tier.variant).toMatchObject({ index: 0, count: 2, id: 'ivory', name: { zh: '白瓷金', en: 'Ivory Gold' } });
+    expect(c.tier.variants).toBeUndefined();
+  });
+
+  it('没写替换的部分沿用徽章本身；款式下标越界时取模', () => {
+    const c = resolveTier(withVariants, 3, 3);
+    expect(c.tier.variant.id).toBe('sapphire');
+    expect(c.shape.type).toBe('polygon');
+    expect(c.layers[0].color).toBe('silver');
+  });
+
+  it('没有款式的等级不受影响', () => {
+    expect(resolveTier(withVariants, 1, 1).tier.variant).toBeNull();
+  });
+
+  it('每一款都要通过校验', () => {
+    expect(validateBadge(withVariants, brand)).toBe(true);
+    const bad = structuredClone(withVariants);
+    bad.tiers[3].variants[1].accent = 'unobtainium';
+    expect(() => validateBadge(bad, brand)).toThrow(/unobtainium/);
+    const badShape = structuredClone(withVariants);
+    badShape.tiers[3].variants[0].shape = { type: 'blob' };
+    expect(() => validateBadge(badShape, brand)).toThrow(/blob/);
+  });
+
+  it('组装时按 state.variant 选款式', () => {
+    const g = buildBadge(withVariants, brand, { unlocked: true, tier: 3, variant: 1, earnedAt: '2025-01-01', progress: { current: 1, target: 1 } });
+    expect(g.userData.tier.variant.id).toBe('sapphire');
+  });
+});
+
 describe('隐藏成就', () => {
   it('未解锁时只显示问号，不透露图案', () => {
     const cfg = { ...resolveTier(tiered, 0), tiers: undefined, tier: undefined, hidden: true, criteria: { metric: 'm', target: 1 } };

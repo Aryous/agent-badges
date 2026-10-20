@@ -1,6 +1,6 @@
 // GitHub 主页徽章陈列图的纯逻辑：放哪些徽章、文字怎么写、每样东西画在哪。
 // 不依赖 three 和 DOM，Node 里也能测试；真正的绘制在 viewer/shelf.js。
-import { badgeTitle, tierName } from '../brands/shared/text.js';
+import { badgeTitle, tierLabel } from '../brands/shared/text.js';
 
 /**
  * 决定陈列哪些工具、哪些徽章。
@@ -26,7 +26,8 @@ export function shelfLabel(config, state, lang) {
   if (!config.tiers || state.tier == null) return { title, meta: '' };
   const tier = config.tiers[state.tier];
   // 英文名字里已经带着数值（100 Sessions），只写等级；中文名字不带数值，补上
-  const meta = lang === 'zh' ? `${tierName(tier.metal, 'zh')} · ${tier.label}` : tierName(tier.metal, 'en');
+  const name = tierLabel(tier, state.variant, lang);
+  const meta = lang === 'zh' ? `${name} · ${tier.label}` : name;
   return { title, meta };
 }
 
