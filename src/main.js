@@ -17,11 +17,11 @@ import { playAward } from './viewer/award-animation.js';
 import { EXPORT_FILL, downloadDataURL, renderBadgePNG } from './viewer/export.js';
 import { createAccumulator, signature } from './viewer/accumulate.js';
 import { Tweens } from './viewer/anim.js';
+import { nextFrame } from './viewer/frame.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const fmtDate = (iso) => (iso ? iso.replaceAll('-', '.') : '');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const THUMB_SIZE = 480;
 
 function showNotice(text) {

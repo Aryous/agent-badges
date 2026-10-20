@@ -8,12 +8,12 @@ import { loadProgress, sourceInfo } from '../data/progress.js';
 import { SHELF, pickShelf, shelfCount, shelfLabel, shelfLayout } from '../data/shelf.js';
 import { createStage } from './scene.js';
 import { renderBadgePNG } from './export.js';
+import { nextFrame } from './frame.js';
 
 const SERIF = `'Iowan Old Style', 'Palatino Linotype', 'Songti SC', Georgia, serif`;
 const SANS = `system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', sans-serif`;
 const GRAY = '#8B949E'; // GitHub 自己的次要文字色，深浅主题都可读
 const THUMB = 256; // 徽章小图边长（显示 104，输出 2 倍即 208）
-const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
 const loadImage = (src) =>
   new Promise((resolve, reject) => {

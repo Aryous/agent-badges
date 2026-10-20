@@ -39,12 +39,19 @@ const browser = await chromium.launch({
 });
 
 /** 运行一条命令，等它打印本地网址，用浏览器打开（代替用户的浏览器），等命令退出。 */
-async function runWithBrowser(args) {
+async function runWithBrowser(args, { hidden = false } = {}) {
   const cli = spawn(process.execPath, ['bin/agent-badges.mjs', ...args, '--no-open', '--port', '4790'], { env });
   let stdout = '';
   cli.stdout.on('data', (d) => (stdout += d));
   cli.stderr.on('data', (d) => (stdout += d));
-  const exited = new Promise((r) => cli.on('exit', r));
+  // 卡住时别让检查本身一直挂着：60 秒没退出就算失败
+  const exited = new Promise((r) => {
+    cli.on('exit', r);
+    setTimeout(() => {
+      cli.kill();
+      r('timeout');
+    }, 60000);
+  });
   const url = await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`命令没有打印网址：\n${stdout}`)), 60000);
     cli.stdout.on('data', () => {
@@ -58,6 +65,14 @@ async function runWithBrowser(args) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
+  if (hidden) {
+    // 模拟后台标签页：浏览器不发动画帧
+    await page.addInitScript(() => {
+      Object.defineProperty(Document.prototype, 'visibilityState', { get: () => 'hidden' });
+      Object.defineProperty(Document.prototype, 'hidden', { get: () => true });
+      window.requestAnimationFrame = () => 0;
+    });
+  }
   await page.goto(url);
   const code = await exited;
   await page.waitForFunction(() => /\.png/.test(document.querySelector('[data-shelf-status]')?.textContent ?? ''), null, { timeout: 10000 }).catch(() => {});
@@ -88,6 +103,14 @@ async function runWithBrowser(args) {
     JSON.stringify(r.shown),
   );
   if (existsSync(out)) writeFileSync('screenshots/shelf-cli.png', readFileSync(out));
+}
+
+// ---------- shelf：页面在后台 ----------
+{
+  // 命令行自动打开的标签页常常在后台；浏览器不发动画帧时也要能生成完
+  const bg = join(root, 'profile', 'background.png');
+  const r = await runWithBrowser(['shelf', '--out', bg], { hidden: true });
+  check('shelf：标签页在后台（没有动画帧）也能生成完', r.code === 0 && existsSync(bg), `exit ${r.code}`);
 }
 
 // ---------- profile：主页仓库里写入徽章图和公开版徽章墙 ----------
