@@ -75,6 +75,8 @@ export function extractFacts(rec, { hash = fnv1a } = {}) {
   if (rec.type === 'attachment') {
     const t = rec.attachment?.type;
     if (t === 'hook_success' || t === 'hook_additional_context') return { ...base, kind: 'hook' };
+    // 新版 Claude Code 按 Shift+Tab 进出 Plan 模式时，只留下 plan_mode / plan_mode_exit / plan_mode_reentry 附件
+    if (t === 'plan_mode' || (typeof t === 'string' && t.startsWith('plan_mode_'))) return { ...base, kind: 'plan' };
     return null;
   }
 

@@ -128,6 +128,22 @@ describe('统计口径', () => {
     expect(progress['hooks-smith']).toMatchObject({ unlocked: true, earnedAt: '2026-05-03' });
   });
 
+  it('Plan 模式：新版只留下 plan_mode_* 附件（按 Shift+Tab 进出，没有工具调用）', () => {
+    const planAttachment = (type, ts) => ({
+      type: 'attachment', sessionId: 's1', timestamp: ts,
+      attachment: { type, planFilePath: `/Users/x/.claude/plans/${SECRET}.md`, planExists: true },
+    });
+    for (const type of ['plan_mode', 'plan_mode_exit', 'plan_mode_reentry']) {
+      const { ledger, progress } = run([user('s1', at('2026-10-15', 9)), planAttachment(type, at('2026-10-15', 11))]);
+      expect(progress['plan-mode']).toMatchObject({ unlocked: true, earnedAt: '2026-10-15' });
+      // 计划文件路径不能进账本
+      expect(JSON.stringify(ledger)).not.toContain(SECRET);
+    }
+    // 名字里带 plan 但不是 Plan 模式的附件不算
+    const { progress } = run([user('s1', at('2026-10-15', 9)), planAttachment('planner_hint', at('2026-10-15', 11))]);
+    expect(progress['plan-mode'].unlocked).toBe(false);
+  });
+
   it('马拉松：按活跃时长计，离开超过 30 分钟的间隔不算', () => {
     const recs = [];
     // 每 20 分钟一条，持续 5 小时 → 活跃 5 小时
