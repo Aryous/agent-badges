@@ -31,6 +31,22 @@ export function fnv1a(s) {
 }
 
 /**
+ * Claude Code 自带的 MCP 服务：装好就有，不是用户自己接入的，不计入「连接者」。
+ * Claude Code 以后新增自带服务时，要补到这里。
+ */
+const BUILTIN_MCP = new Set(['claude_browser', 'claude_in_chrome', 'computer_use', 'remote_devices', 'claude_ai_claude_docs']);
+
+/**
+ * 从工具名里取 MCP 服务名。不是 MCP 工具返回 undefined；是自带服务返回 null（算 MCP 调用，但不计入服务数）。
+ */
+function mcpServer(name) {
+  if (typeof name !== 'string') return undefined;
+  const m = /^mcp__([^_].*?)__/.exec(name);
+  if (!m) return undefined;
+  return BUILTIN_MCP.has(m[1].toLowerCase().replace(/-/g, '_')) ? null : m[1];
+}
+
+/**
  * 从一条会话记录里取出白名单字段。返回 null 表示这条记录对统计没用。
  * 注意：这里刻意不返回任何字符串内容，除了 id、类型值、模型家族和哈希。
  */
@@ -59,8 +75,8 @@ export function extractFacts(rec, { hash = fnv1a } = {}) {
     for (const c of Array.isArray(msg.content) ? msg.content : []) {
       if (c?.type !== 'tool_use' || typeof c.name !== 'string') continue;
       // 只保留工具名；MCP 工具只保留服务名（随后哈希），参数 c.input 完全不读
-      const mcp = /^mcp__([^_].*?)__/.exec(c.name);
-      tools.push({ id: typeof c.id === 'string' ? c.id : null, name: mcp ? 'mcp' : c.name, mcp: mcp ? hash(mcp[1]) : null });
+      const server = mcpServer(c.name);
+      tools.push({ id: typeof c.id === 'string' ? c.id : null, name: server === undefined ? c.name : 'mcp', mcp: server ? hash(server) : null });
     }
     return {
       ...base,
@@ -75,6 +91,15 @@ export function extractFacts(rec, { hash = fnv1a } = {}) {
   if (rec.type === 'attachment') {
     const t = rec.attachment?.type;
     if (t === 'hook_success' || t === 'hook_additional_context') return { ...base, kind: 'hook' };
+    // 会话开始时的可用工具清单：只读工具名，取出接入的 MCP 服务（待连接、需登录的不在工具名里，不算）
+    if (t === 'deferred_tools_delta' || t === 'deferred_tools_record') {
+      const a = rec.attachment;
+      const names = t === 'deferred_tools_record'
+        ? (Array.isArray(a.entries) ? a.entries.map((e) => e?.name) : [])
+        : [...(Array.isArray(a.addedNames) ? a.addedNames : []), ...(Array.isArray(a.readdedNames) ? a.readdedNames : [])];
+      const servers = new Set(names.map(mcpServer).filter(Boolean));
+      return servers.size ? { ...base, kind: 'mcp', mcp: [...servers].map(hash) } : null;
+    }
     // 新版 Claude Code 按 Shift+Tab 进出 Plan 模式时，只留下 plan_mode / plan_mode_exit / plan_mode_reentry 附件
     if (t === 'plan_mode' || (typeof t === 'string' && t.startsWith('plan_mode_'))) return { ...base, kind: 'plan' };
     return null;
@@ -177,6 +202,7 @@ export function aggregateDays(facts) {
       }
     }
 
+    if (f.kind === 'mcp') for (const h of f.mcp) if (!d.mcp.includes(h)) d.mcp.push(h);
     if (f.kind === 'hook') d.hooks = true;
     if (f.kind === 'plan') d.plan = true;
   }

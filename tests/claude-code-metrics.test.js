@@ -128,6 +128,41 @@ describe('统计口径', () => {
     expect(progress['hooks-smith']).toMatchObject({ unlocked: true, earnedAt: '2026-05-03' });
   });
 
+  it('MCP：会话开始时可用工具清单里的服务也算接入（不调用也算），自带服务不算', () => {
+    const delta = (ts, addedNames, extra = {}) => ({
+      type: 'attachment', sessionId: 's1', timestamp: ts,
+      attachment: { type: 'deferred_tools_delta', addedNames, addedLines: addedNames, removedNames: [], readdedNames: [], ...extra },
+    });
+    const record = (ts, names) => ({
+      type: 'attachment', sessionId: 's1', timestamp: ts,
+      attachment: { type: 'deferred_tools_record', entries: names.map((name) => ({ name, description: SECRET, input_schema: {} })) },
+    });
+    const { ledger, progress } = run([
+      user('s1', at('2026-07-26', 9)),
+      delta(at('2026-07-26', 9), [
+        'CronCreate', 'mcp__claude_ai_Gmail__send', 'mcp__claude_ai_Gmail__search',
+        // 自带服务
+        'mcp__computer-use__click', 'mcp__Claude_Browser__open', 'mcp__claude-in-chrome__tab', 'mcp__remote-devices__list', 'mcp__claude_ai_Claude_Docs__batch',
+      ], { pendingMcpServers: ['claude.ai Notion'], needsAuthMcpServers: ['claude.ai Linear'] }),
+      user('s1', at('2026-07-27', 9)),
+      record(at('2026-07-27', 9), ['mcp__open-design__get_file', 'Read']),
+      user('s1', at('2026-07-28', 9)),
+      delta(at('2026-07-28', 9), [], { readdedNames: ['mcp__claude_ai_Notion__search'] }),
+    ]);
+    expect(progress.connector).toMatchObject({ unlocked: true, earnedAt: '2026-07-28' });
+    expect(ledger.days['2026-07-26'].mcp).toHaveLength(1); // 只有 Gmail；待连接、需登录、自带的都不算
+    expect(JSON.stringify(ledger)).not.toContain(SECRET);
+    expect(JSON.stringify(ledger)).not.toContain('Gmail'); // 服务名只存哈希
+  });
+
+  it('MCP：调用自带服务也不算', () => {
+    const { progress } = run([
+      assistant('s1', at('2026-05-01', 10), { tools: ['mcp__computer-use__click', 'mcp__Claude_Browser__open', 'mcp__a__x'] }),
+    ]);
+    expect(progress.connector.unlocked).toBe(false);
+    expect(progress.connector.progress).toMatchObject({ current: 1 });
+  });
+
   it('Plan 模式：新版只留下 plan_mode_* 附件（按 Shift+Tab 进出，没有工具调用）', () => {
     const planAttachment = (type, ts) => ({
       type: 'attachment', sessionId: 's1', timestamp: ts,
