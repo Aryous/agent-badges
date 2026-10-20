@@ -96,7 +96,22 @@ describe('CLI 汇总', () => {
   });
 });
 
-import { newUnlocks } from '../src/collect/summary.js';
+import { formatSummary, newUnlocks } from '../src/collect/summary.js';
+
+describe('CLI 汇总的数字', () => {
+  it('十亿以上用 B', () => {
+    const s = summarize('codex', { tokens: { value: 9_723_800_000, earnedAt: '2026-08-15' } }, { lang: 'en' });
+    expect(formatSummary(s)).toContain('10B Tokens 9.72B/10B');
+  });
+
+  it('升到有款式的顶级：报告抽到的款式', () => {
+    const before = { tokens: { value: 50e9, earnedAt: '2026-08-01' } };
+    const after = { tokens: { value: 120e9, earnedAt: '2026-10-19' } };
+    const [r] = newUnlocks('claude-code', before, after, { lang: 'zh' });
+    expect(r.tier).toMatch(/^(ivory-gold|onyx-gold|sapphire)$/);
+    expect(r.title).toMatch(/^Token 里程碑（(白瓷金|黑瓷金|蓝宝石)）$/);
+  });
+});
 
 describe('新解锁', () => {
   const prev = { 'night-owl': { unlocked: false, progress: { current: 0, target: 1 } }, sessions: { value: 50, earnedAt: '2026-01-01' } };

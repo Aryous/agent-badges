@@ -5,7 +5,7 @@ import codexBrand from '../brands/codex/brand.js';
 import codexBadges from '../brands/codex/badges.js';
 import { normalizeProgress } from '../data/normalize.js';
 import { highlights } from '../data/highlights.js';
-import { badgeTitle } from '../brands/shared/text.js';
+import { badgeTitle, tierKey, tierLabel } from '../brands/shared/text.js';
 
 export const BRAND_INFO = {
   'claude-code': { brand: claudeBrand, badges: claudeBadges },
@@ -37,15 +37,21 @@ export function newUnlocks(brandId, prevRaw, nextRaw, { lang = 'en' } = {}) {
   const next = normalizeProgress(nextRaw, badges);
   return badges
     .filter((b) => next[b.id].unlocked && (!prev[b.id].unlocked || (b.tiers && next[b.id].tier > prev[b.id].tier)))
-    .map((b) => ({
-      id: b.id,
-      title: label(b, next[b.id], lang),
-      earnedAt: next[b.id].earnedAt,
-      ...(b.tiers ? { tier: b.tiers[next[b.id].tier].metal, upgrade: prev[b.id].unlocked } : {}),
-    }));
+    .map((b) => {
+      const st = next[b.id];
+      const tier = b.tiers?.[st.tier];
+      // 顶级有几款时，告诉用户抽到了哪一款
+      const design = tier?.variants ? tierLabel(tier, st.variant, lang) : null;
+      return {
+        id: b.id,
+        title: label(b, st, lang) + (design ? (lang === 'zh' ? `（${design}）` : ` (${design})`) : ''),
+        earnedAt: st.earnedAt,
+        ...(tier ? { tier: tierKey(tier, st.variant), upgrade: prev[b.id].unlocked } : {}),
+      };
+    });
 }
 
-const fmt = (n) => (n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : n >= 1e4 ? `${+(n / 1e3).toFixed(1)}K` : String(n));
+const fmt = (n) => (n >= 1e9 ? `${+(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : n >= 1e4 ? `${+(n / 1e3).toFixed(1)}K` : String(n));
 
 /** 终端里打印的几行文字。 */
 export function formatSummary(s, { lang = 'en' } = {}) {
