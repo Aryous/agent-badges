@@ -3,13 +3,13 @@
 // scripts/promo.mjs 逐帧截图后用 ffmpeg 合成视频。参数：?aspect=16x9|9x16&lang=en|zh
 // showcase: 手工挑选的展示徽章，id 由 tests/contracts.test.js 核对
 import './promo.css';
-import { BRANDS } from '../brands/index.js';
-import { badgeTitle, tierName } from '../brands/shared/text.js';
-import { createStage } from '../viewer/scene.js';
-import { renderBadgePNG } from '../viewer/snapshot.js';
-import { mountBadge } from '../viewer/mount-badge.js';
-import { LOGO_STATE, logoBadge, logoBrand } from '../project/logo.js';
-import { renderShelf, shelfGroups } from '../viewer/shelf.js';
+import { BRANDS } from '../../src/brands/index.js';
+import { badgeTitle, tierName } from '../../src/brands/shared/text.js';
+import { createStage } from '../../src/viewer/scene.js';
+import { renderBadgePNG } from '../../src/viewer/snapshot.js';
+import { mountBadge } from '../../src/viewer/mount-badge.js';
+import { LOGO_STATE, logoBadge, logoBrand } from '../../src/project/logo.js';
+import { renderShelf, shelfGroups } from '../../src/viewer/shelf.js';
 import { CLICK_AT, DONE_AT, DURATION, END_GLINT, END_LAND, HERO_GLINT, HERO_LAND, LINE_AT, TIER_AT, TYPE, TYPED, wallPopAt } from './timeline.js';
 
 const params = new URLSearchParams(location.search);

@@ -1,4 +1,4 @@
-// 宣传动画：逐帧截图 promo.html，用 ffmpeg 合成 MP4（需要先启动开发服务器：npx vite --port 5199）。
+// 宣传动画：逐帧截图 tools/promo.html，用 ffmpeg 合成 MP4（需要先启动开发服务器：npx vite --port 5199）。
 // 用法：
 //   node scripts/promo.mjs                          横竖屏 × 中英文，共 4 个视频
 //   node scripts/promo.mjs --aspect 9x16 --lang zh  只做一个
@@ -33,7 +33,7 @@ for (const aspect of aspects) {
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-    await page.goto(`${BASE}promo.html?aspect=${aspect}&lang=${lang}`);
+    await page.goto(`${BASE}tools/promo.html?aspect=${aspect}&lang=${lang}`);
     await page.waitForFunction(() => window.__promo?.ready, null, { timeout: 120000 });
     const duration = await page.evaluate(() => window.__promo.duration);
     const name = `agent-badges-${aspect}-${lang}`;

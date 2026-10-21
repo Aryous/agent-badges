@@ -1,6 +1,6 @@
 /**
  * 设计预览：?preview=unlocked / locked 临时覆盖全部状态；
- * 分级徽章可再加 &tier=0..3 预览某一级（默认最高级）。直接改写 progress。
+ * 分级徽章可再加 &tier=<等级下标，0 起> 预览某一级（默认最高级）。直接改写 progress。
  * @param {object[]} configs
  * @param {object} progress  徽章 id → 进度
  * @param {{ preview: string | null, tier?: number }} opts  tier 不给时取最高级

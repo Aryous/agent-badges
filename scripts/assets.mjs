@@ -20,7 +20,7 @@ const browser = await chromium.launch({
 });
 const studio = await browser.newPage({ viewport: { width: 640, height: 640 } });
 studio.on('pageerror', (e) => console.error(e.message));
-await studio.goto(new URL('studio.html', base).href);
+await studio.goto(new URL('tools/studio.html', base).href);
 await studio.waitForFunction(() => window.__studio?.ready, null, { timeout: 60000 });
 
 const render = (opts) => studio.evaluate((o) => window.__studio.render(o), opts);

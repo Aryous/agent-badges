@@ -1,9 +1,9 @@
-// 宣传动画的配乐和音效：全部用代码合成（原创，没有采样，没有版权问题），按 src/promo/timeline.js 和画面对齐。
+// 宣传动画的配乐和音效：全部用代码合成（原创，没有采样，没有版权问题），按 tools/promo/timeline.js 和画面对齐。
 // 用法：node scripts/promo-audio.mjs   → 生成 promo-out/audio-{en,zh}.wav，并合进 promo-out 里已有的 4 个 MP4
 // 乐理：D 大调，D → Bm → G → A → D，每一幕换一个和弦；120 BPM，拍点从徽章墙开始。
 import { execFileSync } from 'node:child_process';
 import { existsSync, renameSync, writeFileSync } from 'node:fs';
-import * as T from '../src/promo/timeline.js';
+import * as T from '../tools/promo/timeline.js';
 
 const SR = 48000;
 const N = Math.round(T.DURATION * SR);

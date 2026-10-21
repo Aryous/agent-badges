@@ -1,7 +1,7 @@
 // 采集本机 Codex 使用统计。
 //
 // 只读取两类数据（其余一律不打开）：
-//   <CODEX_HOME 或 ~/.codex>/sessions/**/rollout-*.jsonl(.zst)   会话记录，每行只取白名单元数据
+//   <CODEX_HOME 或 ~/.codex>/{sessions,archived_sessions}/**/rollout-*.jsonl(.zst)   会话记录（含已归档），每行只取白名单元数据
 //   <CODEX_HOME 或 ~/.codex>/state_<N>.sqlite 的 threads 表      只读方式打开，只 SELECT 六个白名单列
 // 明确不读：auth.json、config.toml、*.env、history.jsonl、transcription-history.jsonl、
 //           thread_history*.sqlite、logs*.sqlite、memories*、shell_snapshots、chatgpt-meetings 等，
