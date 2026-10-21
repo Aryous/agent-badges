@@ -29,7 +29,7 @@ npx agent-badges
 
 ## 有什么
 
-- **两个工具，39 枚徽章。** Claude Code 19 枚，Codex 20 枚：里程碑、连续打卡、功能探索，还有几枚隐藏彩蛋。分级徽章从铜到白金逐级升级。
+- **两个工具，62 枚徽章。** Claude Code 32 枚，Codex 30 枚：里程碑、连续与习惯、功能探索、节日限定，还有几枚隐藏彩蛋。分级徽章从铜到金逐级升级，最高一级随机解锁三款之一。
 - **真 3D。** 每枚徽章都由 three.js 按一份配置程序化生成，材质有珐琅、抛光金属、拉丝金属、陶瓷、全息镭射、水晶。可以拖动旋转，翻到背面看刻字。
 - **成就档案。** 解锁进度环、累计 Token、活跃天数、最长连续，最近获得了什么、离哪几枚最近。
 - **年度热力图。** 每天的 Token 用量排成日历，两个工具叠在一起看：同一天都用了就一格两色；解锁徽章的日子有一个小圆点。
@@ -61,7 +61,7 @@ Agent Badges 带有一个给 Claude Code 和 Codex 用的技能（Skill）。直
 > 看看我的徽章
 
 上次之后新解锁：Bash 狂人。
-Claude Code：已解锁 15 / 19。
+Claude Code：已解锁 27 / 32。
 快解锁了：连接者 2 / 3 · 子代理指挥官 3 / 5 · Token 里程碑 4.8B / 10B。
 
 要我打开 3D 徽章墙，或者生成一张 GitHub 个人主页的成就卡片吗？
@@ -125,8 +125,8 @@ npx agent-badges collect --json --lang zh
     {
       "id": "claude-code",
       "brand": "Claude Code",
-      "unlocked": 15,
-      "total": 19,
+      "unlocked": 27,
+      "total": 32,
       "newUnlocks": [{ "id": "bash-maniac", "title": "Bash 狂人", "earnedAt": "2025-11-19" }],
       "recent": [{ "id": "anniversary", "title": "一周年", "earnedAt": "2026-03-02" }],
       "nearMiss": [{ "id": "tokens", "title": "Token 里程碑", "current": 48000000, "target": 100000000 }]
@@ -207,10 +207,13 @@ npx agent-badges publish --lang zh
 npx agent-badges shelf --out 路径/<用户名>/agent-badges-shelf.png --lang zh
 ```
 
-3D 徽章要用 WebGL 渲染，所以这条命令会在你的浏览器里打开一个标签页，画出你已解锁的全部徽章，把 PNG 交回终端保存后退出。图片背景透明，GitHub 深浅两种主题下都能看清。图里只有已解锁的徽章、名字和等级，没有日期，也没有用量数字。在徽章墙上点「GitHub 主页图」按钮也能生成。
+3D 徽章要用 WebGL 渲染，所以这条命令会在你的浏览器里打开一个标签页，画出你已解锁的全部徽章，把 PNG 交回终端保存后退出。会交回两张 PNG：一张给 GitHub 深色主题，一张给浅色主题（`agent-badges-shelf-light.png`），背景都是透明的，只有字色不同。图里只有已解锁的徽章、名字和等级，没有日期，也没有用量数字。在徽章墙上点「GitHub 主页图」按钮也能生成。
 
 ```html
-<img src="./agent-badges-shelf.png" alt="Agent Badges" width="720">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="./agent-badges-shelf-light.png">
+  <img src="./agent-badges-shelf.png" alt="Agent Badges" width="720">
+</picture>
 ```
 
 <p align="center">
@@ -261,6 +264,13 @@ npx agent-badges card --name "你的名字" --lang zh
 | 夜猫子 / 早起鸟 | 你发消息时的本地时间（0–5 点 / 5–7 点） | 你发起一轮对话的本地时间 |
 | 马拉松 | 单个会话的活跃时长，两条记录间隔超过 30 分钟不计 | 同左 |
 | 连续天数 | 有任何活动的连续天数 | 同左 |
+| 协作时长 | 各会话活动时间的并集（几个会话同时开着只算一次），间隔超过 30 分钟不计 | 同左，只算你自己发起的线程 |
+| 跨日夜战 | 同一个会话 23 点前在活动，次日 2 点后还在活动，中间间隔都不超过 60 分钟 | 同左 |
+| 高产日 / 多线并行 | 一天开启 20 个会话 / 同一时刻 3 个会话都在活动（子代理不计） | 同左，只算你自己发起的线程 |
+| 全勤月 | 某个自然月的每个工作日（周一到周五）都有活动 | 同左 |
+| 子代理派遣 | 主会话派出的子代理次数 | 你自己发起的线程里的 `spawn_agent` 调用 |
+| 联网检索 / 文件编辑 | `WebSearch` + `WebFetch` / `Edit` + `MultiEdit` + `Write` + `NotebookEdit` 的调用次数，含子代理 | — |
+| 节日 | 1 月 1 日、农历正月初一、12 月 25 日、Claude Code 发布日（2 月 24 日）当天有活动 | 同左，生日换成 Codex CLI 发布日（4 月 16 日） |
 
 徽章定义在 [`src/brands`](src/brands)，各工具的统计逻辑在 `src/data/<工具>-metrics.js`。
 

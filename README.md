@@ -29,7 +29,7 @@ npx agent-badges
 
 ## What you get
 
-- **39 badges across two tools.** 19 for Claude Code, 20 for Codex: milestones, streaks, features to discover, and a few hidden ones. Tiered badges level up from bronze to platinum.
+- **62 badges across two tools.** 32 for Claude Code, 30 for Codex: milestones, streaks and habits, features to discover, holidays, and a few hidden ones. Tiered badges level up from bronze to gold, and the top tier unlocks one of three designs at random.
 - **Real 3D.** Every badge is generated with three.js from a small config: enamel, polished and brushed metal, ceramic, holographic foil, crystal. Drag to spin it, flip it over to read the engraving on the back.
 - **A profile.** Unlock ring, total tokens, active days, longest streak, recently earned, and what you are closest to unlocking next.
 - **Your year as a heatmap.** Daily token usage on a calendar, both tools overlaid (a day you used both is split in two colors), with a dot on every day you unlocked a badge.
@@ -61,7 +61,7 @@ Agent Badges comes with a skill for Claude Code and Codex. Ask in plain words, s
 > check my badges
 
 New since last time: Bash Maniac.
-Claude Code: 15 / 19 unlocked.
+Claude Code: 27 / 32 unlocked.
 Almost there: MCP Connector 2 / 3 · Subagent Commander 3 / 5 · 10B Tokens 4.8B / 10B.
 
 Want me to open the 3D badge wall, or make a card for your GitHub profile?
@@ -125,8 +125,8 @@ npx agent-badges collect --json --lang en
     {
       "id": "claude-code",
       "brand": "Claude Code",
-      "unlocked": 15,
-      "total": 19,
+      "unlocked": 27,
+      "total": 32,
       "newUnlocks": [{ "id": "bash-maniac", "title": "Bash Maniac", "earnedAt": "2025-11-19" }],
       "recent": [{ "id": "anniversary", "title": "One Year", "earnedAt": "2026-03-02" }],
       "nearMiss": [{ "id": "tokens", "title": "100M Tokens", "current": 48000000, "target": 100000000 }]
@@ -207,10 +207,13 @@ To manage the repository yourself, `npx agent-badges profile path/to/<you>` only
 npx agent-badges shelf --out path/to/<you>/agent-badges-shelf.png
 ```
 
-The 3D badges are rendered with WebGL, so this opens a tab in your browser, renders every badge you have unlocked, hands the PNG back to the terminal and exits. The image has a transparent background and reads on GitHub's light and dark themes. It shows unlocked badges only, with names and tiers: no dates and no usage numbers. You can also make it from the **GitHub profile image** button on your badge wall.
+The 3D badges are rendered with WebGL, so this opens a tab in your browser, renders every badge you have unlocked, hands two PNGs back to the terminal and exits: one for GitHub's dark theme and one for the light theme (`agent-badges-shelf-light.png`). Both have transparent backgrounds; only the text colors differ. It shows unlocked badges only, with names and tiers: no dates and no usage numbers. You can also make it from the **GitHub profile image** button on your badge wall.
 
 ```html
-<img src="./agent-badges-shelf.png" alt="Agent Badges" width="720">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="./agent-badges-shelf-light.png">
+  <img src="./agent-badges-shelf.png" alt="Agent Badges" width="720">
+</picture>
 ```
 
 <p align="center">
@@ -262,6 +265,13 @@ The public demo and the npm package contain no personal data. Only `export`, `ca
 | Night Owl / Early Bird | Local time of the messages you send (00:00–05:00 / 05:00–07:00) | Local time of the turns you start |
 | Marathon | Active time in one session; gaps over 30 minutes don't count | Same |
 | Streaks | Consecutive days with any activity | Same |
+| Active hours | Time any session was active, merged across sessions (running in parallel counts once); gaps over 30 minutes don't count | Same, for threads you started |
+| Past Midnight | One session active before 23:00 and still active after 02:00 the next day, with no gap over 60 minutes in between | Same |
+| Productive Day / Multitasker | 20 sessions started in one day / 3 sessions active at the same moment (sub-agents excluded) | Same, for threads you started |
+| Perfect Month | Every weekday (Monday to Friday) of a calendar month has activity | Same |
+| Dispatches | Sub-agents launched from your main sessions | `spawn_agent` calls in threads you started |
+| Web research / File edits | `WebSearch` + `WebFetch` / `Edit` + `MultiEdit` + `Write` + `NotebookEdit` calls, sub-agents included | — |
+| Holidays | Any activity on January 1, Lunar New Year, December 25, or Claude Code's launch day (February 24) | Same, with Codex CLI's launch day (April 16) |
 
 Badge definitions live in [`src/brands`](src/brands). Each tool's metrics are in `src/data/<tool>-metrics.js`.
 
