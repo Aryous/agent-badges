@@ -21,11 +21,10 @@ const midnightCrossing = {
   criteria: { metric: 'session.midnight', target: 1 },
   ...medal({
     bottom: 'PAST MIDNIGHT',
-    shape: { type: 'polygon', sides: 10, radius: 1.05, cornerRadius: 0.12, rotation: Math.PI / 2 + Math.PI / 10, depth: 0.22, bevel: 0.045 },
+    shape: { type: 'circle', radius: 1, depth: 0.22, bevel: 0.05 },
     metal: 'platinum',
     band: 'violet',
     disc: 'midnight',
-    k: 0.95,
     art: [
       ...dialTicks(0.49, 'platinum', 'lilac'),
       ...midnightHands('platinum', 0.04),
@@ -50,7 +49,6 @@ const productiveDay = {
     metal: 'gold',
     band: 'navy',
     disc: 'sky',
-    k: 0.86,
     art: [
       ...codexMark({ size: 0.17, center: [0, 0.25], height: 0.06 }),
       // 线程清单：四行药丸，每行前面一个对勾色点
@@ -76,7 +74,6 @@ const multitasker = {
     metal: 'silver',
     band: 'teal',
     disc: 'aqua',
-    k: 0.9,
     art: [
       ...codexMark({ size: 0.15, center: [0, 0.24], height: 0.06 }),
       ...[-0.27, 0, 0.27].flatMap((x, i) => terminal({ center: [x, -0.13], half: 0.1, panel: 'midnight', prompt: ['lime', 'amber', 'lavender'][i] })),
@@ -96,11 +93,10 @@ const perfectMonth = {
   criteria: { metric: 'days.perfectMonth', target: 22 },
   ...medal({
     bottom: 'PERFECT MONTH',
-    shape: { type: 'starburst', points: 24, radius: 1.06, innerRadius: 0.95, tipRoundness: 0.06, valleyRoundness: 0.06, depth: 0.22, bevel: 0.035 },
+    shape: { type: 'flower', petals: 8, radius: 1.07, petal: 0.3, valley: 0.08, depth: 0.22, bevel: 0.04 },
     metal: 'rose',
     band: 'cobalt',
     disc: 'periwinkle',
-    k: 0.92,
     art: [...calendar({ header: 'electric', ticks: 'electric', binder: 'rose' })],
   }),
 };
@@ -123,11 +119,10 @@ const activeHoursBase = {
   ],
   ...medal({
     bottom: '{label} TOGETHER',
-    shape: { type: 'gear', teeth: 40, radius: 1.04, rootRadius: 0.975, roundness: 0.02, depth: 0.22, bevel: 0.015 },
+    shape: { type: 'polygon', sides: 8, radius: 1.05, cornerRadius: 0.12, rotation: Math.PI / 8, depth: 0.22, bevel: 0.045 },
     metal: '$metal',
     band: 'violet',
     disc: '$accent',
-    k: 0.94,
     art: [
       label('{label}', 0.15, [0, 0.29]),
       ...hourglass([-0.1, -0.12], 0.028, { sand: 'periwinkle' }),
@@ -152,11 +147,10 @@ const dispatchesBase = {
   ],
   ...medal({
     bottom: '{label} DISPATCHES',
-    shape: { type: 'starburst', points: 6, radius: 1.1, innerRadius: 0.82, tipRoundness: 0.14, valleyRoundness: 0.16, depth: 0.22, bevel: 0.035 },
+    shape: { type: 'polygon', sides: 5, radius: 1.1, cornerRadius: 0.2, depth: 0.22, bevel: 0.045 },
     metal: '$metal',
     band: 'midnight',
     disc: '$accent',
-    k: 0.8,
     textSize: 0.088,
     art: [
       label('{label}', 0.17, [0, 0.27]),
@@ -182,11 +176,10 @@ const newYear = {
   criteria: { metric: 'days.newYear', target: 1 },
   ...medal({
     bottom: 'HAPPY NEW YEAR',
-    shape: { type: 'starburst', points: 12, radius: 1.07, innerRadius: 0.9, tipRoundness: 0.08, valleyRoundness: 0.1, depth: 0.22, bevel: 0.035 },
+    shape: { type: 'starburst', points: 10, radius: 1.07, innerRadius: 0.9, tipRoundness: 0.16, valleyRoundness: 0.12, depth: 0.22, bevel: 0.035 },
     metal: 'silver',
     band: 'plum',
     disc: 'violet',
-    k: 0.86,
     art: [
       ...burst([-0.19, 0.2], 0.19, 12, 'honey', 0.03),
       ...burst([0.22, 0.25], 0.13, 10, 'aqua', 0.026),
@@ -210,7 +203,6 @@ const springFestival = {
     metal: 'gold',
     band: 'crimson',
     disc: 'sand',
-    k: 0.94,
     art: [
       ...lantern(-0.24, 0.12, 0.034),
       ...lantern(0.24, 0.12, 0.034),
@@ -235,11 +227,10 @@ const toolBirthday = {
   criteria: { metric: 'days.toolBirthday', target: 1 },
   ...medal({
     bottom: 'HAPPY BIRTHDAY',
-    shape: { type: 'starburst', points: 10, radius: 1.08, innerRadius: 0.9, tipRoundness: 0.3, valleyRoundness: 0.2, depth: 0.22, bevel: 0.035 },
+    shape: { type: 'starburst', points: 8, radius: 1.08, innerRadius: 0.88, tipRoundness: 0.3, valleyRoundness: 0.26, depth: 0.22, bevel: 0.035 },
     metal: 'gold',
     band: 'magenta',
     disc: 'snow',
-    k: 0.84,
     art: [
       ...balloons(BALLOONS, [0.12, -0.12], 'steel'),
       { kind: 'text', text: 'APR 16', size: 0.07, center: [-0.21, -0.04], tracking: 0.1, material: 'polished-metal', color: 'gold', height: 0.03, z: Z },
@@ -269,11 +260,10 @@ const christmas = {
   criteria: { metric: 'days.christmas', target: 1 },
   ...medal({
     bottom: 'MERRY CHRISTMAS',
-    shape: { type: 'flower', petals: 12, radius: 1.06, petal: 0.17, depth: 0.22, bevel: 0.035 },
+    shape: { type: 'flower', petals: 6, radius: 1.08, petal: 0.36, valley: 0.12, depth: 0.22, bevel: 0.04 },
     metal: 'silver',
     band: 'emerald',
     disc: 'ivory',
-    k: 0.88,
     art: [
       ...[[-0.3, 0.22, 0.026], [0.3, 0.3, 0.02], [-0.37, -0.12, 0.018], [0.37, -0.06, 0.018], [0.0, 0.4, 0.014]].map(([x, y, c]) => px(SNOWFLAKE, c, [x, y], 'sky', 'enamel', 0.03)),
       ...codexMark(XMAS),

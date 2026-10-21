@@ -118,6 +118,7 @@ export function validateBadge(config, brand) {
     if (r.kind === 'pixels' && !(Array.isArray(r.rows) && r.rows.some((row) => row.includes('#')))) {
       fail(`relief[${i}] 像素图 rows 为空`);
     }
+    if (r.kind === 'contour' && !(r.inset >= 0 && r.width > 0)) fail(`relief[${i}] 轮廓描边需要 inset ≥ 0、width > 0`);
     if (r.kind === 'rounded-rect' && !(r.half > 0 && r.radius >= 0)) {
       fail(`relief[${i}] 圆角矩形需要 half > 0、radius ≥ 0`);
     }

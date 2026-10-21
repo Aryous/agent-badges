@@ -22,11 +22,10 @@ const midnightCrossing = {
   criteria: { metric: 'session.midnight', target: 1 },
   ...medal({
     bottom: 'PAST MIDNIGHT',
-    shape: { type: 'polygon', sides: 12, radius: 1.04, cornerRadius: 0.1, rotation: Math.PI / 2 + Math.PI / 12, depth: 0.22, bevel: 0.045 },
+    shape: { type: 'circle', radius: 1, depth: 0.22, bevel: 0.05 },
     metal: 'silver',
     band: 'midnight',
     disc: 'navy',
-    k: 0.97,
     art: [
       ...dialTicks(),
       ...midnightHands(),
@@ -51,7 +50,6 @@ const productiveDay = {
     metal: 'gold',
     band: 'teal',
     disc: 'aqua',
-    k: 0.82,
     art: [
       ...terminal({ center: [-0.15, 0.2], half: 0.13, panel: 'slate', z: Z }),
       ...terminal({ center: [0, 0.1], half: 0.13, panel: 'navy', z: Z + 0.035 }),
@@ -71,11 +69,10 @@ const multitasker = {
   criteria: { metric: 'sessions.parallel', target: 3 },
   ...medal({
     bottom: 'MULTITASKER',
-    shape: { type: 'polygon', sides: 9, radius: 1.05, cornerRadius: 0.14, depth: 0.22, bevel: 0.045 },
+    shape: { type: 'polygon', sides: 6, radius: 1.08, cornerRadius: 0.16, rotation: 0, depth: 0.22, bevel: 0.045 },
     metal: 'rose',
     band: 'plum',
     disc: 'lilac',
-    k: 0.94,
     art: [-0.27, 0, 0.27].flatMap((x, i) => [
       ...terminal({ center: [x, 0.1 + (i === 1 ? 0.04 : 0)], half: 0.1, prompt: ['lime', 'amber', 'aqua'][i] }),
       ...clawd({ cell: 0.0135, center: [x, -0.13 + (i === 1 ? 0.04 : 0)], height: 0.05 }),
@@ -93,11 +90,10 @@ const perfectMonth = {
   criteria: { metric: 'days.perfectMonth', target: 22 },
   ...medal({
     bottom: 'PERFECT MONTH',
-    shape: { type: 'polygon', sides: 16, radius: 1.03, cornerRadius: 0.06, depth: 0.22, bevel: 0.045 },
+    shape: { type: 'polygon', sides: 6, radius: 1.08, cornerRadius: 0.16, rotation: Math.PI / 2, depth: 0.22, bevel: 0.045 },
     metal: 'gold',
     band: 'forest',
     disc: 'lime',
-    k: 0.98,
     art: [
       ...calendar(),
     ],
@@ -127,8 +123,7 @@ const activeHoursBase = {
     metal: '$metal',
     band: 'navy',
     disc: '$accent',
-    ring: false,
-    k: 0.97,
+    contour: false,
     // 表圈：60 道刻度
     extra: around(60, 1).map(([c, s], i) => cap([c * (i % 5 ? 0.85 : 0.83), s * (i % 5 ? 0.85 : 0.83)], [c * 0.875, s * 0.875], i % 5 ? 0.008 : 0.014, '$metal', 0.016, 'polished-metal', 0)),
     art: [
@@ -155,11 +150,10 @@ const dispatchesBase = {
   ],
   ...medal({
     bottom: '{label} DISPATCHES',
-    shape: { type: 'starburst', points: 8, radius: 1.08, innerRadius: 0.82, tipRoundness: 0.06, valleyRoundness: 0.1, depth: 0.22, bevel: 0.03 },
+    shape: { type: 'starburst', points: 8, radius: 1.08, innerRadius: 0.86, tipRoundness: 0.16, valleyRoundness: 0.16, depth: 0.22, bevel: 0.035 },
     metal: '$metal',
     band: 'cobalt',
     disc: '$accent',
-    k: 0.8,
     textSize: 0.088,
     art: [
       { kind: 'text', text: '{label}', size: 0.17, center: [0, 0.26], tracking: 0.06, material: 'polished-metal', color: '$metal', height: 0.055, z: Z },
@@ -192,11 +186,10 @@ const webResearchBase = {
   ],
   ...medal({
     bottom: '{label} SEARCHES',
-    shape: { type: 'starburst', points: 40, radius: 1.03, innerRadius: 0.985, tipRoundness: 0.015, valleyRoundness: 0.015, depth: 0.22, bevel: 0.02 },
+    shape: { type: 'polygon', sides: 8, radius: 1.05, cornerRadius: 0.12, rotation: Math.PI / 8, depth: 0.22, bevel: 0.045 },
     metal: '$metal',
     band: 'forest',
     disc: '$accent',
-    k: 0.96,
     art: [
       { kind: 'text', text: '{label}', size: 0.15, center: [0, 0.3], tracking: 0.06, material: 'polished-metal', color: '$metal', height: 0.055, z: Z },
       dot(GLOBE, GLOBE_R, 'azure', 0.03),
@@ -241,7 +234,6 @@ const fileEditsBase = {
     metal: '$metal',
     band: 'slate',
     disc: '$accent',
-    k: 0.87,
     art: [
       { kind: 'text', text: '{label}', size: 0.16, center: [0, 0.28], tracking: 0.06, material: 'polished-metal', color: '$metal', height: 0.055, z: Z },
       rect(0.24, 0.05, [-0.04, -0.12], 'snow', 0.03),
@@ -274,11 +266,10 @@ const newYear = {
   criteria: { metric: 'days.newYear', target: 1 },
   ...medal({
     bottom: 'HAPPY NEW YEAR',
-    shape: { type: 'starburst', points: 18, radius: 1.06, innerRadius: 0.92, tipRoundness: 0.1, valleyRoundness: 0.08, depth: 0.22, bevel: 0.035 },
+    shape: { type: 'starburst', points: 12, radius: 1.07, innerRadius: 0.9, tipRoundness: 0.14, valleyRoundness: 0.12, depth: 0.22, bevel: 0.035 },
     metal: 'gold',
     band: 'midnight',
     disc: 'navy',
-    k: 0.88,
     art: [
       ...burst([-0.17, 0.17], 0.2, 12, 'amber', 0.03),
       ...burst([0.22, 0.24], 0.14, 10, 'scarlet', 0.026),
@@ -299,11 +290,10 @@ const springFestival = {
   criteria: { metric: 'days.springFestival', target: 1 },
   ...medal({
     bottom: 'SPRING FESTIVAL',
-    shape: { type: 'flower', petals: 5, radius: 1.1, petal: 0.45, depth: 0.22, bevel: 0.04 },
+    shape: { type: 'flower', petals: 5, radius: 1.1, petal: 0.44, valley: 0.1, depth: 0.22, bevel: 0.04 },
     metal: 'gold',
     band: 'crimson',
     disc: 'honey',
-    k: 0.82,
     art: [
       ...lantern(-0.21, 0.1, 0.036),
       ...lantern(0.21, 0.1, 0.036),
@@ -329,11 +319,10 @@ const toolBirthday = {
   criteria: { metric: 'days.toolBirthday', target: 1 },
   ...medal({
     bottom: 'HAPPY BIRTHDAY',
-    shape: { type: 'polygon', sides: 7, radius: 1.07, cornerRadius: 0.2, depth: 0.22, bevel: 0.045 },
+    shape: { type: 'flower', petals: 8, radius: 1.07, petal: 0.3, valley: 0.08, depth: 0.22, bevel: 0.04 },
     metal: 'rose',
     band: 'teal',
     disc: 'sky',
-    k: 0.9,
     art: [
       ...balloons(BALLOONS, HAND),
       { kind: 'text', text: 'FEB 24', size: 0.07, center: [-0.2, -0.04], tracking: 0.1, material: 'polished-metal', color: 'rose', height: 0.03, z: Z },
@@ -367,7 +356,6 @@ const christmas = {
     metal: 'silver',
     band: 'forest',
     disc: 'snow',
-    k: 0.8,
     art: [
       ...[[-0.3, 0.2, 0.026], [0.3, 0.28, 0.02], [-0.36, -0.14, 0.018], [0.37, -0.04, 0.018], [-0.02, 0.38, 0.016]].map(([x, y, c]) => px(SNOWFLAKE, c, [x, y], 'sky', 'enamel', 0.03)),
       ...clawd({ ...XMAS, height: 0.06 }),

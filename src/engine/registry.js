@@ -10,13 +10,10 @@ export const MATERIAL_TYPES = [
   'holographic',     // 全息镭射
   'anodized',        // 阳极氧化铝
   'crystal',         // 水晶宝石
-  'shiny-iris',      // 闪光款：镭射虹彩
-  'shiny-pearl',     // 闪光款：珠光贝母
-  'shiny-aurora',    // 闪光款：极光
   'locked',          // 未解锁剪影
 ];
 
-export const RELIEF_KINDS = ['capsule', 'circle', 'ring', 'pixels', 'rounded-rect', 'text-arc', 'text', 'gem', 'path'];
+export const RELIEF_KINDS = ['capsule', 'circle', 'ring', 'pixels', 'rounded-rect', 'text-arc', 'text', 'gem', 'path', 'contour'];
 
 export const LAYER_KINDS = ['rim', 'face'];
 

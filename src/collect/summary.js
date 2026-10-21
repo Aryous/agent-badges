@@ -42,12 +42,9 @@ export function newUnlocks(brandId, prevRaw, nextRaw, { lang = 'en' } = {}) {
       const tier = b.tiers?.[st.tier];
       // 顶级有几款时，告诉用户抽到了哪一款
       const design = tier?.variants ? tierLabel(tier, st.variant, lang) : null;
-      // 第一次解锁就是闪光款（1/20）：大声说出来
-      const shiny = st.shiny && !prev[b.id].unlocked;
       return {
         id: b.id,
-        title: label(b, st, lang) + (design ? (lang === 'zh' ? `（${design}）` : ` (${design})`) : '') + (shiny ? (lang === 'zh' ? ' ✨闪光！' : ' ✨Shiny!') : ''),
-        ...(shiny ? { shiny: true } : {}),
+        title: label(b, st, lang) + (design ? (lang === 'zh' ? `（${design}）` : ` (${design})`) : ''),
         earnedAt: st.earnedAt,
         ...(tier ? { tier: tierKey(tier, st.variant), upgrade: prev[b.id].unlocked } : {}),
       };

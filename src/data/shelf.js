@@ -23,12 +23,11 @@ export function pickShelf(entries) {
 /** 徽章下面的两行字：名字，以及分级徽章的等级。不写日期和用量。 */
 export function shelfLabel(config, state, lang) {
   const title = badgeTitle(config, lang, state.tier);
-  const shiny = state.shiny ? (lang === 'zh' ? '闪光' : 'Shiny') : '';
-  if (!config.tiers || state.tier == null) return { title, meta: shiny };
+  if (!config.tiers || state.tier == null) return { title, meta: '' };
   const tier = config.tiers[state.tier];
   // 英文名字里已经带着数值（100 Sessions），只写等级；中文名字不带数值，补上
   const name = tierLabel(tier, state.variant, lang);
-  const meta = [shiny, lang === 'zh' ? `${name} · ${tier.label}` : name].filter(Boolean).join(' · ');
+  const meta = lang === 'zh' ? `${name} · ${tier.label}` : name;
   return { title, meta };
 }
 

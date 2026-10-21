@@ -20,7 +20,7 @@ export default async function mockCodex() {
     marathon: { unlocked: false, progress: { current: 2, target: 4 } },
     'midnight-crossing': { unlocked: false, progress: { current: 0, target: 1 } },
     'productive-day': { unlocked: false, progress: { current: 15, target: 20 } },
-    multitasker: { unlocked: true, earnedAt: '2026-05-06', shiny: true }, // 闪光款
+    multitasker: { unlocked: true, earnedAt: '2026-05-06' },
     'perfect-month': { unlocked: true, earnedAt: '2026-08-31' },
 
     // 功能探索

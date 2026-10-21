@@ -45,17 +45,16 @@ export const seriesTitle = (s, lang = 'zh') => (lang === 'zh' ? s.title : s.en?.
 export const seriesSubtitle = (s, lang = 'zh') => (lang === 'zh' ? s.subtitle : s.en?.subtitle ?? s.subtitle);
 
 /** 背面刻字（各品牌共用）：品牌、徽章名（分级徽章带数值）、状态、日期或进度。 */
-export function engravingLines({ brandName, config, lang = 'zh', earnedAt, unlocked, progress, tier, hidden, shiny = false }) {
+export function engravingLines({ brandName, config, lang = 'zh', earnedAt, unlocked, progress, tier, hidden }) {
   const zh = lang === 'zh';
   if (hidden) return [brandName.toUpperCase(), '???', 'HIDDEN ACHIEVEMENT', zh ? '继续探索' : 'KEEP EXPLORING'];
   if (zh) {
     // 分级徽章不写金属名：数值已经刻在上一行（100B TOKENS），顶级再写抽到的款式
-    // 闪光款再在最前面加「闪光」：闪光 · 白瓷金 · 2026.10.24
-    const parts = [shiny && '闪光', tier?.variant?.name.zh, earnedAt].filter(Boolean);
+    const parts = [tier?.variant?.name.zh, earnedAt].filter(Boolean);
     const footer = unlocked ? parts.join(' · ') : `未解锁 · ${progress.current} / ${progress.target}`;
     return [brandName.toUpperCase(), config.title, config.titleEn, footer];
   }
-  const parts = [shiny && 'SHINY', tier?.variant?.name.en.toUpperCase(), earnedAt].filter(Boolean);
+  const parts = [tier?.variant?.name.en.toUpperCase(), earnedAt].filter(Boolean);
   const footer = unlocked ? parts.join(' · ') : `${progress.current} / ${progress.target}`;
   return [brandName.toUpperCase(), badgeTitle(config, 'en', tier?.index ?? null), unlocked ? 'ACHIEVEMENT UNLOCKED' : 'LOCKED', footer];
 }

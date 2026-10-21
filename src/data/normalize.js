@@ -22,25 +22,11 @@ export function pickVariant(tier, earnedAt) {
   return hash32(`${tier.salt ?? ''}|${earnedAt}`) % tier.variants.length;
 }
 
-/** 闪光款的概率：1/20。 */
-export const SHINY_ODDS = 20;
-
-/**
- * 是不是闪光款：由「品牌 + 徽章 + 首次解锁日期」决定，升级后不变，重复采集结果也不变。
- * 改这里的算法会让所有人的闪光款重新洗牌，不要动。
- */
-export function pickShiny(brandId, badgeId, firstAt) {
-  if (!firstAt) return false;
-  return hash32(`shiny|${brandId}/${badgeId}|${firstAt}`) % SHINY_ODDS === 0;
-}
-
 /**
  * 补齐缺失字段：没有数据的徽章按「未解锁、进度 0」处理。
- * @param {string} [brandId]  决定闪光款（不传则没有闪光款）
+ * @param {string} [_brandId]  品牌 id（暂未使用，保留调用约定）
  */
-export function normalizeProgress(raw, badges, brandId = null) {
-  // 示例数据可以直接写 shiny: true，固定展示闪光款；真实数据不会带这个字段
-  const shinyOf = (id, firstAt, forced) => forced ?? (brandId ? pickShiny(brandId, id, firstAt) : false);
+export function normalizeProgress(raw, badges, _brandId = null) {
   const out = {};
   for (const b of badges) {
     const r = raw?.[b.id] ?? {};
@@ -53,8 +39,6 @@ export function normalizeProgress(raw, badges, brandId = null) {
         earnedAt: tier >= 0 ? r.earnedAt ?? null : null,
         tier: tier >= 0 ? tier : null,
         variant: tier >= 0 ? pickVariant(b.tiers[tier], r.earnedAt ?? null) : null,
-        // 首次解锁日期：分级徽章用第一级的达成日期（旧数据没有就用当前等级的）
-        shiny: tier >= 0 ? shinyOf(b.id, r.firstAt ?? r.earnedAt ?? null, r.shiny) : false,
         value,
         progress: { current: value, target: next.threshold },
       };
@@ -68,7 +52,6 @@ export function normalizeProgress(raw, badges, brandId = null) {
       earnedAt: unlocked ? r.earnedAt ?? null : null,
       tier: null,
       variant: null,
-      shiny: unlocked ? shinyOf(b.id, r.earnedAt ?? null, r.shiny) : false,
       value: r.value ?? current,
       progress: { current: r.value !== undefined ? Math.min(r.value, target) : current, target },
     };

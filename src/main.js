@@ -449,7 +449,6 @@ async function main() {
     if (!d.masked && topTier?.variants && state.variant != null) {
       $('[data-desc]').textContent += t('inspect.variant', { n: topTier.variants.length, name: tierLabel(topTier, state.variant, lang) });
     }
-    if (!d.masked && state.shiny) $('[data-desc]').textContent += t('inspect.shiny');
 
     // 等级阶梯
     const ladder = $('[data-tiers]');

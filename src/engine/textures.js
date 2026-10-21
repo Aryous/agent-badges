@@ -1,4 +1,4 @@
-import { CanvasTexture, DataTexture, LinearFilter, LinearMipmapLinearFilter, NoColorSpace, RepeatWrapping, RGBAFormat, SRGBColorSpace } from 'three';
+import { CanvasTexture, DataTexture, LinearFilter, LinearMipmapLinearFilter, NoColorSpace, RGBAFormat, SRGBColorSpace } from 'three';
 
 // 程序化贴图。贴图 UV 约定：徽章正面 (x, y) ∈ [-1, 1] 映射到 [0, 1]。
 // 只能在浏览器中调用（依赖 canvas）。
@@ -178,73 +178,3 @@ export function canvasTexture(canvas, { srgb = false } = {}) {
 
 export { makeCanvas };
 
-// ---------- 闪光款用的贴图（都是灰度：用作薄膜厚度、粗糙度或凹凸） ----------
-
-function grayTexture(key, size, fn, { repeat = false } = {}) {
-  if (cache.has(key)) return cache.get(key);
-  const data = new Uint8Array(size * size * 4);
-  for (let j = 0; j < size; j++) {
-    for (let i = 0; i < size; i++) {
-      const g = Math.round(Math.min(1, Math.max(0, fn((i + 0.5) / size * 2 - 1, (j + 0.5) / size * 2 - 1, i, j))) * 255);
-      const k = (j * size + i) * 4;
-      data[k] = data[k + 1] = data[k + 2] = g;
-      data[k + 3] = 255;
-    }
-  }
-  const tex = new DataTexture(data, size, size, RGBAFormat);
-  tex.colorSpace = NoColorSpace;
-  tex.magFilter = LinearFilter;
-  tex.minFilter = LinearMipmapLinearFilter;
-  tex.generateMipmaps = true;
-  if (repeat) tex.wrapS = tex.wrapT = RepeatWrapping;
-  tex.needsUpdate = true;
-  tex.userData.shared = true;
-  cache.set(key, tex);
-  return tex;
-}
-
-/** 可复现的伪随机（闪粉每次生成都一样）。 */
-function seeded(seed) {
-  let s = seed >>> 0;
-  return () => ((s = Math.imul(s ^ (s >>> 15), 0x2c1b3c6d) + 0x9e3779b9) >>> 0) / 4294967296;
-}
-
-/** 平滑的值噪声（几层叠加），用于贝母的云雾纹。 */
-function valueNoise(seed) {
-  const r = seeded(seed);
-  const N = 64;
-  const grid = Array.from({ length: N * N }, r);
-  const at = (x, y) => grid[((y % N) + N) % N * N + ((x % N) + N) % N];
-  const smooth = (t) => t * t * (3 - 2 * t);
-  return (x, y) => {
-    const x0 = Math.floor(x), y0 = Math.floor(y);
-    const sx = smooth(x - x0), sy = smooth(y - y0);
-    const a = at(x0, y0) + (at(x0 + 1, y0) - at(x0, y0)) * sx;
-    const b = at(x0, y0 + 1) + (at(x0 + 1, y0 + 1) - at(x0, y0 + 1)) * sx;
-    return a + (b - a) * sy;
-  };
-}
-
-/** 镭射虹彩：颜色沿圆周流转一圈（锥形渐变），和全息的同心彩虹环区分开。 */
-export const conicTexture = (size = 512) => grayTexture(`conic-${size}`, size, (x, y) => 0.5 + 0.5 * Math.sin(Math.atan2(y, x) * 2 + Math.hypot(x, y) * 1.5));
-
-/** 珠光贝母：柔和的云雾纹。 */
-export const nacreTexture = (size = 512) => {
-  const n = valueNoise(11);
-  return grayTexture(`nacre-${size}`, size, (x, y) => 0.15 + 0.55 * n(x * 4 + 8, y * 4 + 8) + 0.3 * n(x * 11 + 3, y * 11 + 5));
-};
-
-/** 极光：竖向光带，略带弯曲，像帘幕。 */
-export const auroraTexture = (size = 512) => {
-  const n = valueNoise(23);
-  return grayTexture(`aurora-${size}`, size, (x, y) => 0.5 + 0.45 * Math.sin(x * 9 + 2.2 * n(x * 2 + 4, y * 2 + 4) + y * 1.2));
-};
-
-/** 闪粉：细密的随机亮点，用作凹凸和粗糙度，转动时一粒粒闪。 */
-export const glitterTexture = (size = 1024) => {
-  const r = seeded(7);
-  return grayTexture(`glitter-${size}`, size, () => {
-    const v = r();
-    return v > 0.94 ? 1 : v * 0.35;
-  }, { repeat: true });
-};

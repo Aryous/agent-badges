@@ -4,6 +4,7 @@ import { pixelShapes } from './pixels.js';
 import { arcTextGeometry, textGeometry } from './text.js';
 import { BadgeUV } from './uv.js';
 import { svgShapes } from './svgpath.js';
+import { makeOutline, outlineSegments, withHole } from './shapes.js';
 
 // 正面浮雕：用几何基元拼出图案和文字。
 // 坐标与徽章轮廓同一套单位：中心为原点，外接半径约 1。
@@ -17,6 +18,7 @@ import { svgShapes } from './svgpath.js';
 //   text      水平排布的立体文字（中心大数字）
 //   gem       多面切割的宝石
 //   path      SVG 路径
+//   contour   沿徽章外形内缩的描边线（外形是什么形状，描边就是什么形状）；inset 为离外缘的距离
 //
 // 每个基元都可以带 z：在正面板之上再抬高多少（用于叠在圆盘上的图案）。
 
@@ -76,7 +78,12 @@ function path({ d, scale = 0.5, viewBox = 24, center = [0, 0], holesOnly = false
   return holesOnly ? shapes.flatMap((s) => s.holes.map((h) => new Shape(h.getPoints()))) : shapes;
 }
 
-const PRIMITIVES = { capsule, circle, ring, pixels, path, 'rounded-rect': roundedRect };
+/** 沿外形内缩的描边：shape 由组装时注入（badge.js），配置里只写 inset 和 width。 */
+function contour({ shape, inset, width }) {
+  return [withHole(makeOutline(shape, inset), makeOutline(shape, inset + width), outlineSegments(shape))];
+}
+
+const PRIMITIVES = { capsule, circle, ring, pixels, path, contour, 'rounded-rect': roundedRect };
 
 export function reliefShapes(item) {
   const make = PRIMITIVES[item.kind];

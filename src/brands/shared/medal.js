@@ -1,4 +1,5 @@
 import { PLUS } from './pixel-art.js';
+import { innerRadius } from '../../engine/shapes.js';
 
 // 各品牌共用的奖章构图。坐标单位：徽章中心为原点，外接半径为 1。
 //
@@ -87,14 +88,21 @@ const withoutPattern = ({ pattern: _p, ...rest }) => rest;
  * @param {object} base  不含顶级的徽章配置
  */
 export function topVariants(base) {
-  return TOKEN_TOP.map(({ face, inner, ...v }) => ({
-    ...v,
+  const faceInset = base.layers.find((l) => l.kind === 'face')?.inset ?? 0.1;
+  return TOKEN_TOP.map(({ face, inner, ...v }) => {
     // 顶级外形的倒角更厚，面层内缩至少要 倒角 × 2 + 0.01
-    layers: base.layers.map((l) => (l.kind === 'face' ? withoutPattern({ ...l, ...face, inset: Math.max(l.inset ?? 0, (v.shape.bevel ?? 0.04) * 2 + 0.01) }) : l)),
-    relief: base.relief
-      .filter((r) => !(r.kind === 'circle' && r.radius < 0.04 && r.color === '$metal'))
-      .map((r) => scaleRelief(r.kind === 'circle' && r.color === '$accent' ? withoutPattern(r) : r, inner)),
-  }));
+    const inset = Math.max(faceInset, (v.shape.bevel ?? 0.04) * 2 + 0.01);
+    const isEdgeLine = (r) => r.kind === 'ring' && !r.center && r.width <= 0.02 && r.radius > 0.75;
+    return {
+      ...v,
+      layers: base.layers.map((l) => (l.kind === 'face' ? withoutPattern({ ...l, ...face, inset }) : l)),
+      relief: base.relief
+        .filter((r) => !(r.kind === 'circle' && r.radius < 0.04 && r.color === '$metal'))
+        // 贴边的圆形细描边换成沿外形的描边：外形变成星芒、八角后，描边跟着走
+        .map((r) => (isEdgeLine(r) ? { kind: 'contour', inset: inset + 0.045, width: r.width, material: r.material, color: r.color, height: r.height, bevel: 0.004 } : r))
+        .map((r) => (r.kind === 'contour' ? r : scaleRelief(r.kind === 'circle' && r.color === '$accent' ? withoutPattern(r) : r, inner))),
+    };
+  });
 }
 
 /** 旧名（Token 徽章最先用上这套顶级款式）。 */
@@ -116,23 +124,35 @@ export function topTierFromLast(config, salt) {
   return withTopTier({ ...config, tiers: config.tiers.slice(0, -1) }, last, salt);
 }
 
+/** 标准圆章的版式常量（k = 1 时）。 */
+const FACE_INSET = 0.11;
+const CONTOUR_GAP = 0.045; // 贴边描边离面板外缘的距离
+const CONTOUR_W = 0.012;
+const TEXT_R = 0.715;
+const TEXT_OUTER = (size) => TEXT_R + size * 0.5;
+const BREATH = 0.065; // 比版式检查的下限（0.06）多留一点
+
 /**
- * 标准圆章：金属外圈 → 深色珐琅环带（上弧品牌、下弧成就名）→ 亮色圆盘 → 画面。
- * 画面按 k = 1（圆盘半径 0.56）设计，外形内切圆较小时传 k < 1 整体内缩。
+ * 标准圆章：金属外圈 → 深色珐琅面板 → 沿外形的细描边 → 环形文字（上品牌、下成就名）→ 亮色圆盘 → 画面。
+ * 画面按 k = 1（圆盘半径 0.56）设计；k 默认由外形自动算出：文字环外缘离描边内沿留够呼吸距离，
+ * 所以星形、花形、盾形这类内切圆较小的外形会整体内缩，不会贴边。
  */
-export function roundMedal({ brandText, bottom, shape, metal, band, disc, art = [], k = 1, ring = true, textSize = 0.095, extra = [] }) {
+export function roundMedal({ brandText, bottom, shape, metal, band, disc, art = [], k, textSize = 0.095, extra = [], contour = true }) {
+  const edge = innerRadius(shape, FACE_INSET + CONTOUR_GAP + CONTOUR_W);
+  const fit = Math.min(1, (edge - BREATH) / TEXT_OUTER(textSize));
+  const kk = Math.min(k ?? 1, fit);
   return {
     shape,
     layers: [
       { kind: 'rim', material: 'polished-metal', color: metal },
-      { kind: 'face', material: 'enamel', color: band, inset: 0.11, pattern: 'rings' },
+      { kind: 'face', material: 'enamel', color: band, inset: FACE_INSET, pattern: 'rings' },
     ],
     relief: [
-      ...(ring ? [{ kind: 'ring', radius: 0.845 * k, width: 0.012, material: 'polished-metal', color: metal, height: 0.014 }] : []),
-      ...extra.map((a) => scaleRelief(a, k)),
-      ...textRing({ top: brandText, bottom, radius: 0.715 * k, size: textSize, metal: 'polished-metal', color: metal }),
-      ...medallion({ radius: 0.56 * k, color: disc, metal: 'polished-metal', metalColor: metal }),
-      ...art.map((a) => scaleRelief(a, k)),
+      ...(contour ? [{ kind: 'contour', inset: FACE_INSET + CONTOUR_GAP, width: CONTOUR_W, material: 'polished-metal', color: metal, height: 0.014, bevel: 0.004 }] : []),
+      ...extra.map((a) => scaleRelief(a, kk)),
+      ...textRing({ top: brandText, bottom, radius: TEXT_R * kk, size: textSize * kk, metal: 'polished-metal', color: metal }),
+      ...medallion({ radius: 0.56 * kk, color: disc, metal: 'polished-metal', metalColor: metal }),
+      ...art.map((a) => scaleRelief(a, kk)),
     ],
     back: { material: 'brushed-metal', color: metal },
   };

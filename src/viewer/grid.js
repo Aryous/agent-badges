@@ -6,9 +6,6 @@ import { formatBig, lang, t } from '../i18n.js';
 
 const fmtDate = (iso) => (iso ? iso.replaceAll('-', '.') : '');
 
-/** 闪光款在状态文字前面加「闪光」。 */
-const withShiny = (state, text) => (state.shiny ? [t('state.shiny'), text].filter(Boolean).join(' · ') : text);
-
 /** 陈列墙和详情里共用的状态文字。 */
 export function describeState(config, state) {
   const masked = config.hidden && !state.unlocked;
@@ -19,10 +16,10 @@ export function describeState(config, state) {
     const tier = { ...raw, metal: tierKey(raw, state.variant) };
     // 英文标题里已经带着数值（100 Sessions），只写等级名；顶级写抽到的款式
     const name = tierLabel(raw, state.variant, lang);
-    const meta = withShiny(state, lang === 'zh' ? `${name} · ${tier.label}` : name);
+    const meta = lang === 'zh' ? `${name} · ${tier.label}` : name;
     return { title, meta, tier, masked };
   }
-  if (state.unlocked) return { title, meta: withShiny(state, fmtDate(state.earnedAt)), masked };
+  if (state.unlocked) return { title, meta: fmtDate(state.earnedAt), masked };
   return { title, meta: null, masked };
 }
 

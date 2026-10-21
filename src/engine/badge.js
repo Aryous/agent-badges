@@ -1,6 +1,6 @@
 import { BufferAttribute, Color, ExtrudeGeometry, Group, Mesh } from 'three';
 import { smoothBevels } from './normals.js';
-import { makeOutline, outlineSegments, reededOutline, withHole } from './shapes.js';
+import { makeOutline, outlineSegments, reededOutline, withHole, innerRadius } from './shapes.js';
 import { resolveTier } from './tiers.js';
 import { BadgeUV } from './uv.js';
 import { createMaterial } from './materials.js';
@@ -77,33 +77,11 @@ function safeRadius(shape, inset) {
       return (shape.rootRadius ?? 0.84) - inset - 0.08;
     case 'shield':
       return ((shape.width ?? 0.86) - inset) * 0.86;
-    case 'flower': {
-      // 凹口到中心的距离
-      const R = shape.radius ?? 1;
-      const p = R * (shape.petal ?? 0.44) - inset;
-      const c = R - R * (shape.petal ?? 0.44);
-      const half = Math.PI / (shape.petals ?? 5);
-      return c * Math.cos(half) + Math.sqrt(Math.max(0, p * p - (c * Math.sin(half)) ** 2)) - 0.08;
-    }
+    case 'flower':
+      return innerRadius(shape, inset) - 0.08;
     default:
       return 0.6;
   }
-}
-
-/** 闪光款默认用哪种材质（评审后确定）。 */
-export const SHINY_KIND = 'iris';
-const SHINY_FROM = new Set(['polished-metal', 'brushed-metal', 'anodized', 'holographic']);
-
-/** 闪光款：外圈、金属浮雕和背面换成闪光材质；珐琅、陶瓷不变。kind 为 true 时用默认款。 */
-function applyShiny(config, kind) {
-  const material = `shiny-${kind === true ? SHINY_KIND : kind}`;
-  const swap = (x) => (SHINY_FROM.has(x.material) ? { ...x, material } : x);
-  return {
-    ...config,
-    layers: config.layers.map((l) => (l.kind === 'rim' ? swap(l) : l)),
-    relief: (config.relief ?? []).map(swap),
-    back: swap(config.back),
-  };
 }
 
 function formatDate(iso) {
@@ -132,8 +110,6 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
       relief: [{ kind: 'pixels', rows: QUESTION, cell: 0.075, center: [0, 0], material: 'enamel', color: 'graphite', height: 0.06 }],
     };
   }
-  const shiny = !locked && state.shiny ? state.shiny : null;
-  if (shiny) config = applyShiny(config, shiny);
   const shape = config.shape;
   const depth = shape.depth ?? 0.2;
   const bevel = shape.bevel ?? 0.04;
@@ -191,7 +167,6 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
     progress: state.progress,
     tier: config.tier,
     hidden: masked,
-    shiny: Boolean(shiny),
   });
   const backType = config.back.material;
   const engravingOpts = {
@@ -205,7 +180,7 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
   const engraving = typeof document !== 'undefined' ? createEngraving(engravingOpts) : {};
   const back = new Mesh(
     extrude(coreShape, plate, { segments }),
-    mat(backType, config.back.color, { ...engraving, bumpScale: 1.2, roughness: locked ? 0.85 : shiny ? 0.3 : 0.62 }),
+    mat(backType, config.back.color, { ...engraving, bumpScale: 1.2, roughness: locked ? 0.85 : 0.62 }),
   );
   back.geometry.translate(0, 0, -plate);
   back.name = 'back';
@@ -234,7 +209,7 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
       m = shared.get(key) ?? createMaterial(item.material, palette[item.color], patternOverrides(item.pattern));
       shared.set(key, m);
     }
-    const mesh = buildRelief(item, m, plate);
+    const mesh = buildRelief(item.kind === 'contour' ? { ...item, shape } : item, m, plate);
     if (item.gradient && !locked) paintGradient(mesh.geometry, item.gradient.map((k) => palette[k]));
     group.add(mesh);
   }

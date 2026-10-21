@@ -11,13 +11,13 @@ export default async function mockClaudeCode() {
     'tool-calls': { value: 12_400, earnedAt: '2025-09-11' }, // 银（1 万）
     'active-hours': { value: 640, earnedAt: '2025-09-30' }, // 银（100 小时）
     dispatches: { value: 1_380, earnedAt: '2025-11-02' }, // 金（1K）
-    'web-research': { value: 2_150, earnedAt: '2025-10-08', firstAt: '2025-03-20', shiny: true }, // 金（1K），闪光款
+    'web-research': { value: 2_150, earnedAt: '2025-10-08' }, // 金（1K）
     'file-edits': { value: 8_800, earnedAt: '2025-07-14' }, // 银（1K）
 
     // 连续与习惯
     'seven-day-streak': { unlocked: true, earnedAt: '2025-03-09', progress: { current: 7, target: 7 } },
     'streak-days': { value: 42, earnedAt: '2025-05-20' }, // 铜（30 天）
-    'night-owl': { unlocked: true, earnedAt: '2025-04-12', shiny: true }, // 闪光款
+    'night-owl': { unlocked: true, earnedAt: '2025-04-12' },
     'early-bird': { unlocked: false, progress: { current: 0, target: 1 } },
     'weekend-warrior': { unlocked: true, earnedAt: '2025-04-06' },
     marathon: { unlocked: true, earnedAt: '2025-07-23' },

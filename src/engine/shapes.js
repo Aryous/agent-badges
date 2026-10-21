@@ -101,25 +101,43 @@ function gear({ teeth = 12, radius = 1, rootRadius = 0.84, roundness = 0.025, ro
 }
 
 /**
- * 花形：n 片圆形花瓣围成一圈，相邻花瓣相交处是凹口（如五瓣梅花）。
- * radius 为外接半径；petal 为花瓣半径占外接半径的比例。内缩时花瓣半径同步减小，凹口重新求交，等距准确。
+ * 花形：n 片圆形花瓣围成一圈（如五瓣梅花）。
+ * radius 为外接半径；petal 为花瓣半径占外接半径的比例；
+ * valley 为凹口圆角半径（占外接半径的比例），凹口是一段内凹的圆弧，不出现尖角。
+ * 内缩时花瓣半径减小、凹口圆角同步变大，是准确的等距内缩。
  */
-function flower({ petals = 5, radius = 1, petal = 0.44, rotation = Math.PI / 2 }, inset) {
-  const p0 = radius * petal;
-  const c = radius - p0; // 花瓣圆心到中心的距离
-  const p = p0 - inset;
-  const half = Math.PI / petals;
-  // 相邻两片花瓣的外侧交点（凹口）到中心的距离
-  const v = c * Math.cos(half) + Math.sqrt(Math.max(0, p * p - (c * Math.sin(half)) ** 2));
+function flower({ petals = 5, radius = 1, petal = 0.44, valley = 0.08, rotation = Math.PI / 2 }, inset) {
+  const c = radius * (1 - petal); // 花瓣圆心到中心的距离
+  const p = radius * petal - inset;
+  const f = radius * valley + inset;
+  const h = Math.PI / petals;
+  // 凹口圆角的圆心：在两片花瓣的角平分线上，与两片花瓣外切
+  const d = c * Math.cos(h) + Math.sqrt(Math.max(0, (p + f) ** 2 - (c * Math.sin(h)) ** 2));
+  const petalAt = (i) => {
+    const t = rotation + i * 2 * h;
+    return [Math.cos(t) * c, Math.sin(t) * c];
+  };
+  const filletAt = (i) => {
+    const t = rotation + (2 * i + 1) * h;
+    return [Math.cos(t) * d, Math.sin(t) * d];
+  };
+  const angle = (from, to) => Math.atan2(to[1] - from[1], to[0] - from[0]);
   const shape = new Shape();
   for (let i = 0; i < petals; i++) {
-    const t = rotation + i * 2 * half;
-    const cx = Math.cos(t) * c;
-    const cy = Math.sin(t) * c;
-    // 这片花瓣从右侧凹口（t - half）逆时针走到左侧凹口（t + half）
-    const a0 = Math.atan2(Math.sin(t - half) * v - cy, Math.cos(t - half) * v - cx);
-    const a1 = Math.atan2(Math.sin(t + half) * v - cy, Math.cos(t + half) * v - cx);
-    shape.absarc(cx, cy, p, a0, a1 < a0 ? a1 + Math.PI * 2 : a1, false);
+    const P = petalAt(i);
+    const Fprev = filletAt(i - 1);
+    const Fnext = filletAt(i);
+    // 花瓣：从上一个凹口的切点逆时针走到下一个凹口的切点
+    const a0 = angle(P, Fprev);
+    let a1 = angle(P, Fnext);
+    while (a1 <= a0) a1 += Math.PI * 2;
+    shape.absarc(P[0], P[1], p, a0, a1, false);
+    // 凹口：在圆角圆上顺时针走到下一片花瓣
+    const Pn = petalAt(i + 1);
+    const b0 = angle(Fnext, P);
+    let b1 = angle(Fnext, Pn);
+    while (b1 >= b0) b1 -= Math.PI * 2;
+    shape.absarc(Fnext[0], Fnext[1], f, b0, b1, true);
   }
   shape.closePath();
   return shape;
@@ -163,4 +181,10 @@ export function withHole(outer, hole, segments = 10) {
   const shape = new Shape(outer.getPoints(segments));
   shape.holes.push(new Shape(hole.getPoints(segments)));
   return shape;
+}
+
+/** 轮廓（内缩 inset 之后）到中心的最近距离：内容不能超过这个半径。沿轮廓均匀取点计算。 */
+export function innerRadius(shapeCfg, inset = 0) {
+  const pts = makeOutline(shapeCfg, inset).getSpacedPoints(720);
+  return Math.min(...pts.map((p) => Math.hypot(p.x, p.y)));
 }
