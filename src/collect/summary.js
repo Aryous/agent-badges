@@ -1,16 +1,10 @@
 // 采集结果的文字汇总：解锁数、最近获得、即将解锁。CLI 和 Claude Code Skill 共用。
-import claudeBrand from '../brands/claude-code/brand.js';
-import claudeBadges from '../brands/claude-code/index.js';
-import codexBrand from '../brands/codex/brand.js';
-import codexBadges from '../brands/codex/index.js';
+import { BRANDS } from '../brands/index.js';
 import { normalizeProgress } from '../data/normalize.js';
 import { highlights } from '../data/highlights.js';
 import { badgeTitle, tierKey, tierLabel } from '../brands/shared/text.js';
 
-export const BRAND_INFO = {
-  'claude-code': { brand: claudeBrand, badges: claudeBadges },
-  codex: { brand: codexBrand, badges: codexBadges },
-};
+export const BRAND_INFO = Object.fromEntries(BRANDS.map(({ brand, badges }) => [brand.id, { brand, badges }]));
 
 /** 徽章名；即将解锁时用「下一级」的名字（已是 1K 级、正在冲 10K，就叫 10K Tool Calls）。 */
 const label = (b, s, lang, { next = false } = {}) => badgeTitle(b, lang, next ? (s?.tier ?? -1) + 1 : s?.tier ?? 0);

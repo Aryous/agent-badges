@@ -23,6 +23,8 @@ import { localDate } from '../data/metrics-common.js';
 import { hash, readJSON, saveBrand } from './common.js';
 
 export const BRAND_ID = 'claude-code';
+/** 账本里「对话轮数」的字段名。 */
+export const TURNS_FIELD = 'humanTurns';
 
 export function sourceDir(env = process.env) {
   return env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude');
@@ -92,6 +94,6 @@ export async function collect({ env = process.env, home, now = Date.now() } = {}
   });
   if (!files.length && !Object.keys(ledger.days).length) return null;
   const progress = computeProgress(ledger, badges, localDate(now));
-  const data = saveBrand(home, BRAND_ID, ledger, progress);
+  const data = saveBrand(home, BRAND_ID, ledger, progress, { turnsField: TURNS_FIELD });
   return { brandId: BRAND_ID, files: files.length, facts: facts.length, ledger, progress, data };
 }

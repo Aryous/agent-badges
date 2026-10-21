@@ -17,6 +17,8 @@ import { localDate } from '../data/metrics-common.js';
 import { hash, readJSON, saveBrand, writeJSON } from './common.js';
 
 export const BRAND_ID = 'codex';
+/** 账本里「对话轮数」的字段名。 */
+export const TURNS_FIELD = 'turns';
 const THREAD_COLUMNS = ['created_at_ms', 'source', 'thread_source', 'model', 'reasoning_effort', 'approval_mode'];
 
 export function sourceDir(env = process.env) {
@@ -145,6 +147,6 @@ export async function collect({ env = process.env, home, now = Date.now(), onPro
   const ledger = mergeCodexLedger(readJSON(ledgerPath), mergeDays(days, aggregateCodexDays([], rows)));
   if (!files.length && !rows.length && !Object.keys(ledger.days).length) return null;
   const progress = computeCodexProgress(ledger, badges, localDate(now));
-  const data = saveBrand(home, BRAND_ID, ledger, progress);
+  const data = saveBrand(home, BRAND_ID, ledger, progress, { turnsField: TURNS_FIELD });
   return { brandId: BRAND_ID, files: files.length, parsed, threads: rows.length, facts, ledger, progress, data, note };
 }

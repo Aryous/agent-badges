@@ -1,5 +1,5 @@
 // 进度归一化：把数据源给的原始进度补齐成统一格式（浏览器和 Node 都能用）。
-import { tierIndexFor } from '../engine/tiers.js';
+import { tierIndexFor } from './tiers.js';
 import { hash32 } from './hash.js';
 
 

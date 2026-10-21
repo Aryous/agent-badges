@@ -270,7 +270,7 @@ describe('账本合并', () => {
     const d = daysFromStatsCache(STATS)['2026-04-07'];
     expect(d).toMatchObject({ tokens: 81147, sessions: 1, toolCalls: 114, humanTurns: 0 });
     const merged = mergeLedger(null, {}, { statsDays: daysFromStatsCache(STATS) });
-    expect(dailySeries('claude-code', merged)['2026-04-07']).toEqual([81147, 0]);
+    expect(dailySeries(merged, 'humanTurns')['2026-04-07']).toEqual([81147, 0]);
   });
 
   it('stats-cache：账本里旧版补进来的日期（没有 Token）会被更新；会话记录算出的日期不会被覆盖', () => {

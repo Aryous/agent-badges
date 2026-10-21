@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from
 import { spawn } from 'node:child_process';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { BRAND_IDS } from '../src/brands/index.js';
 
 // Node 22 读 SQLite 时会打印「实验特性」警告，对用户没有意义，只屏蔽这一条
 const emitWarning = process.emitWarning;
@@ -33,7 +34,7 @@ const HELP = t(
   npx agent-badges profile <目录>  只往主页仓库目录写入徽章图和公开版徽章墙，不提交
 
 选项
-  --brand <claude-code|codex>      只采集 / 只看某个工具
+  --brand <${BRAND_IDS.join('|')}>      只采集 / 只看某个工具
   --port <端口>                    本地页面端口（默认 4747）
   --no-open                        不自动打开浏览器
   --json                           以 JSON 输出汇总（collect）
@@ -57,7 +58,7 @@ Usage
   npx agent-badges profile <dir>   only write the badge image and public badge wall into a profile repo folder
 
 Options
-  --brand <claude-code|codex>      only one tool
+  --brand <${BRAND_IDS.join('|')}>      only one tool
   --port <port>                    local page port (default 4747)
   --no-open                        don't open the browser
   --json                           print the summary as JSON (collect)
@@ -91,7 +92,7 @@ export function parseArgs(argv) {
     else if ((opts.command === 'export' || opts.command === 'profile') && !opts.dir) opts.dir = a;
     else throw new Error(t(`不认识的参数：${a}`, `Unknown argument: ${a}`));
   }
-  if (opts.brand && !['claude-code', 'codex'].includes(opts.brand)) throw new Error(t(`不支持的工具：${opts.brand}`, `Unsupported tool: ${opts.brand}`));
+  if (opts.brand && !BRAND_IDS.includes(opts.brand)) throw new Error(t(`不支持的工具：${opts.brand}`, `Unsupported tool: ${opts.brand}`));
   if (!['dark', 'light'].includes(opts.theme)) throw new Error(t(`不支持的配色：${opts.theme}`, `Unsupported theme: ${opts.theme}`));
   if (!['en', 'zh'].includes(opts.cardLang)) throw new Error(t(`不支持的语言：${opts.cardLang}`, `Unsupported language: ${opts.cardLang}`));
   if (opts.command === 'export' && !opts.dir) throw new Error(t('export 需要一个目录', 'export needs a directory'));
@@ -127,7 +128,7 @@ async function collectAndReport(opts) {
     : null;
   // 先记下上次的进度，采集完对比出「新解锁」
   const { dataHome, readJSON } = await import('../src/collect/common.js');
-  const before = Object.fromEntries(['claude-code', 'codex'].map((id) => [id, readJSON(join(dataHome(), `${id}.json`))?.progress ?? null]));
+  const before = Object.fromEntries(BRAND_IDS.map((id) => [id, readJSON(join(dataHome(), `${id}.json`))?.progress ?? null]));
   const { home, results } = await collectAll({ only: opts.brand, onProgress });
   const data = {};
   const summaries = [];

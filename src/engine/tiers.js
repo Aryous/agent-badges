@@ -51,12 +51,3 @@ export function resolveTier(config, index, variant = 0) {
   }
   return { ...replaceDeep(base, fields), tier: { ...fields, index: i, name: TIER_NAMES[fields.metal] ?? fields.metal, variant: picked } };
 }
-
-/** 根据数值算出达到的等级下标（-1 表示还没到第一级）。 */
-export function tierIndexFor(tiers, value) {
-  let idx = -1;
-  tiers.forEach((t, i) => {
-    if (value >= t.threshold) idx = i;
-  });
-  return idx;
-}

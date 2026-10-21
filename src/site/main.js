@@ -1,4 +1,5 @@
 // 落地页：首屏一枚实时旋转的 3D 徽章，下面是徽章画廊、年度热力图（示例数据）、隐私说明。
+// showcase: 手工挑选的展示徽章，id 由 tests/contracts.test.js 核对
 import '../style.css';
 import './site.css';
 import { Group } from 'three';

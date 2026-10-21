@@ -5,6 +5,7 @@ import { engravingLines } from '../shared/text.js';
 export default {
   id: 'claude-code',
   name: 'Claude Code',
+  launchDate: '2025-02-24', // 工具发布日，生日徽章用
   // 鲜明多彩：每枚徽章一组主色（深色环带 + 亮色圆盘），金属轮换；
   // Claude Code 橙只留给小怪物，是全套唯一的橙色。
   palette: {

@@ -142,11 +142,11 @@ if (want('shots')) {
 if (want('card')) {
   const { renderCard } = await import('../src/collect/card.js');
   const { summarize, BRAND_INFO } = await import('../src/collect/summary.js');
-  const { loadDaily } = await import('../src/data/progress.js');
-  const mocks = { 'claude-code': (await import('../src/data/mock-claude-code.js')).default, codex: (await import('../src/data/mock-codex.js')).default };
+  const { loadDaily, DATA_SOURCES } = await import('../src/data/progress.js');
+  const { BRAND_IDS } = await import('../src/brands/index.js');
   const brands = [];
-  for (const id of ['claude-code', 'codex']) {
-    const { unlocked, total } = summarize(id, await mocks[id]());
+  for (const id of BRAND_IDS) {
+    const { unlocked, total } = summarize(id, await DATA_SOURCES[id].mock());
     const { brand } = BRAND_INFO[id];
     brands.push({ id, name: brand.name, accent: brand.ui.accent, unlocked, total, daily: await loadDaily(id, { forceMock: true }) });
   }

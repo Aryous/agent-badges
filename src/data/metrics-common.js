@@ -160,9 +160,6 @@ const SPRING_FESTIVAL = new Set([
   '2031-01-23', '2032-02-11', '2033-01-31', '2034-02-19', '2035-02-08',
 ]);
 
-/** 工具发布日：只认发布当天及之后每年的同一天。 */
-export const LAUNCH_DATES = { 'claude-code': '2025-02-24', codex: '2025-04-16' };
-
 export const holidays = {
   'new-year': (date) => date.endsWith('-01-01'),
   'spring-festival': (date) => SPRING_FESTIVAL.has(date),

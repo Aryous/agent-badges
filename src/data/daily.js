@@ -2,16 +2,13 @@
 //   daily = { 'YYYY-MM-DD': [tokens, turns] }
 import { addDays, streaks } from './metrics-common.js';
 
-const TURNS_FIELD = { 'claude-code': 'humanTurns', codex: 'turns' };
-
-/** 账本 → 按天的使用量（没有任何活动的日子不写）。 */
-export function dailySeries(brandId, ledger) {
-  const field = TURNS_FIELD[brandId];
+/** 账本 → 按天的使用量（没有任何活动的日子不写）。turnsField 由采集模块给出（各工具的对话轮数字段名不同）。 */
+export function dailySeries(ledger, turnsField) {
   const out = {};
   for (const date of Object.keys(ledger?.days ?? {}).sort()) {
     const d = ledger.days[date];
     const tokens = Math.round(d.tokens ?? 0);
-    const turns = d[field] ?? 0;
+    const turns = d[turnsField] ?? 0;
     if (tokens > 0 || turns > 0) out[date] = [tokens, turns];
   }
   return out;

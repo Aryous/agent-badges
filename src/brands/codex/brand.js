@@ -6,6 +6,7 @@ import { engravingLines } from '../shared/text.js';
 export default {
   id: 'codex',
   name: 'Codex',
+  launchDate: '2025-04-16', // 工具发布日，生日徽章用
   // 鲜明多彩：每枚徽章一组主色（深色环带 + 亮色圆盘），金属轮换；
   // Codex 渐变（lavender → periwinkle → electric）只留给 Codex 标志。
   palette: {

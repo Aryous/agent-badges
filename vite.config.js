@@ -3,6 +3,7 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { dataHome } from './src/collect/common.js';
+import { BRAND_IDS } from './src/brands/index.js';
 import { injectData } from './src/collect/inject.js';
 
 /**
@@ -16,7 +17,7 @@ function localData() {
     transformIndexHtml(html) {
       const home = dataHome();
       const data = {};
-      for (const id of ['claude-code', 'codex']) {
+      for (const id of BRAND_IDS) {
         const p = join(home, `${id}.json`);
         if (existsSync(p)) data[id] = JSON.parse(readFileSync(p, 'utf8'));
       }

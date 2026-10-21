@@ -2,6 +2,11 @@
 //   分级徽章给 value（引擎按门槛算等级），普通徽章给 unlocked / progress。
 // 接入真实数据后，这份文件只用于 ?source=mock 预览。
 
+export const BRAND_ID = 'claude-code';
+
+/** 示例数据的按天使用量：从 2025 年 3 月开始。 */
+export const MOCK_DAILY = { seed: 7, from: '2025-03-01', to: '2026-10-15', base: 2_000_000 };
+
 export default async function mockClaudeCode() {
   return {
     // 里程碑

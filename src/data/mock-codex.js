@@ -1,6 +1,11 @@
 // Codex 示例数据：覆盖各种状态，方便设计和测试。
 //   分级徽章给 value（引擎按门槛算等级），普通徽章给 unlocked / progress。
 
+export const BRAND_ID = 'codex';
+
+/** 示例数据的按天使用量：从 2026 年 4 月开始，和 Claude Code 重叠的日子在热力图上显示双色。 */
+export const MOCK_DAILY = { seed: 11, from: '2026-04-10', to: '2026-10-15', base: 60_000_000, restRate: 0.45 };
+
 export default async function mockCodex() {
   return {
     // 里程碑

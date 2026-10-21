@@ -13,12 +13,12 @@ describe('按天使用量', () => {
         '2026-05-03': { tokens: 0, humanTurns: 2 },
       },
     };
-    expect(dailySeries('claude-code', ledger)).toEqual({ '2026-05-02': [1200, 3], '2026-05-03': [0, 2] });
-    expect(dailySeries('codex', { days: { '2026-05-02': { tokens: 9, turns: 1 } } })).toEqual({ '2026-05-02': [9, 1] });
+    expect(dailySeries(ledger, 'humanTurns')).toEqual({ '2026-05-02': [1200, 3], '2026-05-03': [0, 2] });
+    expect(dailySeries({ days: { '2026-05-02': { tokens: 9, turns: 1 } } }, 'turns')).toEqual({ '2026-05-02': [9, 1] });
   });
 
   it('只输出日期和数字', () => {
-    const out = dailySeries('codex', { days: { '2026-05-02': { tokens: 9, turns: 1, models: ['abc123'], hours: Array(24).fill(1) } } });
+    const out = dailySeries({ days: { '2026-05-02': { tokens: 9, turns: 1, models: ['abc123'], hours: Array(24).fill(1) } } }, 'turns');
     expect(JSON.stringify(out)).toBe('{"2026-05-02":[9,1]}');
   });
 

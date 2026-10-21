@@ -21,14 +21,14 @@ export function writeJSON(path, data) {
 }
 
 /** 写入一个品牌的账本和进度，返回进度文件内容。 */
-export function saveBrand(home, brandId, ledger, progress) {
+export function saveBrand(home, brandId, ledger, progress, { turnsField }) {
   writeJSON(join(home, `${brandId}.ledger.json`), ledger);
   const out = {
     source: 'local',
     generatedAt: new Date().toISOString(),
     days: Object.keys(ledger.days).length,
     progress,
-    daily: dailySeries(brandId, ledger),
+    daily: dailySeries(ledger, turnsField),
   };
   writeJSON(join(home, `${brandId}.json`), out);
   return out;

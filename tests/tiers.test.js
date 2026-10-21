@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import brand from '../src/brands/claude-code/brand.js';
-import { resolveTier, tierIndexFor } from '../src/engine/tiers.js';
+import { resolveTier } from '../src/engine/tiers.js';
+import { tierIndexFor } from '../src/data/tiers.js';
 import { validateBadge } from '../src/engine/validate.js';
 import { buildBadge } from '../src/engine/badge.js';
 import ccBadges from '../src/brands/claude-code/index.js';

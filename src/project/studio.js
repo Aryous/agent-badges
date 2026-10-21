@@ -4,8 +4,7 @@ import { Group } from 'three';
 import { BRANDS, getBrand } from '../brands/index.js';
 import { buildBadge, setEngravingSize } from '../engine/badge.js';
 import { normalizeProgress } from '../data/normalize.js';
-import mockClaudeCode from '../data/mock-claude-code.js';
-import mockCodex from '../data/mock-codex.js';
+import { DATA_SOURCES } from '../data/progress.js';
 import { createStage } from '../viewer/scene.js';
 import { renderBadgePNG } from '../viewer/export.js';
 import { LOGO_STATE, logoBadge, logoBrand } from './logo.js';
@@ -14,7 +13,6 @@ const stage = createStage(document.querySelector('#stage'));
 
 /** 展示用的等级：最高一级；最高一级是随机款式的彩蛋时，展示它下面一级，留住惊喜。 */
 const showcaseTier = (tiers) => (tiers.at(-1).variants ? tiers.length - 2 : tiers.length - 1);
-const MOCKS = { 'claude-code': mockClaudeCode, codex: mockCodex };
 
 /**
  * @param {object} o
@@ -37,7 +35,7 @@ async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, la
     const b = getBrand(brandId);
     brand = b.brand;
     config = b.badges.find((x) => x.id === id);
-    state = normalizeProgress(await MOCKS[brandId](), b.badges)[id];
+    state = normalizeProgress(await DATA_SOURCES[brandId].mock(), b.badges)[id];
     // 展示用：分级徽章看最高级，隐藏徽章保持神秘，其余都已解锁
     if (showcase) {
       state = config.hidden

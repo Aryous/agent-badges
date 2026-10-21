@@ -19,7 +19,7 @@
     "src/data/daily.js",
     "src/data/calendar.js",
     "src/data/highlights.js",
-    "src/engine/tiers.js",
+    "src/data/tiers.js",
     "src/brands/",
     "README.md",
     "LICENSE"

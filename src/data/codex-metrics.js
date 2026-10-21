@@ -8,6 +8,7 @@
 //   - 对话正文、命令参数、命令输出、标题、首条消息、路径、git 信息、账号 id 一律不读。
 //   - 输出（账本 + 进度）只包含数字、日期和哈希。
 
+import brand from '../brands/codex/brand.js';
 import { fnv1a } from './hash.js';
 import {
   addDays,
@@ -18,7 +19,6 @@ import {
   localDate,
   holidays,
   hoursSeries,
-  LAUNCH_DATES,
   once,
   perfectMonth,
   segmentsOf,
@@ -363,7 +363,7 @@ export function computeCodexProgress(ledger, badges, today) {
   const on = (pred) => once(firstDate(dates, days, (_, date) => pred(date)));
   out['new-year'] = on(holidays['new-year']);
   out['spring-festival'] = on(holidays['spring-festival']);
-  out['tool-birthday'] = on(holidays.birthday(LAUNCH_DATES.codex));
+  out['tool-birthday'] = on(holidays.birthday(brand.launchDate));
   out.christmas = on(holidays.christmas);
   return out;
 }

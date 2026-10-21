@@ -9,6 +9,7 @@
 //
 // 这个模块是纯函数，不碰文件系统；读文件的部分在 src/collect/claude-code.js。
 
+import brand from '../brands/claude-code/brand.js';
 import { fnv1a } from './hash.js';
 import {
   addDays,
@@ -18,7 +19,6 @@ import {
   firstDate,
   holidays,
   hoursSeries,
-  LAUNCH_DATES,
   localDate,
   once,
   perfectMonth,
@@ -392,7 +392,7 @@ export function computeProgress(ledger, badges, today) {
   out['bash-maniac'] = once(first((d) => d.bashCalls >= 500), Math.min(maxOf('bashCalls'), 500), 500);
   out['new-year'] = on(holidays['new-year']);
   out['spring-festival'] = on(holidays['spring-festival']);
-  out['tool-birthday'] = on(holidays.birthday(LAUNCH_DATES['claude-code']));
+  out['tool-birthday'] = on(holidays.birthday(brand.launchDate));
   out.christmas = on(holidays.christmas);
 
   return out;
