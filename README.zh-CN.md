@@ -21,7 +21,7 @@
 npx agent-badges
 ```
 
-**也可以直接问你的 Agent。** 在 Claude Code 或 Codex 里[装上技能](#让-agent-帮你看)，然后说「看看我的徽章」。
+**也可以直接问你的 Agent。** 在 Claude Code 或 Codex 里[装上技能](#安装)，然后说「看看我的徽章」。
 
 <p align="center">
   <img src="assets/spin.gif" alt="三枚旋转的徽章：Claude Code 初次相遇、Agent Badges 标志、Codex 初次启动" width="720" />
@@ -29,7 +29,7 @@ npx agent-badges
 
 ## 有什么
 
-- **两个工具，62 枚徽章。** Claude Code 32 枚，Codex 30 枚：里程碑、连续与习惯、功能探索、节日限定，还有几枚隐藏彩蛋。分级徽章从铜到金逐级升级，最高一级随机解锁三款之一。
+- **两个工具，62 枚徽章。** Claude Code 32 枚，Codex 30 枚：里程碑、连续与习惯、功能探索、节日限定，还有几枚隐藏彩蛋。分级徽章按铜、银、金逐级升级（Token 徽章多一级白金），最高一级随机解锁三款特别设计之一。
 - **真 3D。** 每枚徽章都由 three.js 按一份配置程序化生成，材质有珐琅、抛光金属、拉丝金属、陶瓷、全息镭射、水晶。可以拖动旋转，翻到背面看刻字。
 - **成就档案。** 解锁进度环、累计 Token、活跃天数、最长连续，最近获得了什么、离哪几枚最近。
 - **年度热力图。** 每天的 Token 用量排成日历，两个工具叠在一起看：同一天都用了就一格两色；解锁徽章的日子有一个小圆点。
@@ -53,7 +53,24 @@ npx agent-badges
 
 </details>
 
-## 让 Agent 帮你看
+## 隐私
+
+Agent Badges 只读取 Claude Code 和 Codex 在你本机留下的记录里的元数据：时间戳、Token 计数、工具名。你的对话、命令参数和文件路径在解析每一行记录时当场丢弃，从不保存；凭证文件从不打开。除非你让它[发布到 GitHub 个人主页](#放到-github-个人主页)，否则什么都不会上传。
+
+规则定得很死，并且有测试保证：
+
+- **只在本机。** 读取 `~/.claude` 和 `~/.codex`，结果写到 `~/.agent-badges`。页面只监听 `127.0.0.1`，局域网里的其他设备也访问不到。没有网络请求，没有统计。
+- **只读元数据。** 每一行记录解析后立刻只保留白名单字段：时间戳、Token 计数、工具名、模式取值。对话内容、代码、工具参数和结果当场丢弃，从不保存。可能透露你在做什么的名字（MCP 服务名、Codex 的模型名）会哈希；Claude 的模型名只保留家族名（opus、sonnet、haiku、fable）。
+- **从不打开的文件。** Claude Code：`settings.json`、`.credentials.json`、MCP 配置、`history.jsonl`、`shell-snapshots`、`session-env`、`paste-cache`、`file-history`。Codex：`auth.json`、`config.toml`、`*.env`、`history.jsonl`、`transcription-history.jsonl`、`thread_history*.sqlite`、`logs*.sqlite`、`memories*`、`shell_snapshots`。
+- **Codex 会话索引库。** `state_*.sqlite` 以只读方式打开，只 SELECT 六列：创建时间、来源、会话类型、模型、推理强度、审批策略。标题、首条消息、预览、路径、git 信息、账号 id 一律不读。
+- **保存了什么。** `~/.agent-badges` 里是按天汇总的账本，只有数字、日期和哈希。工具清理旧记录之后，已经拿到的徽章也不会消失。
+- **有测试。** 测试会在伪造的 `~/.claude` 和 `~/.codex` 里塞入假密钥、对话、路径和会话标题，真跑一遍采集和导出，确认它们不会出现在任何输出里。
+
+在线演示和 npm 包里都没有任何个人数据。只有 `export`、`card`、`shelf` 和 `profile` 会写出和你使用情况有关的文件，而且只写到你指定的位置。`publish` 和 `profile` 生成的网页就是用来公开的，[里面有什么](#放到-github-个人主页)写在下面。
+
+## 安装
+
+命令行本身不用安装，直接 `npx agent-badges` 就能运行（见[快速开始](#快速开始)）。想直接问 Agent 的话，再装上技能。
 
 Agent Badges 带有一个给 Claude Code 和 Codex 用的技能（Skill）。直接用平常的话问，比如「看看我的徽章」「我刚解锁了什么」或 "check my badges"。Agent 会在你的电脑上运行命令行，然后告诉你新解锁了什么、总共解锁了多少、离哪几枚最近。
 
@@ -69,9 +86,7 @@ Claude Code：已解锁 27 / 32。
 
 <sub>回复示例，用示例数据生成。</sub>
 
-### 安装
-
-**Claude Code**
+### Claude Code
 
 ```text
 /plugin install agent-badges --marketplace Aryous/agent-badges
@@ -79,7 +94,7 @@ Claude Code：已解锁 27 / 32。
 
 较旧的版本需要先添加市场：`/plugin marketplace add Aryous/agent-badges`，再运行 `/plugin install agent-badges@agent-badges`。
 
-**Codex**
+### Codex
 
 ```bash
 codex plugin marketplace add Aryous/agent-badges
@@ -94,7 +109,7 @@ $skill-installer install https://github.com/Aryous/agent-badges/tree/main/skills
 
 装好后新开一个 Codex 会话，它才会加载这个技能。
 
-**其他 Agent**
+### 其他 Agent
 
 这个技能就是一个标准的 [Agent Skills](https://agentskills.io) 目录：[`skills/badges`](skills/badges)。可以把它复制到任何支持 `SKILL.md` 的 Agent 里，也可以让 Agent 直接调用命令行、读取 [JSON 输出](#json-输出)。
 
@@ -135,7 +150,7 @@ npx agent-badges collect --json --lang zh
 }
 ```
 
-- `newUnlocks`：上次运行之后新获得的徽章，第一次运行时为空。分级徽章还带有 `tier`（`bronze`、`silver`、`gold`、`platinum`），升级时 `upgrade` 为 `true`。
+- `newUnlocks`：上次运行之后新获得的徽章，第一次运行时为空。分级徽章还带有 `tier`（`bronze`、`silver`、`gold`、`platinum`；到了最高一级是抽到的那一款：`ivory-gold`、`onyx-gold`、`sapphire`），升级时 `upgrade` 为 `true`。
 - `recent`：最近获得的三枚。
 - `nearMiss`：最接近解锁的最多三枚。
 - 没装的工具不会出现在结果里。`--brand codex` 只看一个工具，`--lang en` 输出英文名称。
@@ -241,19 +256,6 @@ npx agent-badges card --name "你的名字" --lang zh
 
 卡片里只有数字。
 
-## 隐私
-
-它读的是你本机上工具自己写下的记录，所以规则定得很死，并且有测试保证。
-
-- **只在本机。** 读取 `~/.claude` 和 `~/.codex`，结果写到 `~/.agent-badges`。页面只监听 `127.0.0.1`，局域网里的其他设备也访问不到。没有网络请求，没有统计。
-- **只读元数据。** 每一行记录解析后立刻只保留白名单字段：时间戳、Token 计数、工具名、模式取值。对话内容、代码、工具参数和结果当场丢弃，从不保存。可能透露你在做什么的名字（MCP 服务名、Codex 的模型名）会哈希；Claude 的模型名只保留家族名（opus、sonnet、haiku、fable）。
-- **从不打开的文件。** Claude Code：`settings.json`、`.credentials.json`、MCP 配置、`history.jsonl`、`shell-snapshots`、`session-env`、`paste-cache`、`file-history`。Codex：`auth.json`、`config.toml`、`*.env`、`history.jsonl`、`transcription-history.jsonl`、`thread_history*.sqlite`、`logs*.sqlite`、`memories*`、`shell_snapshots`。
-- **Codex 会话索引库。** `state_*.sqlite` 以只读方式打开，只 SELECT 六列：创建时间、来源、会话类型、模型、推理强度、审批策略。标题、首条消息、预览、路径、git 信息、账号 id 一律不读。
-- **保存了什么。** `~/.agent-badges` 里是按天汇总的账本，只有数字、日期和哈希。工具清理旧记录之后，已经拿到的徽章也不会消失。
-- **有测试。** 测试会在伪造的 `~/.claude` 和 `~/.codex` 里塞入假密钥、对话、路径和会话标题，真跑一遍采集和导出，确认它们不会出现在任何输出里。
-
-在线演示和 npm 包里都没有任何个人数据。只有 `export`、`card`、`shelf` 和 `profile` 会写出和你使用情况有关的文件，而且只写到你指定的位置。`publish` 和 `profile` 生成的网页就是用来公开的，[里面有什么](#放到-github-个人主页)写在上面。
-
 ## 统计口径
 
 | | Claude Code | Codex |
@@ -274,78 +276,9 @@ npx agent-badges card --name "你的名字" --lang zh
 
 徽章定义在 [`src/brands`](src/brands)，各工具的统计逻辑在 `src/data/<工具>-metrics.js`。
 
-## 开发
+## 参与贡献
 
-```bash
-npm install
-npm run collect          # 采集本机数据到 ~/.agent-badges，开发服务器会自动注入
-npm run dev              # http://localhost:5173（徽章墙）
-npm test                 # 单元测试 + CLI 端到端测试
-npm run build            # dist/index.html：单文件、不含个人数据
-npm run build:site       # dist-site/：落地页 + 在线演示（示例数据）
-npm run check:pack       # 打包、装进临时目录、真跑一次 CLI
-```
-
-浏览器检查需要先启动开发服务器（`npx vite --port 5199`）并装有 Google Chrome：`npm run check:browser` 检查徽章墙，`npm run check:site` 检查构建好的站点。`node scripts/assets.mjs` 用示例数据重新生成 README 里的图片。
-
-徽章墙的页面参数：`?source=mock`（示例数据）、`?lang=en|zh`、`?brand=codex`、`#<徽章 id>`（直接打开某一枚）、`?preview=unlocked&tier=2`（把所有徽章预览成某一级的已解锁状态）。
-
-```
-src/
-├─ engine/    徽章引擎：轮廓、材质、浮雕、文字、分级（不含任何品牌信息）
-├─ brands/    每个工具一个目录：色板，以及按系列分目录、一枚徽章一个文件
-├─ data/      统计口径、按天数据、示例数据
-├─ collect/   本机采集、汇总、成就卡片（CLI 使用）
-├─ viewer/    舞台、陈列墙、单枚查看、热力图、海报、导出
-├─ site/      落地页
-└─ project/   Agent Badges 标志和素材工作台
-bin/          命令行
-skills/       Agent 技能，Claude Code 和 Codex 共用
-.claude-plugin/              Claude Code 插件和市场
-plugin.json、.agents/plugins/  Codex 插件和市场
-```
-
-### 新增一枚徽章
-
-一枚徽章一个文件：`src/brands/<工具>/<系列>/<徽章 id>.js` 里放这枚徽章的配置、专属像素图和英文文案（`en`）。新建文件后，在该系列目录的 `index.js` 里加一行（这里的顺序就是陈列墙上的顺序），不用改引擎。
-
-```
-src/brands/
-├─ shared/        layout.js（标准圆章、文字环、圆盘）、parts.js（终端、烟花、灯笼、日历……）、
-│                 top-tier.js（顶级三款）、pixel-art.js
-├─ claude-code/   brand.js（色板）、mascot.js（像素小怪物）、app-icon.js（功能系列骨架）、
-│                 medal.js、milestones/ habits/ features/ limited/
-└─ codex/         brand.js、mark.js（Codex 标志）、feature-frame.js、medal.js，同样四个系列
-```
-
-- **最快的起点**：用工具目录下 `medal.js` 的 `medal({ bottom, shape, metal, band, disc, art })` 生成标准圆章：金属外圈、沿外形的细描边、环形文字和中心圆盘。内容大小按外形自动算，星形、花形、盾形也不会贴边。`art` 按半径 0.56 的圆盘来画。
-- **轮廓**：`circle`（可加 `reeded` 滚花边）、`polygon`、`starburst`、`flower`（圆形花瓣，凹口是圆角）、`shield`、`gear`
-- **材质**：`enamel`、`polished-metal`、`brushed-metal`、`ceramic`、`anodized`（阳极氧化铝）、`holographic`（全息镭射）、`crystal`（水晶宝石）
-- **浮雕基元**：`capsule` 胶囊线条、`circle` 圆片、`ring` 圆环、`contour` 沿徽章外形的描边、`pixels` 像素图（字符画，`'#'` 为实心）、`rounded-rect` 圆角方块、`text-arc` 弧形立体文字、`text` 水平立体文字、`gem` 宝石、`path` SVG 路径
-- **底纹**：在 `face` 层或浮雕上加 `pattern: 'sunburst' | 'rings'`
-- **叠放**：浮雕的 `z` 表示在正面板之上再抬高多少，用于把图案放在中心圆盘上
-- **分级**：写 `tiers: [{ threshold, metal, label, accent? }]`，造型里用 `'$metal'`、`'$accent'`、`'{label}'` 占位；`shared/top-tier.js` 的 `withTopTier` / `topTierFromLast` 把最高一级变成三款随机
-- **隐藏**：`hidden: true`，未解锁时正面只显示像素问号，标题显示为 `???`
-- **坐标和颜色**：以徽章中心为原点、外接半径约为 1；颜色写品牌色板里的键名，不直接写色值
-
-设计原则（由 `tests/layout.test.js` 检查）：
-
-1. **内外呼应**：贴边的细描边沿外形走（`contour`），圆形细描边只用在圆形徽章上。
-2. **呼吸距离**：文字环、圆盘离外框至少留徽章半径的 6%。
-3. **轮廓节奏**：多边形最多 8 条边，再多就用圆形；异形用少而舒展的起伏，一条轮廓里不同时出现尖角和圆弧。
-4. **系列感**：功能系列用各工具统一的骨架，其余系列按题材挑外形。
-
-配置会在启动时校验，写错的字段会在开发模式下直接显示在页面上。设计时可以用截图工具：
-
-```bash
-node scripts/peek.mjs "http://localhost:5199/?preview=unlocked" out.png <徽章id> [角度]
-```
-
-角度传 `3.14159` 截背面；传 `hold:0.6` 会把徽章钉在斜角，用来检查全息等材质的侧面效果。
-
-### 新增一个工具
-
-新建 `src/brands/<id>/`（色板、按系列分目录的徽章文件、`index.js`），在 `src/brands/index.js` 登记，在 `src/data/progress.js` 加上数据源和示例数据，再在 `src/collect/` 写一个采集器并配上泄漏测试。欢迎 PR。
+见 [CONTRIBUTING.md](CONTRIBUTING.md)（英文）。
 
 ## 致谢
 

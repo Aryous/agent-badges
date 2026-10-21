@@ -21,7 +21,7 @@ Turn your Claude Code and Codex history into collectible 3D achievement badges, 
 npx agent-badges
 ```
 
-**Or ask your agent.** Install the [skill for Claude Code or Codex](#ask-your-agent), then say *"check my badges"*.
+**Or ask your agent.** Install the [skill for Claude Code or Codex](#install), then say *"check my badges"*.
 
 <p align="center">
   <img src="assets/spin.gif" alt="Three badges spinning: Claude Code First Session, the Agent Badges logo, Codex First Thread" width="720" />
@@ -29,7 +29,7 @@ npx agent-badges
 
 ## What you get
 
-- **62 badges across two tools.** 32 for Claude Code, 30 for Codex: milestones, streaks and habits, features to discover, holidays, and a few hidden ones. Tiered badges level up from bronze to gold, and the top tier unlocks one of three designs at random.
+- **62 badges across two tools.** 32 for Claude Code, 30 for Codex: milestones, streaks and habits, features to discover, holidays, and a few hidden ones. Tiered badges level up through bronze, silver and gold (the Token badges add platinum), and the top tier unlocks one of three special designs at random.
 - **Real 3D.** Every badge is generated with three.js from a small config: enamel, polished and brushed metal, ceramic, holographic foil, crystal. Drag to spin it, flip it over to read the engraving on the back.
 - **A profile.** Unlock ring, total tokens, active days, longest streak, recently earned, and what you are closest to unlocking next.
 - **Your year as a heatmap.** Daily token usage on a calendar, both tools overlaid (a day you used both is split in two colors), with a dot on every day you unlocked a badge.
@@ -53,7 +53,24 @@ The two `???` in each row are hidden achievements. They reveal themselves when y
 
 </details>
 
-## Ask your agent
+## Privacy
+
+Agent Badges reads only metadata from the logs Claude Code and Codex already keep on your machine: timestamps, token counts, tool names. Your conversations, command arguments and file paths are dropped the moment a log line is parsed and never stored, and credential files are never opened. Nothing is uploaded unless you ask it to [publish to your GitHub profile](#show-it-on-your-github-profile).
+
+The rules are strict and covered by tests:
+
+- **Local only.** It reads `~/.claude` and `~/.codex` and writes to `~/.agent-badges`. The page is served on `127.0.0.1`, so nothing else on your network can reach it. There are no network calls and no analytics.
+- **Metadata only.** Each log line is reduced to an allowlist of fields the moment it is parsed: timestamps, token counts, tool names, mode values. Prompts, code, tool inputs and outputs are dropped immediately and never stored. Names that could hint at what you work on (MCP server names, Codex model names) are hashed; Claude model names are reduced to the family (opus, sonnet, haiku, fable).
+- **Files it never opens.** Claude Code: `settings.json`, `.credentials.json`, MCP configs, `history.jsonl`, `shell-snapshots`, `session-env`, `paste-cache`, `file-history`. Codex: `auth.json`, `config.toml`, `*.env`, `history.jsonl`, `transcription-history.jsonl`, `thread_history*.sqlite`, `logs*.sqlite`, `memories*`, `shell_snapshots`.
+- **Codex thread index.** `state_*.sqlite` is opened read-only and only six columns are selected (created time, source, thread type, model, reasoning effort, approval mode). Titles, first messages, previews, paths, git info and account ids are never read.
+- **What is saved.** `~/.agent-badges` holds a per-day ledger of numbers, dates and hashes, so badges you earned stay earned even after the tools clean up old logs.
+- **Tested.** The test suite plants fake secrets, prompts, paths and thread titles in fake `~/.claude` and `~/.codex` folders, runs the real collector and export, and checks none of them appear in any output.
+
+The public demo and the npm package contain no personal data. Only `export`, `card`, `shelf` and `profile` write files about your usage, and only where you tell them to. `publish` and `profile` make a page meant to be public; see [what it contains](#show-it-on-your-github-profile).
+
+## Install
+
+The CLI itself needs no install: `npx agent-badges` runs it (see [Quick start](#quick-start)). Install the skill if you would rather ask your agent.
 
 Agent Badges comes with a skill for Claude Code and Codex. Ask in plain words, such as "check my badges", "what did I just unlock?" or "我的徽章". The agent runs the CLI on your machine and tells you what's new, your totals, and what you're closest to.
 
@@ -69,9 +86,7 @@ Want me to open the 3D badge wall, or make a card for your GitHub profile?
 
 <sub>An example reply, made from sample data.</sub>
 
-### Install
-
-**Claude Code**
+### Claude Code
 
 ```text
 /plugin install agent-badges --marketplace Aryous/agent-badges
@@ -79,7 +94,7 @@ Want me to open the 3D badge wall, or make a card for your GitHub profile?
 
 On older versions, add the marketplace first with `/plugin marketplace add Aryous/agent-badges`, then run `/plugin install agent-badges@agent-badges`.
 
-**Codex**
+### Codex
 
 ```bash
 codex plugin marketplace add Aryous/agent-badges
@@ -94,7 +109,7 @@ $skill-installer install https://github.com/Aryous/agent-badges/tree/main/skills
 
 Start a new Codex session afterwards so it picks up the skill.
 
-**Other agents**
+### Other agents
 
 The skill is a plain [Agent Skills](https://agentskills.io) folder, [`skills/badges`](skills/badges). Copy it into any agent that reads `SKILL.md` files, or have your agent call the CLI directly and read its [JSON output](#json-output).
 
@@ -135,7 +150,7 @@ npx agent-badges collect --json --lang en
 }
 ```
 
-- `newUnlocks`: badges earned since the previous run, empty on the first run. Tiered badges also carry `tier` (`bronze`, `silver`, `gold`, `platinum`) and `upgrade: true` when they moved up a tier.
+- `newUnlocks`: badges earned since the previous run, empty on the first run. Tiered badges also carry `tier` (`bronze`, `silver`, `gold`, `platinum`, or at the top tier the design you got: `ivory-gold`, `onyx-gold`, `sapphire`) and `upgrade: true` when they moved up a tier.
 - `recent`: the three most recently earned badges.
 - `nearMiss`: up to three badges closest to unlocking.
 - A tool that isn't installed is left out. Use `--brand codex` for one tool and `--lang zh` for Chinese titles.
@@ -242,19 +257,6 @@ This writes `agent-badges-card.svg`: unlock counts, totals, streaks and a grid o
 
 The card contains numbers only.
 
-## Privacy
-
-It reads the logs your tools already keep on your machine, so the rules are strict and covered by tests.
-
-- **Local only.** It reads `~/.claude` and `~/.codex` and writes to `~/.agent-badges`. The page is served on `127.0.0.1`, so nothing else on your network can reach it. There are no network calls and no analytics.
-- **Metadata only.** Each log line is reduced to an allowlist of fields the moment it is parsed: timestamps, token counts, tool names, mode values. Prompts, code, tool inputs and outputs are dropped immediately and never stored. Names that could hint at what you work on (MCP server names, Codex model names) are hashed; Claude model names are reduced to the family (opus, sonnet, haiku, fable).
-- **Files it never opens.** Claude Code: `settings.json`, `.credentials.json`, MCP configs, `history.jsonl`, `shell-snapshots`, `session-env`, `paste-cache`, `file-history`. Codex: `auth.json`, `config.toml`, `*.env`, `history.jsonl`, `transcription-history.jsonl`, `thread_history*.sqlite`, `logs*.sqlite`, `memories*`, `shell_snapshots`.
-- **Codex thread index.** `state_*.sqlite` is opened read-only and only six columns are selected (created time, source, thread type, model, reasoning effort, approval mode). Titles, first messages, previews, paths, git info and account ids are never read.
-- **What is saved.** `~/.agent-badges` holds a per-day ledger of numbers, dates and hashes, so badges you earned stay earned even after the tools clean up old logs.
-- **Tested.** The test suite plants fake secrets, prompts, paths and thread titles in fake `~/.claude` and `~/.codex` folders, runs the real collector and export, and checks none of them appear in any output.
-
-The public demo and the npm package contain no personal data. Only `export`, `card`, `shelf` and `profile` write files about your usage, and only where you tell them to. `publish` and `profile` make a page meant to be public; see [what it contains](#show-it-on-your-github-profile).
-
 ## How badges are counted
 
 | | Claude Code | Codex |
@@ -275,70 +277,9 @@ The public demo and the npm package contain no personal data. Only `export`, `ca
 
 Badge definitions live in [`src/brands`](src/brands). Each tool's metrics are in `src/data/<tool>-metrics.js`.
 
-## Development
+## Contributing
 
-```bash
-npm install
-npm run collect          # collect local data into ~/.agent-badges (the dev server injects it)
-npm run dev              # http://localhost:5173 (the badge wall)
-npm test                 # unit tests and CLI end-to-end tests
-npm run build            # dist/index.html, a single file with no personal data
-npm run build:site       # dist-site/: the landing page plus the demo (sample data)
-npm run check:pack       # pack, install into a temp folder, and run the CLI
-```
-
-Browser checks need a running dev server (`npx vite --port 5199`) and Google Chrome: `npm run check:browser` for the wall, `npm run check:site` for the built site. `node scripts/assets.mjs` regenerates the images in this README from sample data.
-
-Useful URL parameters on the wall: `?source=mock` (sample data), `?lang=en|zh`, `?brand=codex`, `#<badge-id>` (open a badge), `?preview=unlocked&tier=2` (preview every badge unlocked at a given tier).
-
-```
-src/
-├─ engine/    badge engine: shapes, materials, relief, text, tiers (no brand knowledge)
-├─ brands/    one folder per tool: palette and one file per badge, grouped by series
-├─ data/      metrics, daily series, mock data
-├─ collect/   local collectors, summary, achievement card (used by the CLI)
-├─ viewer/    stage, wall, inspector, heatmap, poster, export
-├─ site/      landing page
-└─ project/   the Agent Badges logo and the asset studio
-bin/          the CLI
-skills/       the agent skill, shared by Claude Code and Codex
-.claude-plugin/              Claude Code plugin and marketplace
-plugin.json, .agents/plugins/  Codex plugin and marketplace
-```
-
-### Adding a badge
-
-Each badge is one file: `src/brands/<tool>/<series>/<badge-id>.js` holds its config, its own pixel art and its English text (`en`). Add the file, then add one line to the series' `index.js` (which sets the order on the wall). No engine changes needed.
-
-```
-src/brands/
-├─ shared/        layout.js (round medal, text ring, medallion), parts.js (terminal, fireworks,
-│                 lantern, calendar…), top-tier.js (the three top-tier designs), pixel-art.js
-├─ claude-code/   brand.js (palette), mascot.js (the pixel mascot), app-icon.js (feature family),
-│                 medal.js, milestones/ habits/ features/ limited/
-└─ codex/         brand.js, mark.js (the Codex mark), feature-frame.js, medal.js, the same four series
-```
-
-- **Quickest start:** `medal({ bottom, shape, metal, band, disc, art })` from the tool's `medal.js` builds a round medal: metal rim, an edge line that follows the outline, a text ring and a center disc. It sizes the content to the outline, so star, flower and shield shapes keep their breathing room. Draw `art` for a disc of radius 0.56.
-- **Shapes:** `circle` (optionally reeded), `polygon`, `starburst`, `flower` (round petals with rounded notches), `shield`, `gear`
-- **Materials:** `enamel`, `polished-metal`, `brushed-metal`, `ceramic`, `anodized`, `holographic`, `crystal`
-- **Relief:** `capsule`, `circle`, `ring`, `contour` (a line that follows the badge outline), `pixels` (ASCII art), `rounded-rect`, `text-arc`, `text`, `gem`, `path` (SVG)
-- **Tiers:** `tiers: [{ threshold, metal, label, accent? }]`, then use `'$metal'`, `'$accent'` and `'{label}'` in the design. `withTopTier` / `topTierFromLast` from `shared/top-tier.js` turn the top tier into the three random designs.
-- **Hidden:** `hidden: true` shows a pixel question mark until it is earned
-- **Coordinates and colors:** the badge center is the origin and its outer radius is about 1; colors are palette keys, not hex values
-
-Design principles, checked by `tests/layout.test.js`:
-
-1. **Inside follows outside.** The thin edge line follows the outline (`contour`); a round edge line belongs on round badges only.
-2. **Breathing room.** Text rings and discs keep at least 6% of the radius from the edge.
-3. **Calm outlines.** At most 8 sides (beyond that, use a circle); lobed shapes use a few broad lobes, and one outline never mixes sharp and round corners.
-4. **Series feel.** Features use the tool's feature family; other series pick shapes that suit the theme.
-
-Configs are validated at startup, and mistakes show up on the page in dev mode. To look at one while designing: `node scripts/peek.mjs "http://localhost:5199/?preview=unlocked" out.png <badge-id> [angle]`.
-
-### Adding a tool
-
-Create `src/brands/<id>/` (palette, one file per badge in series folders, `index.js`), register it in `src/brands/index.js`, add a data source and sample data in `src/data/progress.js`, and write a collector in `src/collect/` with a leak test. Pull requests welcome.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Credits
 
