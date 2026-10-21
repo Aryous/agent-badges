@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import ccBadges from '../src/brands/claude-code/index.js';
-import codexBadges from '../src/brands/codex/index.js';
+import { BRANDS } from '../src/brands/index.js';
 import { layoutIssues } from '../src/engine/layout.js';
 import { resolveTier } from '../src/engine/tiers.js';
 
@@ -18,8 +17,9 @@ const NEW = {
 };
 
 describe('版式：内外呼应、留够呼吸距离', () => {
-  for (const [brand, list] of [['claude-code', ccBadges], ['codex', codexBadges]]) {
-    for (const id of NEW[brand]) {
+  for (const { brand: { id: brand }, badges: list } of BRANDS) {
+    it(`${brand}：在 NEW 里登记了新徽章清单`, () => expect(NEW[brand], 'tests/layout.test.js 的 NEW 缺这个工具').toBeDefined());
+    for (const id of NEW[brand] ?? []) {
       it(`${brand} ${id}`, () => expect(issuesOf(list.find((b) => b.id === id))).toEqual([]));
     }
   }
@@ -35,8 +35,8 @@ describe('版式：内外呼应、留够呼吸距离', () => {
 
   it('已有徽章：不合规的正好是待定清单里的这些', () => {
     const failing = [];
-    for (const [brand, list] of [['claude-code', ccBadges], ['codex', codexBadges]]) {
-      for (const b of list) if (!NEW[brand].includes(b.id) && issuesOf(b).length) failing.push(`${brand}/${b.id}`);
+    for (const { brand: { id: brand }, badges: list } of BRANDS) {
+      for (const b of list) if (!(NEW[brand] ?? []).includes(b.id) && issuesOf(b).length) failing.push(`${brand}/${b.id}`);
     }
     expect(failing.sort()).toEqual([...LEGACY].sort());
   });

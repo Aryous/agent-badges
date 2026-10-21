@@ -106,8 +106,49 @@ describe('README', () => {
     });
   }
 
-  it('落地页和技能里链到 README 某一节的链接都有效', () => {
-    const files = [...filesUnder('src'), ...filesUnder('skills'), 'landing.html'];
+  // 统计口径表里写了数字门槛的一次性徽章：id -> 表里的哪一行、那一句话怎么写（数字换成 {n}）。
+  // 表里的数字必须等于配置的 target；新增这类徽章并在表里写了数字时，在这里补一条。
+  // 其余一次性徽章（马拉松 4 小时、连续 7 天等）表里没写数字，不在此列。
+  const COUNTED_ROWS = {
+    'README.md': {
+      'productive-day': { row: '| Productive Day / Multitasker |', phrase: '{n} sessions started in one day' },
+      multitasker: { row: '| Productive Day / Multitasker |', phrase: '{n} sessions active at the same moment' },
+    },
+    'README.zh-CN.md': {
+      'productive-day': { row: '| 高产日 / 多线并行 |', phrase: '一天开启 {n} 个会话' },
+      multitasker: { row: '| 高产日 / 多线并行 |', phrase: '同一时刻 {n} 个会话' },
+    },
+  };
+  const isOneTimeCounted = (b) => !b.tiers && b.criteria.target > 1 && !b.criteria.dynamic;
+
+  for (const file of Object.keys(COUNTED_ROWS)) {
+    it(`${file}：统计口径表里写的门槛和徽章配置的 target 一致`, () => {
+      const lines = read(file).split('\n');
+      const mapped = Object.entries(COUNTED_ROWS[file]);
+      expect(mapped.length).toBeGreaterThan(0);
+      for (const [id, { row, phrase }] of mapped) {
+        const line = lines.find((l) => l.startsWith(row));
+        expect(line, `${file} 缺统计口径行 ${row}`).toBeDefined();
+        const cells = line.split('|').map((c) => c.trim()); // ['', 行名, Claude Code, Codex, '']
+        let hit = 0;
+        for (const [i, { brand, badges }] of BRANDS.entries()) {
+          const badge = badges.find((b) => b.id === id);
+          if (!badge) continue;
+          hit++;
+          expect(isOneTimeCounted(badge), `${brand.id}/${id} 不再是带数字门槛的一次性徽章，更新 COUNTED_ROWS`).toBe(true);
+          // 「Same / 同左」列沿用第一个工具那一列的写法
+          let cell = cells[2 + i] ?? '';
+          if (/^(Same|同左)/.test(cell)) cell = cells[2];
+          const re = new RegExp(phrase.split('{n}').map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(`(?<!\\d)${badge.criteria.target}(?!\\d)`));
+          expect(cell, `${file}: ${brand.id}/${id} 的门槛应为 ${badge.criteria.target}`).toMatch(re);
+        }
+        expect(hit, id).toBeGreaterThan(0);
+      }
+    });
+  }
+
+  it('落地页、技能和插件清单里链到 README 某一节的链接都有效', () => {
+    const files = [...filesUnder('src'), ...filesUnder('skills'), 'landing.html', 'plugin.json', '.claude-plugin/plugin.json'];
     const bad = [];
     for (const f of files) {
       for (const [, zh, anchor] of read(f).matchAll(/github\.com\/Aryous\/agent-badges(?:\/blob\/main\/README(\.zh-CN)?\.md)?#([^"'\s)<>]+)/g)) {

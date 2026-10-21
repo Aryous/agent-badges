@@ -121,12 +121,21 @@ describe('不手写工具 id', () => {
 });
 
 describe('展示列表', () => {
-  it('网站、宣传片和素材脚本里挑出来展示的徽章都存在', () => {
-    const files = [...filesUnder('src'), ...(statSync(join(root, 'tools'), { throwIfNoEntry: false }) ? filesUnder('tools') : []), ...filesUnder('scripts')];
+  // 标了 showcase 的文件和素材脚本都必须真的有 { brand, id } 列表；格式变了正则匹配不到时，这里会报错而不是悄悄放过
+  const LIST = /\{\s*brand:\s*'([a-z-]+)',\s*id:\s*'([a-z0-9-]+)'/g;
+  const marked = [...filesUnder('src'), ...filesUnder('scripts')].filter((f) => /\/\/ showcase\b/.test(read(f)) || f === 'scripts/assets.mjs');
+
+  it('标了 showcase 的文件和 scripts/assets.mjs 都至少列出一个 { brand, id }', () => {
+    expect(marked).toContain('scripts/assets.mjs');
+    expect(marked.length).toBeGreaterThan(1);
+    expect(marked.filter((f) => [...read(f).matchAll(LIST)].length === 0)).toEqual([]);
+  });
+
+  it('网站和素材脚本里挑出来展示的徽章都存在', () => {
     const missing = [];
-    for (const f of files) {
+    for (const f of [...filesUnder('src'), ...filesUnder('scripts')]) {
       if (!/\/\/ showcase\b/.test(read(f)) && !f.startsWith('scripts/')) continue;
-      for (const [, brand, id] of read(f).matchAll(/\{\s*brand:\s*'([a-z-]+)',\s*id:\s*'([a-z0-9-]+)'/g)) {
+      for (const [, brand, id] of read(f).matchAll(LIST)) {
         if (!brandById(brand)?.badges.some((b) => b.id === id)) missing.push(`${f}: ${brand}/${id}`);
       }
     }
@@ -226,4 +235,24 @@ describe('门槛只写在配置里', () => {
       }
     }
   });
+});
+
+describe('分级徽章的规则读的是配置里的 tiers', () => {
+  // 每个分级徽章用到的字段都给一个远超第一级门槛的值，连续 30 天（连续天数徽章的第一级是 30 天）。
+  // 目前所有分级徽章（sessions/threads/tokens/tool-calls/web-research/file-edits/patches/active-hours/dispatches/streak-days）
+  // 都能由这份账本解锁；新增的分级徽章若解锁不了，下面第一个断言会报错，需要在这里补字段。
+  const RICH = { sessions: 1e8, threads: 1e8, tokens: 1e8, toolCalls: 1e8, webCalls: 1e8, editCalls: 1e8, patches: 1e8, dispatches: 1e8, activeMin: 1e8 };
+  const richLedger = (brandId) => ({ days: Object.fromEntries(Array.from({ length: 30 }, (_, i) => [addDays('2026-03-02', i), baseDay(brandId, RICH)])) });
+
+  for (const { brand, badges } of BRANDS) {
+    const { computeProgress } = METRICS[brand.id];
+    for (const badge of badges.filter((b) => b.tiers)) {
+      it(`${brand.id}/${badge.id}：每一级门槛放大 1e12 倍后不再达成`, () => {
+        const ledger = richLedger(brand.id);
+        expect(computeProgress(ledger, [badge], TODAY)[badge.id].earnedAt, '未放大时第一级必须已达成，否则这条测试什么也没证明').toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        const scaled = { ...badge, tiers: badge.tiers.map((t) => ({ ...t, threshold: t.threshold * 1e12 })) };
+        expect(computeProgress(ledger, [scaled], TODAY)[badge.id].earnedAt).toBeNull();
+      });
+    }
+  }
 });

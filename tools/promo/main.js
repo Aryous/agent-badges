@@ -1,7 +1,7 @@
 // 宣传动画（约 20 秒）：开场 → 徽章墙 → 分级升级 → 跟 Agent 说一句 → 主页效果 → 结尾。
 // 画面完全由时间 t 决定：window.__promo.seek(t) 设置这一刻的样子并渲染一帧，
 // scripts/promo.mjs 逐帧截图后用 ffmpeg 合成视频。参数：?aspect=16x9|9x16&lang=en|zh
-// showcase: 手工挑选的展示徽章，id 由 tests/contracts.test.js 核对
+// 用到的徽章在下面用 .find 按 id 取，不是 { brand, id } 列表，所以没有 showcase 标记，也不在 tests/contracts.test.js 的展示列表核对范围内
 import './promo.css';
 import { BRANDS } from '../../src/brands/index.js';
 import { badgeTitle, tierName } from '../../src/brands/shared/text.js';

@@ -1,6 +1,6 @@
 // 采集本机 Claude Code 使用统计。
 //
-// 只读取两类文件（其余一律不打开）：
+// 只读取三类文件（其余一律不打开）：
 //   <CLAUDE_CONFIG_DIR 或 ~/.claude>/stats-cache.json           汇总统计，只取数字字段
 //   <CLAUDE_CONFIG_DIR 或 ~/.claude>/projects/<项目>/<会话>.jsonl  会话记录，每行只取白名单元数据
 //   <CLAUDE_CONFIG_DIR 或 ~/.claude>/projects/<项目>/<会话>/subagents/**/*.jsonl  子代理的会话记录，同上
