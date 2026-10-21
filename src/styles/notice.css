@@ -1,0 +1,29 @@
+/* 提示与致命错误 */
+
+.notice {
+  position: fixed;
+  left: 50%;
+  top: 64px;
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border: 1px solid rgba(217, 119, 87, 0.4);
+  border-radius: 8px;
+  background: rgba(40, 24, 18, 0.85);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #f3c9b8;
+  z-index: 13;
+  white-space: pre-line;
+}
+
+.fatal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+}

@@ -1,0 +1,272 @@
+/* 年度热力图：网格、品牌筛选、图例、悬浮提示 */
+
+/* 卡片外观与 .profile-main / .profile-col 一致（见 profile.css），再加上定位与下边距 */
+.heat {
+  position: relative;
+  margin-bottom: 52px;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(240, 238, 230, 0.025);
+}
+
+.heat-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.heat-summary {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.heat-scroll {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 4px;
+}
+
+.heat-body {
+  --gap: 3px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 6px;
+  min-width: 700px;
+}
+
+.heat-months,
+.heat-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--weeks), minmax(0, 1fr));
+  column-gap: var(--gap);
+}
+
+.heat-months {
+  grid-column: 2;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.heat-grid {
+  grid-template-rows: repeat(7, auto);
+  grid-auto-flow: column;
+  row-gap: var(--gap);
+}
+
+.heat-wd {
+  display: grid;
+  grid-template-rows: repeat(7, 1fr);
+  row-gap: var(--gap);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--faint);
+}
+
+.heat-wd span {
+  display: flex;
+  align-items: center;
+}
+
+.heat-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 3px;
+}
+
+.heat-cell.is-pad {
+  visibility: hidden;
+}
+
+.heat-cell.is-future {
+  box-shadow: inset 0 0 0 1px rgba(240, 238, 230, 0.04);
+}
+
+/* 解锁徽章的日子：中间一个小圆点，可以点开那枚徽章 */
+.heat-cell.is-unlock::after {
+  content: '';
+  position: absolute;
+  inset: 32%;
+  border-radius: 50%;
+  background: #f7f6f2;
+  box-shadow: 0 0 0 1px rgba(20, 20, 19, 0.5);
+}
+
+.heat-cell.is-unlock {
+  cursor: pointer;
+}
+
+.heat-cell:not(.is-pad):not(.is-future):hover {
+  outline: 1.5px solid rgba(240, 238, 230, 0.7);
+  outline-offset: 1px;
+}
+
+.heat-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-top: 14px;
+}
+
+.heat-brands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.heat-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.heat-brand i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--c);
+}
+
+.heat-brand[aria-pressed='true'] {
+  color: var(--text);
+  background: rgba(240, 238, 230, 0.05);
+}
+
+.heat-brand[aria-pressed='false'] {
+  opacity: 0.55;
+}
+
+.heat-brand[aria-pressed='false'] i {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--c);
+}
+
+.heat-brand-total {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.heat-brand:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.heat-scale {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.heat-scale > i {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+}
+
+.heat-scale > span:first-child {
+  margin-right: 4px;
+}
+
+.heat-scale > span:nth-last-child(2) {
+  margin-left: 4px;
+}
+
+.heat-scale-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 14px;
+}
+
+.heat-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  min-width: 200px;
+  max-width: 300px;
+  padding: 10px 12px;
+  border: 1px solid rgba(240, 238, 230, 0.16);
+  border-radius: 10px;
+  background: rgba(30, 29, 27, 0.96);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.heat-tip p {
+  margin: 0;
+}
+
+.heat-tip-date {
+  font-weight: 600;
+  margin-bottom: 6px !important;
+}
+
+.heat-tip ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.heat-tip li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.heat-tip li i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.heat-tip li b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.heat-tip-none {
+  color: var(--muted);
+}
+
+.heat-tip-unlock {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 8px !important;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.heat-tip-unlock .dot {
+  flex: none;
+  transform: translateY(-1px);
+}
+
+.heat-tip-brand {
+  color: var(--muted);
+  font-size: 11px;
+}

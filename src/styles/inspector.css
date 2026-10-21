@@ -1,0 +1,211 @@
+/* 单枚查看：遮罩、舞台信息栏、等级阶梯、进度条 */
+
+/* ---------- 单枚查看遮罩 ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: radial-gradient(ellipse 80% 70% at 50% 42%, var(--bg-lift) 0%, var(--bg) 70%);
+  background-color: var(--bg);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.overlay.is-open {
+  opacity: 1;
+}
+
+/* ---------- 等级阶梯 ---------- */
+
+.tier-ladder {
+  display: flex;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tier-ladder li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 56px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.tier-ladder .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--metal);
+  opacity: 0.25;
+}
+
+.tier-ladder li.is-earned {
+  color: var(--muted);
+}
+
+.tier-ladder li.is-earned .dot {
+  opacity: 1;
+}
+
+.tier-ladder li.is-current {
+  background: rgba(240, 238, 230, 0.07);
+  color: var(--text);
+}
+
+/* ---------- 进度条 ---------- */
+
+.meter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.meter-track {
+  width: 160px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.meter-text {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 单枚查看 ---------- */
+
+.inspector {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.inspector[hidden] {
+  display: none;
+}
+
+.btn-back {
+  position: absolute;
+  top: 64px;
+  left: var(--gutter);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 12px 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(20, 20, 19, 0.5);
+  backdrop-filter: blur(8px);
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-back:hover {
+  color: var(--text);
+  border-color: rgba(240, 238, 230, 0.28);
+}
+
+.info {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(20px, 4vh, 44px);
+  width: min(520px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.info > * {
+  margin: 0;
+}
+
+.kicker {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.title {
+  margin-top: 6px;
+  font-family: var(--serif);
+  font-size: clamp(26px, 3.6vh, 34px);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.title-en {
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--faint);
+}
+
+.desc {
+  margin-top: 12px;
+  max-width: 36ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  text-wrap: pretty;
+  /* 顶级彩蛋的说明另起一段 */
+  white-space: pre-line;
+}
+
+.info .meter {
+  margin-top: 14px;
+}
+
+.actions {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.hint {
+  margin-top: 14px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+}
+
+/* 进入单枚查看时，信息区稍后淡入 */
+.inspector .info,
+.inspector .btn-back {
+  opacity: 0;
+  transition: opacity 0.4s ease 0.15s;
+}
+
+.inspector.is-open .info,
+.inspector.is-open .btn-back {
+  opacity: 1;
+}

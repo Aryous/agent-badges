@@ -1,0 +1,62 @@
+/* 设计变量、全局重置、body 与 WebGL 画布 */
+
+:root {
+  --bg: #141413;
+  --bg-lift: #24221f;
+  --text: #f0eee6;
+  --muted: #8f8b82;
+  --faint: #5d5a54;
+  --accent: #d97757;
+  --line: rgba(240, 238, 230, 0.12);
+  --serif: ui-serif, 'Iowan Old Style', 'Palatino Linotype', 'Songti SC', Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', sans-serif;
+  --gutter: clamp(16px, 3vw, 32px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body.is-inspecting {
+  overflow: hidden;
+}
+
+body {
+  background: radial-gradient(ellipse 80% 70% at 50% 42%, var(--bg-lift) 0%, var(--bg) 70%);
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  background-attachment: fixed;
+}
+
+#stage,
+#stage-accum {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+  touch-action: none;
+}
+
+#stage-accum {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
