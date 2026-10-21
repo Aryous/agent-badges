@@ -9,7 +9,7 @@ const perfectMonth = {
   titleEn: 'PERFECT MONTH',
   description: '一个月里每个工作日都和 Claude Code 见了面。日历上一格不落，全是勾。',
   en: { title: 'Perfect Month', description: 'Met Claude Code on every weekday of a month. Not a single box left unticked.' },
-  criteria: { metric: 'days.perfectMonth', target: 22 },
+  criteria: { target: 22, dynamic: true },
   ...medal({
     bottom: 'PERFECT MONTH',
     shape: { type: 'polygon', sides: 6, radius: 1.08, cornerRadius: 0.16, rotation: Math.PI / 2, depth: 0.22, bevel: 0.045 },

@@ -12,7 +12,6 @@ const tiered = {
   title: '会话里程碑',
   titleEn: '{label} SESSIONS',
   description: 'x',
-  criteria: { metric: 'sessions.total' },
   tiers: [
     { threshold: 10, metal: 'bronze', label: '10' },
     { threshold: 100, metal: 'silver', label: '100' },
@@ -118,7 +117,7 @@ describe('分级的款式（variants）', () => {
 
 describe('隐藏成就', () => {
   it('未解锁时只显示问号，不透露图案', () => {
-    const cfg = { ...resolveTier(tiered, 0), tiers: undefined, tier: undefined, hidden: true, criteria: { metric: 'm', target: 1 } };
+    const cfg = { ...resolveTier(tiered, 0), tiers: undefined, tier: undefined, hidden: true, criteria: { target: 1 } };
     const g = buildBadge(cfg, brand, { unlocked: false, progress: { current: 0, target: 1 } });
     expect(g.userData.masked).toBe(true);
     expect(g.children.filter((m) => !['rim', 'face', 'back'].includes(m.name))).toHaveLength(1);

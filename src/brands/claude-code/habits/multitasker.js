@@ -9,8 +9,8 @@ const multitasker = {
   title: '多线并行',
   titleEn: 'MULTITASKER',
   description: '同一时刻有 3 个会话一起在跑。三块屏幕三只小家伙，各干各的，互不打扰。',
-  en: { title: 'Multitasker', description: 'Three sessions running at the same moment. Three screens, three little guys, each minding its own work.' },
-  criteria: { metric: 'sessions.parallel', target: 3 },
+  en: { title: 'Multitasker', description: '3 sessions running at the same moment. Three screens, three little guys, each minding its own work.' },
+  criteria: { target: 3 },
   ...medal({
     bottom: 'MULTITASKER',
     shape: { type: 'polygon', sides: 6, radius: 1.08, cornerRadius: 0.16, rotation: 0, depth: 0.22, bevel: 0.045 },

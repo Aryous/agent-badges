@@ -10,7 +10,6 @@ const sessions = {
   titleEn: '{label} SESSIONS',
   description: '累计开启的 Claude Code 会话。每一次 claude 回车，都是一次新的结伴出发。',
   en: { title: '{label} Sessions', description: 'Claude Code sessions started. Every claude + Enter is a new trip together.' },
-  criteria: { metric: 'sessions.total' },
   tiers: [
     { threshold: 10, metal: 'bronze', accent: 'aqua', label: '10' },
     { threshold: 100, metal: 'silver', accent: 'sky', label: '100' },

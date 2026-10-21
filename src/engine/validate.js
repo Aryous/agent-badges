@@ -35,6 +35,7 @@ export function validateBadge(config, brand) {
 
   // 分级徽章：先检查门槛，再把每一级展开成普通配置分别校验
   if (config?.tiers) {
+    if (config.criteria) fail('分级徽章的门槛写在 tiers 里，不写 criteria');
     const tiers = config.tiers;
     if (!Array.isArray(tiers) || !tiers.length) fail('tiers 不能为空');
     const checkMetal = (where, t) => {
@@ -57,7 +58,7 @@ export function validateBadge(config, brand) {
       for (let k = 0; k < (t.variants?.length ?? 1); k++) {
         const { tiers: _omit, tier: _t, ...plain } = resolveTier(config, i, k);
         try {
-          validateBadge({ ...plain, criteria: { ...plain.criteria, target: plain.criteria?.target ?? tiers[0].threshold } }, brand);
+          validateBadge({ ...plain, criteria: { target: tiers[0].threshold } }, brand);
         } catch (e) {
           const where = t.variants ? `第 ${i + 1} 级「${t.variants[k].name.zh}」` : `第 ${i + 1} 级`;
           fail(`${where}：${e.message.replace(/^\[徽章 [^\]]+\] /, '')}`);
@@ -75,7 +76,9 @@ export function validateBadge(config, brand) {
 
   if (!id) fail('缺少 id');
   for (const k of ['title', 'titleEn', 'description']) if (!config[k]) fail(`缺少 ${k}`);
-  if (!config.criteria?.metric || !(config.criteria.target > 0)) fail('criteria 需要 metric 和大于 0 的 target');
+  const extra = Object.keys(config.criteria ?? {}).filter((k) => !['target', 'unit', 'dynamic'].includes(k));
+  if (extra.length) fail(`criteria 只能有 target、unit、dynamic，多了 ${extra.join('、')}`);
+  if (!(config.criteria?.target > 0)) fail('criteria 需要大于 0 的 target');
 
   if (!SHAPE_TYPES.includes(config.shape?.type)) fail(`轮廓类型「${config.shape?.type}」未注册`);
 

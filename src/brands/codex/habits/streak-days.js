@@ -10,7 +10,6 @@ const streakDays = {
   titleEn: '{label}-DAY STREAK',
   description: '连续使用 Codex 的天数。链条一节扣一节，转起来就停不下。',
   en: { title: '{label}-Day Streak', description: 'Consecutive days with Codex. Link by link, once the chain starts turning it does not stop.' },
-  criteria: { metric: 'streak.days' },
   tiers: [
     { threshold: 30, label: '30', metal: 'bronze', accent: 'teal' },
     { threshold: 100, label: '100', metal: 'silver', accent: 'azure' },

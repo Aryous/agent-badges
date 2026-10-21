@@ -14,7 +14,6 @@ const activeHoursBase = {
   titleEn: '{label} TOGETHER',
   description: '和 Claude Code 一起专注干活的时长。挂着不动不算，几个会话同时开着也只算一次。',
   en: { title: '{label} Together', description: 'Hours of focused work with Claude Code. Idle time does not count, and parallel sessions count once.' },
-  criteria: { metric: 'time.activeHours' },
   tiers: [
     { threshold: 10, metal: 'bronze', accent: 'amber', label: '10H' },
     { threshold: 100, metal: 'silver', accent: 'sky', label: '100H' },

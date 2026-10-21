@@ -16,7 +16,6 @@ const fileEditsBase = {
   titleEn: '{label} EDITS',
   description: '改过、写过的文件次数。一行加，一行减，代码就是这样一点点变好的。',
   en: { title: '{label} Edits', description: 'Files edited and written. A line added, a line removed: that is how code gets better.' },
-  criteria: { metric: 'tools.edits' },
   tiers: [
     { threshold: 100, metal: 'bronze', accent: 'sand', label: '100' },
     { threshold: 1000, metal: 'silver', accent: 'sky', label: '1K' },

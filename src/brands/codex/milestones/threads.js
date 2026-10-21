@@ -25,7 +25,6 @@ const threads = {
   titleEn: '{label} THREADS',
   description: '累计开启的 Codex 会话。一朵云开出一条线，线多了就织成了网。',
   en: { title: '{label} Threads', description: 'Codex threads started. A cloud spins out a thread; enough threads weave a net.' },
-  criteria: { metric: 'threads.total' },
   tiers: [
     { threshold: 10, metal: 'bronze', accent: 'sand', label: '10' },
     { threshold: 100, metal: 'silver', accent: 'aqua', label: '100' },

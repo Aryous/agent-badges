@@ -23,7 +23,7 @@ const skillMaster = appIcon({
   titleEn: 'SKILL MASTER',
   description: '调用 Skill 50 次。会的招式多了，出手就快了。',
   en: { title: 'Skill Master', description: 'Invoked Skills 50 times. The more moves you know, the faster you strike.' },
-  criteria: { metric: 'features.skillCalls', target: 50 },
+  criteria: { target: 50 },
   rim: 'sapphire',
   face: 'navy',
   panel: 'sky',

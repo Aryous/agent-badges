@@ -18,7 +18,7 @@ const weekendWarrior = {
   titleEn: 'WEEKEND WARRIOR',
   description: '周六和周日都在用 Codex。墨镜戴上了，补丁也没停下。',
   en: { title: 'Weekend Warrior', description: 'Used Codex on both Saturday and Sunday. Sunglasses on, patches still flowing.' },
-  criteria: { metric: 'days.weekend', target: 1 },
+  criteria: { target: 1 },
   shape: { type: 'polygon', sides: 5, radius: 1.1, cornerRadius: 0.2, rotation: Math.PI / 2, depth: 0.2, bevel: 0.04 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'rose' },

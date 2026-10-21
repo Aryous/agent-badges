@@ -22,7 +22,7 @@ const bashManiac = {
   titleEn: 'BASH MANIAC',
   description: '一天之内让 Claude Code 敲了 500 次 Bash。键盘冒烟了，终端还在滚。',
   en: { title: 'Bash Maniac', description: 'Had Claude Code run Bash 500 times in one day. The keyboard is smoking and the terminal is still scrolling.' },
-  criteria: { metric: 'tools.bashDaily', target: 500 },
+  criteria: { target: 500 },
   shape: { type: 'starburst', points: 14, radius: 1.06, innerRadius: 0.88, tipRoundness: 0.05, valleyRoundness: 0.1, depth: 0.22, bevel: 0.03 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'steel' },

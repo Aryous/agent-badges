@@ -14,7 +14,7 @@ const subagentCommander = {
   titleEn: 'SUBAGENT COMMANDER',
   description: '在一次会话中同时调度 5 个子代理并行工作。',
   en: { title: 'Subagent Commander', description: 'Ran 5 subagents in parallel in a single session.' },
-  criteria: { metric: 'subagents.parallelMax', target: 5 },
+  criteria: { target: 5 },
   shape: { type: 'starburst', points: 12, radius: 1.06, innerRadius: 0.8, tipRoundness: 0.1, valleyRoundness: 0.06, depth: 0.2, bevel: 0.03 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'rose' },

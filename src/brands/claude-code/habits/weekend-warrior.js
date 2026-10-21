@@ -24,7 +24,7 @@ const weekendWarrior = {
   titleEn: 'WEEKEND WARRIOR',
   description: '周六、周日都在和 Claude Code 写代码。头带一绑，周末就是主场。',
   en: { title: 'Weekend Warrior', description: 'Coded with Claude Code on both Saturday and Sunday. Headband on, the weekend is home turf.' },
-  criteria: { metric: 'days.weekend', target: 1 },
+  criteria: { target: 1 },
   shape: { type: 'shield', radius: 1, width: 0.88, top: 0.88, shoulder: 0.05, bottom: -1.04, cornerRadius: 0.2, depth: 0.2, bevel: 0.04 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'gold' },

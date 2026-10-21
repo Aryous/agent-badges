@@ -9,7 +9,7 @@ const perfectMonth = {
   titleEn: 'PERFECT MONTH',
   description: '一个月里每个工作日都打开过 Codex。日历一格不落，盖个全勤章。',
   en: { title: 'Perfect Month', description: 'Opened Codex on every weekday of a month. Not a box left empty: stamped for perfect attendance.' },
-  criteria: { metric: 'days.perfectMonth', target: 22 },
+  criteria: { target: 22, dynamic: true },
   ...medal({
     bottom: 'PERFECT MONTH',
     shape: { type: 'flower', petals: 8, radius: 1.07, petal: 0.3, valley: 0.08, depth: 0.22, bevel: 0.04 },

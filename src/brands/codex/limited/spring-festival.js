@@ -10,7 +10,7 @@ const springFestival = {
   titleEn: 'SPRING FESTIVAL',
   description: '农历正月初一和 Codex 一起写代码。灯笼挂上云头，新春第一个补丁。',
   en: { title: 'Spring Festival', description: 'Coded with Codex on Lunar New Year. Lanterns hung by the cloud, the first patch of the new spring.' },
-  criteria: { metric: 'days.springFestival', target: 1 },
+  criteria: { target: 1 },
   ...medal({
     bottom: 'SPRING FESTIVAL',
     shape: { type: 'polygon', sides: 8, radius: 1.06, cornerRadius: 0.16, rotation: Math.PI / 8, depth: 0.22, bevel: 0.045 },

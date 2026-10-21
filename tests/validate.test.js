@@ -61,6 +61,23 @@ describe('validateBadge', () => {
   });
 });
 
+describe('validateBadge：criteria 形状', () => {
+  it('criteria 里多出 metric 报错', () => {
+    const b = { ...structuredClone(badges.find((x) => !x.tiers)), criteria: { metric: 'x', target: 1 } };
+    expect(() => validateBadge(b, brand)).toThrow(/criteria 只能有 target、unit、dynamic/);
+  });
+
+  it('一次性徽章缺少 target 报错', () => {
+    const b = { ...structuredClone(badges.find((x) => !x.tiers)), criteria: {} };
+    expect(() => validateBadge(b, brand)).toThrow(/target/);
+  });
+
+  it('分级徽章写了 criteria 报错', () => {
+    const b = { ...structuredClone(badges.find((x) => x.tiers)), criteria: { target: 1 } };
+    expect(() => validateBadge(b, brand)).toThrow(/分级徽章.*不写 criteria/);
+  });
+});
+
 describe('partitionBadges', () => {
   it('跳过出错的徽章，保留其余', () => {
     const bad = clone(byId('seven-day-streak'));

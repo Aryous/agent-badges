@@ -56,7 +56,7 @@ const planMode = appIcon({
   titleEn: 'PLAN MODE',
   description: '用过 Plan 模式。先想清楚，再动手。',
   en: { title: 'Plan Mode', description: 'Used Plan mode. Think it through, then build.' },
-  criteria: { metric: 'features.planMode', target: 1 },
+  criteria: { target: 1 },
   rim: 'forest',
   face: 'forest',
   panel: 'lime',

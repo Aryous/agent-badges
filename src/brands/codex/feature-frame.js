@@ -33,14 +33,14 @@ function scaleArt(items) {
 }
 
 /** 成套的外框、文字、圆盘和铭牌。 */
-export function featureBadge({ id, title, titleEn, description, en, metric, target, band, panel, label, art }) {
+export function featureBadge({ id, title, titleEn, description, en, target, band, panel, label, art }) {
   return {
     id,
     title,
     titleEn,
     description,
     en,
-    criteria: { metric, target },
+    criteria: { target },
     shape: { type: 'polygon', sides: 6, rotation: 0, radius: 1.1, cornerRadius: 0.3, depth: 0.2, bevel: 0.04 },
     layers: [
       { kind: 'rim', material: 'brushed-metal', color: 'silver' },

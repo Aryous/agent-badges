@@ -19,7 +19,6 @@ const webResearchBase = {
   titleEn: '{label} SEARCHES',
   description: '让 Claude Code 联网搜索、抓取网页的次数。不知道的，就去全世界找答案。',
   en: { title: '{label} Searches', description: 'Web searches and page fetches. What you do not know, go find out from the whole world.' },
-  criteria: { metric: 'tools.web' },
   tiers: [
     { threshold: 10, metal: 'bronze', accent: 'sky', label: '10' },
     { threshold: 100, metal: 'silver', accent: 'lime', label: '100' },

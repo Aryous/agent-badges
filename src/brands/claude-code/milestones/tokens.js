@@ -47,7 +47,6 @@ const tokensBase = {
   titleEn: '{label} TOKENS',
   description: '累计处理的 Token。一枚一枚攒起来，就成了一座小金山。',
   en: { title: '{label} Tokens', description: 'Tokens processed. Coin by coin, they pile up into a small mountain of gold.' },
-  criteria: { metric: 'tokens.total' },
   tiers: [
     { threshold: 10_000_000, metal: 'bronze', accent: 'amber', label: '10M' },
     { threshold: 100_000_000, metal: 'silver', accent: 'sapphire', label: '100M' },

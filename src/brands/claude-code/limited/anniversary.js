@@ -100,7 +100,7 @@ const anniversary = {
   titleEn: 'ONE YEAR',
   description: '和 Claude Code 相识满一年。吹蜡烛之前，先许个「测试全绿」的愿望吧。',
   en: { title: 'One Year', description: 'One year with Claude Code. Before blowing out the candles, wish for all-green tests.' },
-  criteria: { metric: 'account.years', target: 1 },
+  criteria: { target: 1 },
   shape: { type: 'starburst', points: 24, radius: 1.04, innerRadius: 0.95, tipRoundness: 0.14, valleyRoundness: 0.05, depth: 0.22, bevel: 0.04 },
   layers: [
     { kind: 'rim', material: 'holographic', color: 'snow' },

@@ -24,7 +24,7 @@ const christmas = {
   titleEn: 'CHRISTMAS',
   description: '12 月 25 日和 Claude Code 一起写代码。圣诞帽戴好，今天的礼物是一个通过的测试。',
   en: { title: "Christmas", description: "Coded with Claude Code on December 25. Santa hat on; today's present is a passing test." },
-  criteria: { metric: 'days.christmas', target: 1 },
+  criteria: { target: 1 },
   ...medal({
     bottom: 'MERRY CHRISTMAS',
     shape: { type: 'starburst', points: 6, radius: 1.1, innerRadius: 0.84, tipRoundness: 0.3, valleyRoundness: 0.2, depth: 0.22, bevel: 0.04 },

@@ -10,7 +10,7 @@ const newYear = {
   titleEn: 'NEW YEAR',
   description: '1 月 1 日和 Codex 一起写代码。新年的第一个补丁，云朵后面在放烟花。',
   en: { title: "New Year", description: "Coded with Codex on January 1. The year's first patch, with fireworks behind the cloud." },
-  criteria: { metric: 'days.newYear', target: 1 },
+  criteria: { target: 1 },
   ...medal({
     bottom: 'HAPPY NEW YEAR',
     shape: { type: 'starburst', points: 10, radius: 1.07, innerRadius: 0.9, tipRoundness: 0.16, valleyRoundness: 0.12, depth: 0.22, bevel: 0.035 },

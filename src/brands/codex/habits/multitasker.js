@@ -9,8 +9,8 @@ const multitasker = {
   title: '多线并行',
   titleEn: 'MULTITASKER',
   description: '同一时刻有 3 个 Codex 会话一起在跑。三块屏幕同时滚动，云朵在中间调度。',
-  en: { title: 'Multitasker', description: 'Three Codex sessions running at the same moment. Three screens scrolling, the cloud in the middle keeping order.' },
-  criteria: { metric: 'threads.parallel', target: 3 },
+  en: { title: 'Multitasker', description: '3 Codex sessions running at the same moment. Three screens scrolling, the cloud in the middle keeping order.' },
+  criteria: { target: 3 },
   ...medal({
     bottom: 'MULTITASKER',
     shape: { type: 'polygon', sides: 6, radius: 1.08, cornerRadius: 0.18, rotation: Math.PI / 2, depth: 0.22, bevel: 0.045 },

@@ -9,7 +9,7 @@ const firstThread = {
   titleEn: 'FIRST THREAD',
   description: '在 Codex 里开启第一个会话。光标在云里闪了一下，故事就开始了。',
   en: { title: 'First Thread', description: 'Started your first Codex thread. The cursor blinked inside the cloud, and the story began.' },
-  criteria: { metric: 'threads.total', target: 1 },
+  criteria: { target: 1 },
   shape: { type: 'circle', radius: 1, depth: 0.22, bevel: 0.05 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'silver' },

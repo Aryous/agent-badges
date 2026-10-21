@@ -10,7 +10,7 @@ const newYear = {
   titleEn: 'NEW YEAR',
   description: '1 月 1 日和 Claude Code 一起写代码。新年第一个提交，小家伙仰头看烟花。',
   en: { title: "New Year", description: "Coded with Claude Code on January 1. The year's first commit, and the little guy looks up at the fireworks." },
-  criteria: { metric: 'days.newYear', target: 1 },
+  criteria: { target: 1 },
   ...medal({
     bottom: 'HAPPY NEW YEAR',
     shape: { type: 'starburst', points: 12, radius: 1.07, innerRadius: 0.9, tipRoundness: 0.14, valleyRoundness: 0.12, depth: 0.22, bevel: 0.035 },

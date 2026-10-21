@@ -16,9 +16,9 @@ const modelCollector = {
   hidden: true,
   title: '模型收藏家',
   titleEn: 'MODEL COLLECTOR',
-  description: 'Opus、Sonnet、Haiku、Fable，四位都请来干过活。宝石集齐，收藏柜满了。',
-  en: { title: 'Model Collector', description: 'Opus, Sonnet, Haiku and Fable have all clocked in. Every gem collected, the cabinet is full.' },
-  criteria: { metric: 'models.distinct', target: 4 },
+  description: 'Opus、Sonnet、Haiku、Fable，4 位都请来干过活。宝石集齐，收藏柜满了。',
+  en: { title: 'Model Collector', description: 'All 4 of Opus, Sonnet, Haiku and Fable have clocked in. Every gem collected, the cabinet is full.' },
+  criteria: { target: 4 },
   shape: { type: 'polygon', sides: 4, radius: 1.1, cornerRadius: 0.14, rotation: Math.PI / 2, depth: 0.22, bevel: 0.045 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'platinum' },

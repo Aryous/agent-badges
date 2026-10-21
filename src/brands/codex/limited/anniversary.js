@@ -44,7 +44,7 @@ const anniversary = {
   titleEn: 'ONE YEAR',
   description: '和 Codex 相识满一年。云朵戴上派对帽：再来一年，继续把想法变成代码。',
   en: { title: 'One Year', description: 'One year with Codex. The cloud puts on a party hat: here is to another year of turning ideas into code.' },
-  criteria: { metric: 'account.years', target: 1 },
+  criteria: { target: 1 },
   shape: { type: 'circle', radius: 1, depth: 0.24, bevel: 0.05, reeded: { count: 150, depth: 0.012 } },
   layers: [
     { kind: 'rim', material: 'holographic', color: 'silver' },

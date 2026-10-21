@@ -22,7 +22,6 @@ const reviewer = featureBadge({
   titleEn: 'REVIEWER',
   description: '用过自动代码审查。再小的问题，也逃不过这片放大镜。',
   en: { title: 'Reviewer', description: 'Used automatic code review. No issue is too small for this magnifying glass.' },
-  metric: 'features.autoReview',
   target: 1,
   band: 'navy',
   panel: 'snow',

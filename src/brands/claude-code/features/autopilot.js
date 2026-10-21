@@ -12,7 +12,7 @@ const autopilot = appIcon({
   titleEn: 'AUTOPILOT',
   description: '用过 /loop、定时任务或 Workflow 编排。循环转起来，小家伙戴上墨镜歇一会儿。',
   en: { title: 'Autopilot', description: 'Used /loop, a scheduled task or a Workflow. The loop keeps turning, so the little guy puts on shades and takes a break.' },
-  criteria: { metric: 'features.autopilot', target: 1 },
+  criteria: { target: 1 },
   rim: 'azure',
   face: 'cobalt',
   panel: 'sky',

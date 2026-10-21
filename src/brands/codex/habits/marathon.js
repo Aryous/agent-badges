@@ -9,7 +9,7 @@ const marathon = {
   titleEn: 'MARATHON',
   description: '一次会话连续活跃超过 4 小时。表针走了四格，Codex 还没喊累。',
   en: { title: 'Marathon', description: 'One session active for over 4 hours. The clock hand moved four ticks and Codex still is not tired.' },
-  criteria: { metric: 'session.longestHours', target: 4 },
+  criteria: { target: 4, unit: 'h' },
   shape: { type: 'polygon', sides: 12, radius: 1.04, cornerRadius: 0.1, rotation: Math.PI / 2, depth: 0.22, bevel: 0.045 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'platinum' },

@@ -26,7 +26,7 @@ const compactor = {
   titleEn: 'CONTEXT COMPACTOR',
   description: '上下文压缩了 20 次。再长的对话，也能被压成刚刚好的一小块。',
   en: { title: 'Context Compactor', description: 'Context compacted 20 times. Even the longest conversation can be squeezed down to just the right size.' },
-  criteria: { metric: 'events.compacted', target: 20 },
+  criteria: { target: 20 },
   hidden: true,
   shape: { type: 'polygon', sides: 8, radius: 1.05, cornerRadius: 0.11, rotation: Math.PI / 2, depth: 0.22, bevel: 0.045 },
   layers: [

@@ -9,7 +9,7 @@ const firstSession = {
   titleEn: 'FIRST SESSION',
   description: '完成第一次 Claude Code 会话。小家伙第一次在终端里探出头来。',
   en: { title: 'First Session', description: 'Your first Claude Code session. The little guy pokes its head out of the terminal for the first time.' },
-  criteria: { metric: 'sessions.total', target: 1 },
+  criteria: { target: 1 },
   shape: { type: 'circle', radius: 1, depth: 0.22, bevel: 0.05 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'gold' },

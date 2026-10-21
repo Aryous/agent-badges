@@ -67,6 +67,15 @@ export function tiered(tiers, value, reachedOn) {
   return { value, earnedAt };
 }
 
+/**
+ * 「某一天的 field 达到 target」类徽章。进度显示历史单日最高值（不超过 target）。
+ * @param {string[]} dates 参与判断的日期（升序）
+ */
+export function dayPeak(dates, days, field, target) {
+  const max = Math.max(0, ...dates.map((d) => days[d][field] ?? 0));
+  return once(firstDate(dates, days, (d) => (d[field] ?? 0) >= target), Math.min(max, target), target);
+}
+
 // ---------- 会话活动段：协作时长、多线并行、跨日夜战 ----------
 
 const MIN = 60 * 1000;

@@ -25,7 +25,6 @@ const deepThinker = featureBadge({
   titleEn: 'DEEP THINKER',
   description: '把推理强度开到 xhigh 或 ultra。多想一会儿，答案会更好。',
   en: { title: 'Deep Thinker', description: 'Turned reasoning effort up to xhigh or ultra. Think a little longer, get a better answer.' },
-  metric: 'features.highEffort',
   target: 1,
   band: 'plum',
   panel: 'honey',

@@ -26,7 +26,7 @@ const connector = appIcon({
   titleEn: 'MCP CONNECTOR',
   description: '接入 3 个 MCP 服务。小家伙的插座越来越多了。',
   en: { title: 'MCP Connector', description: 'Connected 3 MCP servers. The little guy keeps growing more sockets.' },
-  criteria: { metric: 'features.mcpServers', target: 3 },
+  criteria: { target: 3 },
   rim: 'magenta',
   face: 'plum',
   panel: 'scarlet',

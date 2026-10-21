@@ -294,12 +294,14 @@ describe('会话活动与新徽章', () => {
 
   // 分级门槛：测试用，和正式配置无关
   const TIERS = (...t) => t.map((threshold) => ({ threshold }));
-  const BADGES = [
-    { id: 'active-hours', tiers: TIERS(10, 100, 1000, 5000) },
-    { id: 'dispatches', tiers: TIERS(10, 100, 1000, 10000) },
-    { id: 'web-research', tiers: TIERS(10, 100, 1000, 10000) },
-    { id: 'file-edits', tiers: TIERS(100, 1000, 10000, 100000) },
-  ];
+  const TEST_TIERS = {
+    'active-hours': TIERS(10, 100, 1000, 5000),
+    dispatches: TIERS(10, 100, 1000, 10000),
+    'web-research': TIERS(10, 100, 1000, 10000),
+    'file-edits': TIERS(100, 1000, 10000, 100000),
+  };
+  // 其余徽章用正式配置（规则从配置里读门槛）；这几枚分级徽章换成测试门槛
+  const BADGES = badges.map((b) => (TEST_TIERS[b.id] ? { ...b, tiers: TEST_TIERS[b.id] } : b));
 
   // ---------- Claude Code 记录 ----------
   const user = (sessionId, ts) => ({ type: 'user', sessionId, timestamp: ts, message: { role: 'user', content: SECRET } });

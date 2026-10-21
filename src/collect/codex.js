@@ -12,7 +12,7 @@ import { zstdDecompressSync } from 'node:zlib';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import badges from '../brands/codex/index.js';
-import { aggregateCodexDays, applyCodexSegments, applyStreams, computeCodexProgress, extractRolloutFacts, mergeCodexLedger, mergeDays, threadFacts } from '../data/codex-metrics.js';
+import { aggregateCodexDays, applyCodexSegments, applyStreams, computeProgress, extractRolloutFacts, mergeCodexLedger, mergeDays, threadFacts } from '../data/codex-metrics.js';
 import { localDate } from '../data/metrics-common.js';
 import { hash, readJSON, saveBrand, writeJSON } from './common.js';
 
@@ -146,7 +146,7 @@ export async function collect({ env = process.env, home, now = Date.now(), onPro
   const ledgerPath = join(home, `${BRAND_ID}.ledger.json`);
   const ledger = mergeCodexLedger(readJSON(ledgerPath), mergeDays(days, aggregateCodexDays([], rows)));
   if (!files.length && !rows.length && !Object.keys(ledger.days).length) return null;
-  const progress = computeCodexProgress(ledger, badges, localDate(now));
+  const progress = computeProgress(ledger, badges, localDate(now));
   const data = saveBrand(home, BRAND_ID, ledger, progress, { turnsField: TURNS_FIELD });
   return { brandId: BRAND_ID, files: files.length, parsed, threads: rows.length, facts, ledger, progress, data, note };
 }

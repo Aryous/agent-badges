@@ -6,6 +6,9 @@ import { BRANDS, BRAND_IDS, brandById } from '../src/brands/index.js';
 import { COLLECTORS } from '../src/collect/index.js';
 import { BRAND_INFO } from '../src/collect/summary.js';
 import { DATA_SOURCES } from '../src/data/progress.js';
+import * as ccMetrics from '../src/data/claude-code-metrics.js';
+import * as cxMetrics from '../src/data/codex-metrics.js';
+import { addDays } from '../src/data/metrics-common.js';
 
 // 项目约定的守护测试：文档（AGENTS.md / CONTRIBUTING.md）里写的每条约定，都在这里或别的测试里有一条对应。
 
@@ -111,5 +114,84 @@ describe('展示列表', () => {
       }
     }
     expect(missing).toEqual([]);
+  });
+});
+
+const METRICS = { 'claude-code': ccMetrics, codex: cxMetrics };
+const TODAY = '2026-10-21';
+
+// 一天的基础记录：让这一天算「有活动」，其余字段为 0
+const baseDay = (brandId, extra) => ({
+  ...(brandId === 'codex' ? { threads: 1, turns: 1, patches: 0 } : { sessions: 1, humanTurns: 1, toolCalls: 0 }),
+  tokens: 1,
+  hours: Array(24).fill(0),
+  models: [],
+  mcp: [],
+  longestSessionMin: 0,
+  ...extra,
+});
+const names = (n) => Array.from({ length: n }, (_, i) => `x${i}`);
+
+// 「有数字门槛的一次性徽章」在账本里对应的字段：给出数值 n，造出刚好是 n 的账本。
+// 新增这类徽章时在这里补一条，否则下面的测试会提醒。
+const FIXTURES = {
+  'productive-day': (b, n) => ({ '2026-03-02': baseDay(b, b === 'codex' ? { threads: n } : { sessions: n }) }),
+  multitasker: (b, n) => ({ '2026-03-02': baseDay(b, { maxParallel: n }) }),
+  'subagent-commander': (b, n) => ({ '2026-03-02': baseDay(b, { maxParallelAgents: n }) }),
+  'bash-maniac': (b, n) => ({ '2026-03-02': baseDay(b, { bashCalls: n }) }),
+  'skill-master': (b, n) => ({ '2026-03-02': baseDay(b, { skillCalls: n }) }),
+  connector: (b, n) => ({ '2026-03-02': baseDay(b, { mcp: names(n) }) }),
+  'model-collector': (b, n) => ({ '2026-03-02': baseDay(b, { models: names(n) }) }),
+  compactor: (b, n) => ({ '2026-03-02': baseDay(b, { compactions: n }) }),
+  marathon: (b, n) => ({ '2026-03-02': baseDay(b, { longestSessionMin: n * 60 }) }),
+  'seven-day-streak': (b, n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [addDays('2026-03-02', i), baseDay(b)])),
+};
+
+const isCounted = (badge) => !badge.tiers && badge.criteria.target > 1 && !badge.criteria.dynamic;
+
+describe('每枚徽章都有统计规则', () => {
+  for (const { brand, badges } of BRANDS) {
+    it(`${brand.id}：RULES 的 key 和徽章 id 一一对应`, () => {
+      expect(sorted(Object.keys(METRICS[brand.id].RULES))).toEqual(sorted(badges.map((b) => b.id)));
+    });
+    it(`${brand.id}：空账本也能算出每枚徽章的进度`, () => {
+      const out = METRICS[brand.id].computeProgress({ days: {} }, badges, TODAY);
+      expect(sorted(Object.keys(out))).toEqual(sorted(badges.map((b) => b.id)));
+    });
+  }
+});
+
+describe('门槛只写在配置里', () => {
+  for (const { brand, badges } of BRANDS) {
+    const { computeProgress } = METRICS[brand.id];
+    const unlockedAt = (badge, n) => computeProgress({ days: FIXTURES[badge.id](brand.id, n) }, [badge], TODAY)[badge.id].unlocked;
+
+    for (const badge of badges.filter(isCounted)) {
+      it(`${brand.id}/${badge.id}：达到配置的门槛才解锁，改门槛规则跟着变`, () => {
+        expect(FIXTURES[badge.id], `tests/contracts.test.js 的 FIXTURES 缺 ${badge.id}`).toBeTypeOf('function');
+        const t = badge.criteria.target;
+        expect(unlockedAt(badge, t)).toBe(true);
+        expect(unlockedAt(badge, t - 1)).toBe(false);
+        const moved = { ...badge, criteria: { ...badge.criteria, target: t + 2 } };
+        expect(unlockedAt(moved, t + 1)).toBe(false);
+        expect(unlockedAt(moved, t + 2)).toBe(true);
+        expect(computeProgress({ days: FIXTURES[badge.id](brand.id, t) }, [badge], TODAY)[badge.id].progress.target).toBe(t);
+      });
+
+      it(`${brand.id}/${badge.id}：中英文说明里写的是配置的门槛`, () => {
+        const t = String(badge.criteria.target);
+        expect(badge.description).toContain(t);
+        expect(badge.en.description).toContain(t);
+      });
+    }
+  }
+
+  it('criteria 只有 target、unit、dynamic；分级徽章不写 criteria', () => {
+    for (const { badges } of BRANDS) {
+      for (const b of badges) {
+        if (b.tiers) expect(b.criteria, b.id).toBeUndefined();
+        else expect(Object.keys(b.criteria).filter((k) => !['target', 'unit', 'dynamic'].includes(k)), b.id).toEqual([]);
+      }
+    }
   });
 });

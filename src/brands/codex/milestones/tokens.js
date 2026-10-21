@@ -10,7 +10,6 @@ const tokensBase = {
   titleEn: '{label} TOKENS',
   description: '累计消耗的 Token。云里一直在下雨，下的全是字。',
   en: { title: '{label} Tokens', description: 'Tokens used. It never stops raining in the cloud, and every drop is a word.' },
-  criteria: { metric: 'tokens.total' },
   tiers: [
     { threshold: 10_000_000, metal: 'bronze', accent: 'amber', label: '10M' },
     { threshold: 100_000_000, metal: 'silver', accent: 'sky', label: '100M' },

@@ -22,7 +22,6 @@ const toolCalls = {
   titleEn: '{label} TOOL CALLS',
   description: '累计的工具调用次数。读文件、跑命令、改代码，小家伙从不嫌活多。',
   en: { title: '{label} Tool Calls', description: 'Tool calls made. Reading files, running commands, editing code: the little guy never minds more work.' },
-  criteria: { metric: 'tools.calls' },
   tiers: [
     { threshold: 1000, metal: 'bronze', accent: 'amber', label: '1K' },
     { threshold: 10000, metal: 'silver', accent: 'aqua', label: '10K' },

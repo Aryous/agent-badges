@@ -44,7 +44,6 @@ const patches = {
   titleEn: '{label} PATCHES',
   description: '累计应用的补丁。删一行、加两行，代码就这样一针一线地缝好了。',
   en: { title: '{label} Patches', description: 'Patches applied. Delete a line, add two, and the code is stitched together one stitch at a time.' },
-  criteria: { metric: 'tools.applyPatch' },
   tiers: [
     { threshold: 10, metal: 'bronze', accent: 'sand', label: '10' },
     { threshold: 100, metal: 'silver', accent: 'sky', label: '100' },

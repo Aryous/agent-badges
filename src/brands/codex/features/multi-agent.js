@@ -16,7 +16,6 @@ const multiAgent = featureBadge({
   titleEn: 'MULTI-AGENT',
   description: '派生过子代理，让几朵小云分头干活。一个人，一支队伍。',
   en: { title: 'Multi-Agent', description: 'Spawned subagents and sent little clouds off to work in parallel. One person, one team.' },
-  metric: 'features.spawnAgent',
   target: 1,
   band: 'teal',
   panel: 'aqua',

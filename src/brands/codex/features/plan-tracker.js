@@ -18,7 +18,6 @@ const planTracker = featureBadge({
   titleEn: 'PLAN TRACKER',
   description: '用 update_plan 列过计划。先写清单，再动手，一项一项打勾。',
   en: { title: 'Plan Tracker', description: 'Made a plan with update_plan. Write the list first, then check things off one by one.' },
-  metric: 'features.updatePlan',
   target: 1,
   band: 'forest',
   panel: 'lime',

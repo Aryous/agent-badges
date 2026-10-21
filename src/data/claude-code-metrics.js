@@ -15,6 +15,7 @@ import {
   addDays,
   applySessionSegments,
   cumulative,
+  dayPeak,
   distinctOver,
   firstDate,
   holidays,
@@ -309,13 +310,8 @@ export function daysFromStatsCache(stats) {
 
 // ---------- 4. 账本 → 徽章进度 ----------
 
-/**
- * @param {object} ledger   mergeLedger 的结果
- * @param {object[]} badges 徽章配置（用于读取分级门槛）
- * @param {string} today    YYYY-MM-DD
- * @returns {object} 原始进度（交给 progress.js 的 normalizeProgress）
- */
-export function computeProgress(ledger, badges, today) {
+/** 规则共用的上下文：活跃日期、按天数据，以及几个常用的算法。 */
+function context(ledger, today) {
   const days = ledger.days;
   const dates = Object.keys(days)
     .filter((d) => {
@@ -324,76 +320,110 @@ export function computeProgress(ledger, badges, today) {
       return x.sessions > 0 || x.humanTurns > 0 || x.toolCalls > 0 || x.tokens > 0 || x.hooks || x.plan;
     })
     .sort();
-  const tiersOf = (id) => badges.find((b) => b.id === id)?.tiers ?? [];
-  const out = {};
-  const tier = (id, series) => (out[id] = tiered(tiersOf(id), series.value, series.reachedOn));
-  const first = (pred) => firstDate(dates, days, pred);
-  const maxOf = (field) => Math.max(0, ...dates.map((d) => days[d][field] ?? 0));
-  const on = (pred) => once(first((_, date) => pred(date)));
+  let streak;
+  return {
+    ledger,
+    days,
+    dates,
+    today,
+    first: (pred) => firstDate(dates, days, pred),
+    on: (pred) => once(firstDate(dates, days, (_, date) => pred(date))),
+    cum: (field) => cumulative(dates, days, field),
+    maxOf: (field) => Math.max(0, ...dates.map((d) => days[d][field] ?? 0)),
+    peak: (field, target) => dayPeak(dates, days, field, target),
+    get streak() {
+      return (streak ??= streaks(dates));
+    },
+  };
+}
 
+const tier = (badge, series) => tiered(badge.tiers, series.value, series.reachedOn);
+
+/**
+ * 每枚徽章一条规则，键是徽章 id。门槛一律从徽章配置读（criteria.target / tiers），这里不写数字。
+ * 新增徽章：在这里加一条；tests/contracts.test.js 会检查规则和徽章一一对应、门槛跟随配置。
+ */
+export const RULES = {
   // 里程碑
-  out['first-session'] = once(dates[0] ?? null);
-  tier('sessions', cumulative(dates, days, 'sessions'));
-  tier('tokens', cumulative(dates, days, 'tokens'));
-  tier('tool-calls', cumulative(dates, days, 'toolCalls'));
-  tier('active-hours', hoursSeries(dates, days));
-  tier('dispatches', cumulative(dates, days, 'dispatches'));
-  tier('web-research', cumulative(dates, days, 'webCalls'));
-  tier('file-edits', cumulative(dates, days, 'editCalls'));
+  'first-session': (c) => once(c.dates[0] ?? null),
+  sessions: (c, b) => tier(b, c.cum('sessions')),
+  tokens: (c, b) => tier(b, c.cum('tokens')),
+  'tool-calls': (c, b) => tier(b, c.cum('toolCalls')),
+  'active-hours': (c, b) => tier(b, hoursSeries(c.dates, c.days)),
+  dispatches: (c, b) => tier(b, c.cum('dispatches')),
+  'web-research': (c, b) => tier(b, c.cum('webCalls')),
+  'file-edits': (c, b) => tier(b, c.cum('editCalls')),
 
   // 连续与习惯
-  const { best, reached } = streaks(dates);
-  out['seven-day-streak'] = once(reached[7] ?? null, Math.min(best, 7), 7);
-  out['streak-days'] = tiered(tiersOf('streak-days'), best, (n) => reached[n] ?? null);
-  out['night-owl'] = once(first((d) => d.hours.slice(0, 5).some((h) => h > 0)));
-  out['early-bird'] = once(first((d) => d.hours[5] + d.hours[6] > 0));
+  'seven-day-streak': (c, { criteria: { target: t } }) => once(c.streak.reached[t] ?? null, Math.min(c.streak.best, t), t),
+  'streak-days': (c, b) => tiered(b.tiers, c.streak.best, (n) => c.streak.reached[n] ?? null),
+  'night-owl': (c) => once(c.first((d) => d.hours.slice(0, 5).some((h) => h > 0))),
+  'early-bird': (c) => once(c.first((d) => d.hours[5] + d.hours[6] > 0)),
   // 周末战士：同一个周末的周六和周日都有使用，记在周日
-  out['weekend-warrior'] = once(first((_, date) => weekday(date) === 0 && dates.includes(addDays(date, -1))));
-  out.marathon = once(first((d) => d.longestSessionMin >= 240), Math.floor(maxOf('longestSessionMin') / 60), 4);
-  out['midnight-crossing'] = once(first((d) => d.midnight));
-  out['productive-day'] = once(first((d) => d.sessions >= 20), Math.min(maxOf('sessions'), 20), 20);
-  out.multitasker = once(first((d) => (d.maxParallel ?? 0) >= 3), Math.min(maxOf('maxParallel'), 3), 3);
-  {
-    const pm = perfectMonth(dates, today);
-    out['perfect-month'] = once(pm.date, pm.current, pm.target);
-  }
+  'weekend-warrior': (c) => once(c.first((_, date) => weekday(date) === 0 && c.dates.includes(addDays(date, -1)))),
+  // 门槛单位是小时，账本里是分钟
+  marathon: (c, { criteria: { target: t } }) => once(c.first((d) => d.longestSessionMin >= t * 60), Math.floor(c.maxOf('longestSessionMin') / 60), t),
+  'midnight-crossing': (c) => once(c.first((d) => d.midnight)),
+  'productive-day': (c, b) => c.peak('sessions', b.criteria.target),
+  multitasker: (c, b) => c.peak('maxParallel', b.criteria.target),
+  // 门槛是当月的工作日数，由规则自己算（配置里的 target 只是显示兜底）
+  'perfect-month': (c) => {
+    const pm = perfectMonth(c.dates, c.today);
+    return once(pm.date, pm.current, pm.target);
+  },
 
   // 功能探索
-  out['subagent-commander'] = once(first((d) => d.maxParallelAgents >= 5), Math.min(maxOf('maxParallelAgents'), 5), 5);
-  out['hooks-smith'] = once(first((d) => d.hooks));
-  {
-    const { size, reached: r } = distinctOver(dates, days, 'mcp', 3);
-    out.connector = once(r, Math.min(size, 3), 3);
-  }
-  {
-    const s = cumulative(dates, days, 'skillCalls');
-    out['skill-master'] = once(s.reachedOn(50), Math.min(s.value, 50), 50);
-  }
-  out['plan-mode'] = once(first((d) => d.plan));
-  out.autopilot = once(first((d) => d.autopilot));
+  'subagent-commander': (c, b) => c.peak('maxParallelAgents', b.criteria.target),
+  'hooks-smith': (c) => once(c.first((d) => d.hooks)),
+  connector: (c, { criteria: { target: t } }) => {
+    const { size, reached } = distinctOver(c.dates, c.days, 'mcp', t);
+    return once(reached, Math.min(size, t), t);
+  },
+  'skill-master': (c, { criteria: { target: t } }) => {
+    const s = c.cum('skillCalls');
+    return once(s.reachedOn(t), Math.min(s.value, t), t);
+  },
+  'plan-mode': (c) => once(c.first((d) => d.plan)),
+  autopilot: (c) => once(c.first((d) => d.autopilot)),
 
   // 限定与彩蛋
-  out['programmers-day'] = on((date) => date.endsWith('-10-24'));
-  {
-    const firstDay = [ledger.firstSeen, dates[0]].filter(Boolean).sort()[0];
-    const anniv = firstDay ? addDays(firstDay, 365) : null;
-    out.anniversary = once(anniv && anniv <= today ? anniv : null);
-  }
-  {
+  'programmers-day': (c) => c.on((date) => date.endsWith('-10-24')),
+  // 门槛是年数
+  anniversary: (c, { criteria: { target: years } }) => {
+    const firstDay = [c.ledger.firstSeen, c.dates[0]].filter(Boolean).sort()[0];
+    const anniv = firstDay ? addDays(firstDay, 365 * years) : null;
+    return once(anniv && anniv <= c.today ? anniv : null);
+  },
+  'model-collector': (c, { criteria: { target: t } }) => {
     // stats-cache 里没有日期的模型使用记录也算：一开始就收集到了
-    const seen = new Set(ledger.undatedModels ?? []);
-    let r = seen.size >= 4 ? dates[0] ?? null : null;
-    for (const date of dates) {
-      for (const m of days[date].models) seen.add(m);
-      if (!r && seen.size >= 4) r = date;
+    const seen = new Set(c.ledger.undatedModels ?? []);
+    let r = seen.size >= t ? c.dates[0] ?? null : null;
+    for (const date of c.dates) {
+      for (const m of c.days[date].models) seen.add(m);
+      if (!r && seen.size >= t) r = date;
     }
-    out['model-collector'] = once(r, Math.min(seen.size, 4), 4);
-  }
-  out['bash-maniac'] = once(first((d) => d.bashCalls >= 500), Math.min(maxOf('bashCalls'), 500), 500);
-  out['new-year'] = on(holidays['new-year']);
-  out['spring-festival'] = on(holidays['spring-festival']);
-  out['tool-birthday'] = on(holidays.birthday(brand.launchDate));
-  out.christmas = on(holidays.christmas);
+    return once(r, Math.min(seen.size, t), t);
+  },
+  'bash-maniac': (c, b) => c.peak('bashCalls', b.criteria.target),
+  'new-year': (c) => c.on(holidays['new-year']),
+  'spring-festival': (c) => c.on(holidays['spring-festival']),
+  'tool-birthday': (c) => c.on(holidays.birthday(brand.launchDate)),
+  christmas: (c) => c.on(holidays.christmas),
+};
 
-  return out;
+/**
+ * @param {object} ledger   mergeLedger 的结果
+ * @param {object[]} badges 徽章配置（规则从这里读门槛）
+ * @param {string} today    YYYY-MM-DD
+ * @returns {object} 原始进度（交给 normalizeProgress）
+ */
+export function computeProgress(ledger, badges, today) {
+  const ctx = context(ledger, today);
+  return Object.fromEntries(
+    badges.map((b) => {
+      const rule = RULES[b.id];
+      if (!rule) throw new Error(`徽章「${b.id}」没有统计规则：在 src/data/claude-code-metrics.js 的 RULES 里加一条`);
+      return [b.id, rule(ctx, b)];
+    }),
+  );
 }

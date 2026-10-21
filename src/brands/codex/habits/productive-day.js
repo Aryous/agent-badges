@@ -10,7 +10,7 @@ const productiveDay = {
   titleEn: 'PRODUCTIVE DAY',
   description: '一天之内开启 20 个 Codex 线程。清单一行接一行，今天的点子格外多。',
   en: { title: 'Productive Day', description: 'Started 20 Codex threads in a single day. Line after line on the list: a day full of ideas.' },
-  criteria: { metric: 'threads.perDay', target: 20 },
+  criteria: { target: 20 },
   ...medal({
     bottom: '20 THREADS',
     shape: { type: 'shield', radius: 1, width: 0.9, top: 0.92, shoulder: 0.1, bottom: -1.06, cornerRadius: 0.22, depth: 0.22, bevel: 0.04 },

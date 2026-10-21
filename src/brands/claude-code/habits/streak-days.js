@@ -40,7 +40,6 @@ const streakDays = {
   titleEn: '{label}-DAY STREAK',
   description: '连续使用 Claude Code 的天数。日历一页页撕下去，小家伙一天也没落下。',
   en: { title: '{label}-Day Streak', description: 'Consecutive days with Claude Code. Page after page off the calendar, and not a single day missed.' },
-  criteria: { metric: 'streak.days' },
   tiers: [
     { threshold: 30, label: '30', metal: 'bronze', accent: 'aqua' },
     { threshold: 100, label: '100', metal: 'silver', accent: 'sky' },

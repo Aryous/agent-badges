@@ -41,7 +41,6 @@ const fullAuto = featureBadge({
   titleEn: 'FULL AUTO',
   description: '在无需审批的模式下放手让 Codex 干活。系好安全带，点火。',
   en: { title: 'Full Auto', description: 'Let Codex work with no approvals needed. Seatbelt on, ignition.' },
-  metric: 'features.fullAuto',
   target: 1,
   band: 'crimson',
   panel: 'sand',

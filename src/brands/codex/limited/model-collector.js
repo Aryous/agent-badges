@@ -14,7 +14,7 @@ const modelCollector = {
   titleEn: 'MODEL COLLECTOR',
   description: '在 Codex 里用过 4 种不同的模型。每一颗都有自己的脾气，你都摸透了。',
   en: { title: 'Model Collector', description: 'Used 4 different models in Codex. Each one has its own temper, and you have figured them all out.' },
-  criteria: { metric: 'models.distinct', target: 4 },
+  criteria: { target: 4 },
   hidden: true,
   shape: { type: 'polygon', sides: 6, radius: 1.06, cornerRadius: 0.12, rotation: 0, depth: 0.22, bevel: 0.045 },
   layers: [

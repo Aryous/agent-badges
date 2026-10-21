@@ -72,7 +72,7 @@ const nightOwl = {
   titleEn: 'NIGHT OWL',
   description: '在凌晨 0–5 点还在和 Claude Code 写代码。帽子都戴上了，就是不肯睡。',
   en: { title: 'Night Owl', description: 'Still coding with Claude Code between midnight and 5 a.m. Nightcap on, still not going to bed.' },
-  criteria: { metric: 'hours.night', target: 1 },
+  criteria: { target: 1 },
   shape: { type: 'circle', radius: 1, depth: 0.22, bevel: 0.05 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'silver' },

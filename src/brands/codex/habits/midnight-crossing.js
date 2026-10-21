@@ -11,7 +11,7 @@ const midnightCrossing = {
   titleEn: 'PAST MIDNIGHT',
   description: '同一个会话从前一天 23 点前一直聊到第二天凌晨 2 点后。指针在 12 点重合，云朵还亮着。',
   en: { title: 'Past Midnight', description: 'One session that started before 11 p.m. and was still going after 2 a.m. The hands meet at twelve and the cloud is still lit.' },
-  criteria: { metric: 'session.midnight', target: 1 },
+  criteria: { target: 1 },
   ...medal({
     bottom: 'PAST MIDNIGHT',
     shape: { type: 'circle', radius: 1, depth: 0.22, bevel: 0.05 },

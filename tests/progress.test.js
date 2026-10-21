@@ -42,7 +42,7 @@ describe('loadProgress', () => {
 });
 
 describe('分级徽章', () => {
-  const tiered = [{ id: 'sessions', criteria: { metric: 'sessions.total' }, tiers: [
+  const tiered = [{ id: 'sessions', tiers: [
     { threshold: 10, metal: 'bronze', label: '10' },
     { threshold: 100, metal: 'silver', label: '100' },
     { threshold: 1000, metal: 'gold', label: '1K' },
@@ -95,7 +95,7 @@ describe('分级徽章', () => {
   });
 
   it('普通徽章也可以只给数值', () => {
-    const plain = [{ id: 'x', criteria: { metric: 'm', target: 5 } }];
+    const plain = [{ id: 'x', criteria: { target: 5 } }];
     expect(normalizeProgress({ x: { value: 7, earnedAt: '2025-01-01' } }, plain).x).toMatchObject({ unlocked: true, progress: { current: 5, target: 5 } });
     expect(normalizeProgress({ x: { value: 2 } }, plain).x).toMatchObject({ unlocked: false, progress: { current: 2, target: 5 } });
   });

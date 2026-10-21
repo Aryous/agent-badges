@@ -25,7 +25,7 @@ const nightOwl = {
   titleEn: 'NIGHT OWL',
   description: '凌晨零点到五点还在和 Codex 对话。月亮都挂到云上了。',
   en: { title: 'Night Owl', description: 'Still talking to Codex between midnight and 5 a.m. The moon is hanging on the cloud.' },
-  criteria: { metric: 'hours.night', target: 1 },
+  criteria: { target: 1 },
   shape: { type: 'starburst', points: 8, radius: 1.06, innerRadius: 0.84, tipRoundness: 0.16, valleyRoundness: 0.1, depth: 0.2, bevel: 0.035 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'silver' },

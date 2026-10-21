@@ -11,7 +11,7 @@ const earlyBird = {
   titleEn: 'EARLY BIRD',
   description: '早上五到七点就开工。太阳刚从云后面探出头，Codex 已经在跑测试了。',
   en: { title: 'Early Bird', description: 'Started work between 5 and 7 a.m. The sun just peeked out from behind the cloud, and Codex is already running tests.' },
-  criteria: { metric: 'hours.morning', target: 1 },
+  criteria: { target: 1 },
   shape: { type: 'starburst', points: 16, radius: 1.05, innerRadius: 0.92, tipRoundness: 0.08, valleyRoundness: 0.06, depth: 0.2, bevel: 0.035 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'gold' },

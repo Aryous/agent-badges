@@ -20,7 +20,6 @@ const ideBuddy = featureBadge({
   titleEn: 'IDE BUDDY',
   description: '在 VS Code 里用过 Codex。代码在左，搭档在右，配合默契。',
   en: { title: 'IDE Buddy', description: 'Used Codex inside VS Code. Code on the left, partner on the right, perfectly in sync.' },
-  metric: 'features.vscode',
   target: 1,
   band: 'slate',
   panel: 'sky',

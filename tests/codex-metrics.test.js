@@ -4,7 +4,7 @@ import {
   aggregateCodexDays,
   applyCodexSegments,
   applyStreams,
-  computeCodexProgress,
+  computeProgress,
   mergeDays,
   extractRolloutFacts,
   mergeCodexLedger,
@@ -32,7 +32,7 @@ const ctx = (ts, extra = {}) => ({ type: 'turn_context', timestamp: ts, payload:
 const session = (recs) => recs.map((r) => extractRolloutFacts(r, { hash })).filter(Boolean);
 const run = (sessions, threads = [], ledger = null, today = '2026-10-18') => {
   const merged = mergeCodexLedger(ledger, aggregateCodexDays(sessions, threads.map((t) => threadFacts(t, { hash }))));
-  return { ledger: merged, progress: computeCodexProgress(merged, badges, today) };
+  return { ledger: merged, progress: computeProgress(merged, badges, today) };
 };
 
 describe('隐私：白名单提取', () => {
@@ -179,12 +179,14 @@ describe('会话活动与新徽章', () => {
 
   // 分级门槛：测试用，和正式配置无关
   const TIERS = (...t) => t.map((threshold) => ({ threshold }));
-  const BADGES = [
-    { id: 'active-hours', tiers: TIERS(10, 100, 1000, 5000) },
-    { id: 'dispatches', tiers: TIERS(10, 100, 1000, 10000) },
-    { id: 'web-research', tiers: TIERS(10, 100, 1000, 10000) },
-    { id: 'file-edits', tiers: TIERS(100, 1000, 10000, 100000) },
-  ];
+  const TEST_TIERS = {
+    'active-hours': TIERS(10, 100, 1000, 5000),
+    dispatches: TIERS(10, 100, 1000, 10000),
+    'web-research': TIERS(10, 100, 1000, 10000),
+    'file-edits': TIERS(100, 1000, 10000, 100000),
+  };
+  // 其余徽章用正式配置（规则从配置里读门槛）；这几枚分级徽章换成测试门槛
+  const BADGES = badges.map((b) => (TEST_TIERS[b.id] ? { ...b, tiers: TEST_TIERS[b.id] } : b));
 
   // ---------- Codex ----------
   const meta = (ts, source = 'cli') => ({ type: 'session_meta', timestamp: ts, payload: { source } });
@@ -195,7 +197,7 @@ describe('会话活动与新徽章', () => {
     facts([meta(at(date, h, m), source), ...Array.from({ length: n }, (_, i) => task(new Date(ms(date, h, m) + i * step * MIN).toISOString()))]);
   const cxRun = (sessions, threads = [], today = '2026-10-21') => {
     const ledger = mergeCodexLedger(null, aggregateCodexDays(sessions, threads.map((t) => threadFacts(t, { hash }))));
-    return { ledger, progress: computeCodexProgress(ledger, BADGES, today) };
+    return { ledger, progress: computeProgress(ledger, BADGES, today) };
   };
 
   describe('习惯、里程碑、节日（0.5 起）', () => {

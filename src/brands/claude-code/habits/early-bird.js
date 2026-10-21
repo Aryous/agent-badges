@@ -27,7 +27,7 @@ const earlyBird = {
   titleEn: 'EARLY BIRD',
   description: '早上 5–7 点就开工。太阳刚露头，咖啡还冒着热气，第一个提示已经发出去了。',
   en: { title: 'Early Bird', description: 'Started work between 5 and 7 a.m. The sun is barely up, the coffee is still steaming, and the first prompt is already sent.' },
-  criteria: { metric: 'hours.morning', target: 1 },
+  criteria: { target: 1 },
   shape: { type: 'circle', radius: 1, depth: 0.22, bevel: 0.05 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'rose' },

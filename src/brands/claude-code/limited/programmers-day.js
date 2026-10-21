@@ -26,7 +26,7 @@ const programmersDay = {
   titleEn: 'PROGRAMMERS DAY',
   description: '在 10 月 24 日这天和 Claude Code 一起写代码。2 的 10 次方，属于我们的节日。',
   en: { title: "Programmers' Day", description: "Coded with Claude Code on October 24. Two to the tenth power: a holiday that belongs to us." },
-  criteria: { metric: 'days.1024', target: 1 },
+  criteria: { target: 1 },
   shape: { type: 'polygon', sides: 10, radius: 1.04, cornerRadius: 0.08, depth: 0.22, bevel: 0.045 },
   layers: [
     { kind: 'rim', material: 'holographic', color: 'snow' },

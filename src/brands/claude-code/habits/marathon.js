@@ -65,7 +65,7 @@ const marathon = {
   titleEn: 'MARATHON',
   description: '单次会话超过 4 小时。补给靠咖啡，配速靠 Claude，终点线在下一个 commit。',
   en: { title: 'Marathon', description: 'A single session over 4 hours. Fueled by coffee, paced by Claude, the finish line is the next commit.' },
-  criteria: { metric: 'session.longestHours', target: 4 },
+  criteria: { target: 4, unit: 'h' },
   shape: { type: 'starburst', points: 24, radius: 1.04, innerRadius: 0.94, tipRoundness: 0.06, valleyRoundness: 0.02, depth: 0.2, bevel: 0.035 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'gold' },

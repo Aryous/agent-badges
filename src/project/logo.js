@@ -41,7 +41,7 @@ export const logoBadge = {
   titleEn: 'AGENT BADGES',
   description: 'npx agent-badges',
   en: { title: 'Agent Badges', description: 'npx agent-badges' },
-  criteria: { metric: 'none', target: 1 },
+  criteria: { target: 1 },
   shape: { type: 'starburst', points: 16, radius: 1.05, innerRadius: 0.93, tipRoundness: 0.12, valleyRoundness: 0.06, depth: 0.22, bevel: 0.04 },
   layers: [
     { kind: 'rim', material: 'polished-metal', color: 'gold' },

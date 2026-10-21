@@ -11,7 +11,6 @@ const dispatchesBase = {
   titleEn: '{label} DISPATCHES',
   description: '派出去的子代理次数。云朵放出一架架纸飞机，各自去把活干完。',
   en: { title: '{label} Dispatches', description: 'Subagents sent out. The cloud launches paper plane after paper plane, and each one finishes its job.' },
-  criteria: { metric: 'subagents.dispatched' },
   tiers: [
     { threshold: 10, metal: 'bronze', accent: 'aqua', label: '10' },
     { threshold: 100, metal: 'silver', accent: 'sky', label: '100' },
