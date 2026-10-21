@@ -18,7 +18,7 @@ const label = (b, s, lang, { next = false } = {}) => badgeTitle(b, lang, next ? 
 /** 一个品牌的汇总数据（结构化，供 --json 输出）。 */
 export function summarize(brandId, rawProgress, { lang = 'en' } = {}) {
   const { brand, badges } = BRAND_INFO[brandId];
-  const p = normalizeProgress(rawProgress, badges, brandId);
+  const p = normalizeProgress(rawProgress, badges);
   const h = highlights(badges, p);
   const unlocked = h.unlocked;
   const recent = h.recent.map(({ badge: b, state: st }) => ({ id: b.id, title: label(b, st, lang), earnedAt: st.earnedAt }));
@@ -33,8 +33,8 @@ export function summarize(brandId, rawProgress, { lang = 'en' } = {}) {
 export function newUnlocks(brandId, prevRaw, nextRaw, { lang = 'en' } = {}) {
   if (!prevRaw) return [];
   const { badges } = BRAND_INFO[brandId];
-  const prev = normalizeProgress(prevRaw, badges, brandId);
-  const next = normalizeProgress(nextRaw, badges, brandId);
+  const prev = normalizeProgress(prevRaw, badges);
+  const next = normalizeProgress(nextRaw, badges);
   return badges
     .filter((b) => next[b.id].unlocked && (!prev[b.id].unlocked || (b.tiers && next[b.id].tier > prev[b.id].tier)))
     .map((b) => {

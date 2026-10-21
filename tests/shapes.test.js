@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { ShapeUtils } from 'three';
-import { makeOutline } from '../src/engine/shapes.js';
+import { innerRadius, makeOutline } from '../src/engine/shapes.js';
+import { innerRadiusOf } from '../src/brands/shared/fit.js';
+import ccBadges from '../src/brands/claude-code/index.js';
+import codexBadges from '../src/brands/codex/index.js';
 
 const pts = (shape) => shape.getPoints(64);
 const area = (shape) => Math.abs(ShapeUtils.area(pts(shape)));
@@ -45,5 +48,33 @@ describe('makeOutline', () => {
 
   it('未知类型报错', () => {
     expect(() => makeOutline({ type: 'heart' })).toThrow(/heart/);
+  });
+});
+
+describe('花形外形', () => {
+  it('凹口在外接半径以内，内缩后仍是闭合轮廓', () => {
+    const cfg = { type: 'flower', petals: 5, radius: 1.1, petal: 0.45 };
+    for (const inset of [0, 0.1]) {
+      const pts = makeOutline(cfg, inset).getPoints(40);
+      const r = pts.map((p) => Math.hypot(p.x, p.y));
+      expect(Math.max(...r)).toBeCloseTo(1.1 - inset, 2);
+      expect(Math.min(...r)).toBeGreaterThan(0.75 - inset);
+    }
+  });
+});
+
+describe('不依赖 three 的内切半径', () => {
+  it('和引擎的精确结果一致或略小（偏保守），用于所有徽章外形', () => {
+    for (const b of [...ccBadges, ...codexBadges]) {
+      const shapes = [b.shape, ...(b.tiers ?? []).flatMap((t) => (t.variants ?? []).map((v) => v.shape ?? b.shape))];
+      for (const shape of shapes) {
+        for (const inset of [0, 0.167]) {
+          const exact = innerRadius(shape, inset);
+          const fast = innerRadiusOf(shape, inset);
+          expect(fast, `${b.id} ${shape.type}`).toBeLessThanOrEqual(exact + 2e-3);
+          expect(fast, `${b.id} ${shape.type}`).toBeGreaterThan(exact - 0.04);
+        }
+      }
+    }
   });
 });

@@ -3,6 +3,8 @@ import brand from '../src/brands/claude-code/brand.js';
 import { resolveTier, tierIndexFor } from '../src/engine/tiers.js';
 import { validateBadge } from '../src/engine/validate.js';
 import { buildBadge } from '../src/engine/badge.js';
+import ccBadges from '../src/brands/claude-code/index.js';
+import codexBadges from '../src/brands/codex/index.js';
 
 const tiered = {
   id: 'sessions',
@@ -119,5 +121,17 @@ describe('隐藏成就', () => {
     const g = buildBadge(cfg, brand, { unlocked: false, progress: { current: 0, target: 1 } });
     expect(g.userData.masked).toBe(true);
     expect(g.children.filter((m) => !['rim', 'face', 'back'].includes(m.name))).toHaveLength(1);
+  });
+});
+
+describe('顶级三款', () => {
+  it('所有分级徽章的最高一级都是三款随机，门槛不变', () => {
+    const expect4 = { sessions: 5000, 'tool-calls': 1000000, 'streak-days': 365, 'active-hours': 5000, dispatches: 10000, 'web-research': 10000, 'file-edits': 100000, threads: 5000, patches: 10000 };
+    for (const b of [...ccBadges, ...codexBadges].filter((x) => x.tiers)) {
+      const top = b.tiers.at(-1);
+      expect(top.variants?.length, b.id).toBe(3);
+      expect(top.salt, b.id).toMatch(new RegExp(`/${b.id}$`));
+      if (expect4[b.id]) expect(top.threshold).toBe(expect4[b.id]);
+    }
   });
 });

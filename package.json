@@ -11,6 +11,7 @@
     "bin/",
     "dist/index.html",
     "src/collect/",
+    "src/data/hash.js",
     "src/data/normalize.js",
     "src/data/metrics-common.js",
     "src/data/claude-code-metrics.js",

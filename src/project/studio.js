@@ -37,7 +37,7 @@ async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, la
     const b = getBrand(brandId);
     brand = b.brand;
     config = b.badges.find((x) => x.id === id);
-    state = normalizeProgress(await MOCKS[brandId](), b.badges, brandId)[id];
+    state = normalizeProgress(await MOCKS[brandId](), b.badges)[id];
     // 展示用：分级徽章看最高级，隐藏徽章保持神秘，其余都已解锁
     if (showcase) {
       state = config.hidden

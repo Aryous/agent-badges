@@ -9,7 +9,24 @@
 //
 // 这个模块是纯函数，不碰文件系统；读文件的部分在 src/collect/claude-code.js。
 
-import { applySessionSegments, holidays, hoursSeries, LAUNCH_DATES, perfectMonth, segmentsOf } from './metrics-common.js';
+import { fnv1a } from './hash.js';
+import {
+  addDays,
+  applySessionSegments,
+  cumulative,
+  distinctOver,
+  firstDate,
+  holidays,
+  hoursSeries,
+  LAUNCH_DATES,
+  localDate,
+  once,
+  perfectMonth,
+  segmentsOf,
+  streaks,
+  tiered,
+  weekday,
+} from './metrics-common.js';
 
 // ---------- 1. 单条记录 → 白名单事实 ----------
 
@@ -22,15 +39,6 @@ export function modelFamily(model) {
   return MODEL_FAMILIES.find((f) => m.includes(f)) ?? null;
 }
 
-/** 默认哈希（FNV-1a）：MCP 服务名在提取时就被替换，原名不进入任何后续数据。 */
-export function fnv1a(s) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return (h >>> 0).toString(16).padStart(8, '0');
-}
 
 /**
  * Claude Code 自带的 MCP 服务：装好就有，不是用户自己接入的，不计入「连接者」。
@@ -124,11 +132,6 @@ function num(v) {
 
 // ---------- 2. 事实 → 按天汇总 ----------
 
-/** 本地日期 YYYY-MM-DD（按运行机器的时区）。 */
-export function localDate(ts) {
-  const d = new Date(ts);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 const emptyDay = () => ({
   sessions: 0,
@@ -306,32 +309,6 @@ export function daysFromStatsCache(stats) {
 
 // ---------- 4. 账本 → 徽章进度 ----------
 
-const addDays = (date, n) => {
-  const d = new Date(`${date}T00:00:00`);
-  d.setDate(d.getDate() + n);
-  return localDate(d.getTime());
-};
-const weekday = (date) => new Date(`${date}T00:00:00`).getDay(); // 0 周日 … 6 周六
-
-/**
- * 累计型指标：按日期顺序累加，返回当前值和「第一次达到 threshold 的日期」查询函数。
- */
-function cumulative(dates, days, field) {
-  let total = 0;
-  const steps = [];
-  for (const date of dates) {
-    total += days[date][field] ?? 0;
-    steps.push([date, total]);
-  }
-  return {
-    value: total,
-    reachedOn: (threshold) => steps.find(([, v]) => v >= threshold)?.[0] ?? null,
-  };
-}
-
-/** 第一次满足条件的日期 */
-const firstDate = (dates, days, pred) => dates.find((d) => pred(days[d], d)) ?? null;
-
 /**
  * @param {object} ledger   mergeLedger 的结果
  * @param {object[]} badges 徽章配置（用于读取分级门槛）
@@ -347,123 +324,76 @@ export function computeProgress(ledger, badges, today) {
       return x.sessions > 0 || x.humanTurns > 0 || x.toolCalls > 0 || x.tokens > 0 || x.hooks || x.plan;
     })
     .sort();
-  const tiers = (id) => badges.find((b) => b.id === id)?.tiers ?? [];
+  const tiersOf = (id) => badges.find((b) => b.id === id)?.tiers ?? [];
   const out = {};
-
-  /** 分级徽章：当前值 + 当前等级的达成日期 */
-  const tiered = (id, series) => {
-    const ts = tiers(id);
-    let earnedAt = null;
-    for (const t of ts) if (series.value >= t.threshold) earnedAt = series.reachedOn(t.threshold);
-    // firstAt：第一级的达成日期，决定闪光款（升级后不变）
-    const firstAt = ts[0] && series.value >= ts[0].threshold ? series.reachedOn(ts[0].threshold) : null;
-    out[id] = { value: series.value, earnedAt, firstAt };
-  };
-  /** 一次性徽章 */
-  const once = (id, date, current = date ? 1 : 0, target = 1) => {
-    out[id] = date ? { unlocked: true, earnedAt: date, progress: { current: target, target } } : { unlocked: false, progress: { current, target } };
-  };
+  const tier = (id, series) => (out[id] = tiered(tiersOf(id), series.value, series.reachedOn));
+  const first = (pred) => firstDate(dates, days, pred);
+  const maxOf = (field) => Math.max(0, ...dates.map((d) => days[d][field] ?? 0));
+  const on = (pred) => once(first((_, date) => pred(date)));
 
   // 里程碑
-  once('first-session', dates[0] ?? null);
-  tiered('sessions', cumulative(dates, days, 'sessions'));
-  tiered('tokens', cumulative(dates, days, 'tokens'));
-  tiered('tool-calls', cumulative(dates, days, 'toolCalls'));
+  out['first-session'] = once(dates[0] ?? null);
+  tier('sessions', cumulative(dates, days, 'sessions'));
+  tier('tokens', cumulative(dates, days, 'tokens'));
+  tier('tool-calls', cumulative(dates, days, 'toolCalls'));
+  tier('active-hours', hoursSeries(dates, days));
+  tier('dispatches', cumulative(dates, days, 'dispatches'));
+  tier('web-research', cumulative(dates, days, 'webCalls'));
+  tier('file-edits', cumulative(dates, days, 'editCalls'));
 
-  // 连续：逐日走一遍，记录每个连续天数第一次达到的日期
-  let run = 0;
-  let best = 0;
-  const runReached = {}; // n 天 → 第一次连续达到 n 天的日期
-  for (let i = 0; i < dates.length; i++) {
-    run = i > 0 && addDays(dates[i - 1], 1) === dates[i] ? run + 1 : 1;
-    if (run > best) {
-      for (let n = best + 1; n <= run; n++) runReached[n] ??= dates[i];
-      best = run;
-    }
-  }
-  once('seven-day-streak', runReached[7] ?? null, Math.min(best, 7), 7);
-  {
-    const ts = tiers('streak-days');
-    let earnedAt = null;
-    for (const t of ts) if (best >= t.threshold) earnedAt = runReached[t.threshold];
-    out['streak-days'] = { value: best, earnedAt, firstAt: ts[0] ? runReached[ts[0].threshold] ?? null : null };
-  }
-
-  // 作息（按本地小时）
-  once('night-owl', firstDate(dates, days, (d) => d.hours.slice(0, 5).some((h) => h > 0)));
-  once('early-bird', firstDate(dates, days, (d) => d.hours[5] + d.hours[6] > 0));
+  // 连续与习惯
+  const { best, reached } = streaks(dates);
+  out['seven-day-streak'] = once(reached[7] ?? null, Math.min(best, 7), 7);
+  out['streak-days'] = tiered(tiersOf('streak-days'), best, (n) => reached[n] ?? null);
+  out['night-owl'] = once(first((d) => d.hours.slice(0, 5).some((h) => h > 0)));
+  out['early-bird'] = once(first((d) => d.hours[5] + d.hours[6] > 0));
   // 周末战士：同一个周末的周六和周日都有使用，记在周日
-  once('weekend-warrior', firstDate(dates, days, (_, date) => weekday(date) === 0 && days[addDays(date, -1)] !== undefined && dates.includes(addDays(date, -1))));
+  out['weekend-warrior'] = once(first((_, date) => weekday(date) === 0 && dates.includes(addDays(date, -1))));
+  out.marathon = once(first((d) => d.longestSessionMin >= 240), Math.floor(maxOf('longestSessionMin') / 60), 4);
+  out['midnight-crossing'] = once(first((d) => d.midnight));
+  out['productive-day'] = once(first((d) => d.sessions >= 20), Math.min(maxOf('sessions'), 20), 20);
+  out.multitasker = once(first((d) => (d.maxParallel ?? 0) >= 3), Math.min(maxOf('maxParallel'), 3), 3);
   {
-    const longest = Math.max(0, ...dates.map((d) => days[d].longestSessionMin));
-    const date = firstDate(dates, days, (d) => d.longestSessionMin >= 240);
-    once('marathon', date, Math.floor(longest / 60), 4);
+    const pm = perfectMonth(dates, today);
+    out['perfect-month'] = once(pm.date, pm.current, pm.target);
   }
 
   // 功能探索
+  out['subagent-commander'] = once(first((d) => d.maxParallelAgents >= 5), Math.min(maxOf('maxParallelAgents'), 5), 5);
+  out['hooks-smith'] = once(first((d) => d.hooks));
   {
-    const maxAgents = Math.max(0, ...dates.map((d) => days[d].maxParallelAgents));
-    once('subagent-commander', firstDate(dates, days, (d) => d.maxParallelAgents >= 5), Math.min(maxAgents, 5), 5);
-  }
-  once('hooks-smith', firstDate(dates, days, (d) => d.hooks));
-  {
-    const seen = new Set();
-    let reached = null;
-    for (const date of dates) {
-      for (const h of days[date].mcp) seen.add(h);
-      if (!reached && seen.size >= 3) reached = date;
-    }
-    once('connector', reached, Math.min(seen.size, 3), 3);
+    const { size, reached: r } = distinctOver(dates, days, 'mcp', 3);
+    out.connector = once(r, Math.min(size, 3), 3);
   }
   {
     const s = cumulative(dates, days, 'skillCalls');
-    once('skill-master', s.reachedOn(50), Math.min(s.value, 50), 50);
+    out['skill-master'] = once(s.reachedOn(50), Math.min(s.value, 50), 50);
   }
-  once('plan-mode', firstDate(dates, days, (d) => d.plan));
+  out['plan-mode'] = once(first((d) => d.plan));
+  out.autopilot = once(first((d) => d.autopilot));
 
   // 限定与彩蛋
-  once('programmers-day', firstDate(dates, days, (_, date) => date.endsWith('-10-24')));
+  out['programmers-day'] = on((date) => date.endsWith('-10-24'));
   {
-    const first = [ledger.firstSeen, dates[0]].filter(Boolean).sort()[0];
-    const anniv = first ? addDays(first, 365) : null;
-    once('anniversary', anniv && anniv <= today ? anniv : null);
+    const firstDay = [ledger.firstSeen, dates[0]].filter(Boolean).sort()[0];
+    const anniv = firstDay ? addDays(firstDay, 365) : null;
+    out.anniversary = once(anniv && anniv <= today ? anniv : null);
   }
   {
+    // stats-cache 里没有日期的模型使用记录也算：一开始就收集到了
     const seen = new Set(ledger.undatedModels ?? []);
-    let reached = seen.size >= 4 ? dates[0] ?? null : null;
+    let r = seen.size >= 4 ? dates[0] ?? null : null;
     for (const date of dates) {
       for (const m of days[date].models) seen.add(m);
-      if (!reached && seen.size >= 4) reached = date;
+      if (!r && seen.size >= 4) r = date;
     }
-    once('model-collector', reached, Math.min(seen.size, 4), 4);
+    out['model-collector'] = once(r, Math.min(seen.size, 4), 4);
   }
-  {
-    const maxBash = Math.max(0, ...dates.map((d) => days[d].bashCalls));
-    once('bash-maniac', firstDate(dates, days, (d) => d.bashCalls >= 500), Math.min(maxBash, 500), 500);
-  }
-
-  // ---- 0.5 新增 ----
-  const maxOf = (field) => Math.max(0, ...dates.map((d) => days[d][field] ?? 0));
-  // 习惯
-  once('midnight-crossing', firstDate(dates, days, (d) => d.midnight));
-  once('productive-day', firstDate(dates, days, (d) => d.sessions >= 20), Math.min(maxOf('sessions'), 20), 20);
-  once('multitasker', firstDate(dates, days, (d) => (d.maxParallel ?? 0) >= 3), Math.min(maxOf('maxParallel'), 3), 3);
-  {
-    const pm = perfectMonth(dates, today);
-    once('perfect-month', pm.date, pm.current, pm.target);
-  }
-  // 里程碑
-  tiered('active-hours', hoursSeries(dates, days));
-  tiered('dispatches', cumulative(dates, days, 'dispatches'));
-  tiered('web-research', cumulative(dates, days, 'webCalls'));
-  tiered('file-edits', cumulative(dates, days, 'editCalls'));
-  // 功能
-  once('autopilot', firstDate(dates, days, (d) => d.autopilot));
-  // 节日限定
-  once('new-year', firstDate(dates, days, (_, date) => holidays['new-year'](date)));
-  once('spring-festival', firstDate(dates, days, (_, date) => holidays['spring-festival'](date)));
-  once('tool-birthday', firstDate(dates, days, (_, date) => holidays.birthday(LAUNCH_DATES['claude-code'])(date)));
-  once('christmas', firstDate(dates, days, (_, date) => holidays.christmas(date)));
+  out['bash-maniac'] = once(first((d) => d.bashCalls >= 500), Math.min(maxOf('bashCalls'), 500), 500);
+  out['new-year'] = on(holidays['new-year']);
+  out['spring-festival'] = on(holidays['spring-festival']);
+  out['tool-birthday'] = on(holidays.birthday(LAUNCH_DATES['claude-code']));
+  out.christmas = on(holidays.christmas);
 
   return out;
 }

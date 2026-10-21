@@ -1,15 +1,7 @@
 // 进度归一化：把数据源给的原始进度补齐成统一格式（浏览器和 Node 都能用）。
 import { tierIndexFor } from '../engine/tiers.js';
+import { hash32 } from './hash.js';
 
-/** FNV-1a 32 位哈希：浏览器和 Node 结果一致。 */
-function hash32(str) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}
 
 /**
  * 顶级有几款时抽到哪一款：由「salt + 达到这一级的日期」决定。
@@ -22,11 +14,8 @@ export function pickVariant(tier, earnedAt) {
   return hash32(`${tier.salt ?? ''}|${earnedAt}`) % tier.variants.length;
 }
 
-/**
- * 补齐缺失字段：没有数据的徽章按「未解锁、进度 0」处理。
- * @param {string} [_brandId]  品牌 id（暂未使用，保留调用约定）
- */
-export function normalizeProgress(raw, badges, _brandId = null) {
+/** 补齐缺失字段：没有数据的徽章按「未解锁、进度 0」处理。 */
+export function normalizeProgress(raw, badges) {
   const out = {};
   for (const b of badges) {
     const r = raw?.[b.id] ?? {};

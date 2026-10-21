@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import badges from '../src/brands/codex/index.js';
 import {
   aggregateCodexDays,
+  applyCodexSegments,
   applyStreams,
   computeCodexProgress,
   mergeDays,
@@ -166,5 +167,69 @@ describe('统计口径', () => {
     const second = run([], [{ created_at_ms: ms('2026-09-01', 9), source: 'cli', model: 'gpt-a' }], first);
     expect(second.progress['first-thread'].earnedAt).toBe('2026-04-10');
     expect(second.progress.threads.value).toBe(2);
+  });
+});
+
+describe('会话活动与新徽章', () => {
+  const SECRET = 'sk-SECRET-should-never-leak-789';
+  const hash = (s) => `h${s.length}`;
+  const at = (date, h, m = 0) => new Date(`${date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`).toISOString();
+  const ms = (date, h, m = 0) => Date.parse(at(date, h, m));
+  const MIN = 60_000;
+
+  // 分级门槛：测试用，和正式配置无关
+  const TIERS = (...t) => t.map((threshold) => ({ threshold }));
+  const BADGES = [
+    { id: 'active-hours', tiers: TIERS(10, 100, 1000, 5000) },
+    { id: 'dispatches', tiers: TIERS(10, 100, 1000, 10000) },
+    { id: 'web-research', tiers: TIERS(10, 100, 1000, 10000) },
+    { id: 'file-edits', tiers: TIERS(100, 1000, 10000, 100000) },
+  ];
+
+  // ---------- Codex ----------
+  const meta = (ts, source = 'cli') => ({ type: 'session_meta', timestamp: ts, payload: { source } });
+  const task = (ts) => ({ type: 'event_msg', timestamp: ts, payload: { type: 'task_started' } });
+  const call = (ts, name) => ({ type: 'response_item', timestamp: ts, payload: { type: 'function_call', name, arguments: SECRET } });
+  const facts = (recs) => recs.map((r) => extractRolloutFacts(r, { hash })).filter(Boolean);
+  const cxSession = (date, h, m, n, step = 5, source = 'cli') =>
+    facts([meta(at(date, h, m), source), ...Array.from({ length: n }, (_, i) => task(new Date(ms(date, h, m) + i * step * MIN).toISOString()))]);
+  const cxRun = (sessions, threads = [], today = '2026-10-21') => {
+    const ledger = mergeCodexLedger(null, aggregateCodexDays(sessions, threads.map((t) => threadFacts(t, { hash }))));
+    return { ledger, progress: computeCodexProgress(ledger, BADGES, today) };
+  };
+
+  describe('习惯、里程碑、节日（0.5 起）', () => {
+    it('多线并行与跨日夜战只看自己发起的会话；按文件缓存再合并结果一样', () => {
+      const sessions = [cxSession('2026-05-01', 22, 30, 50), cxSession('2026-05-01', 23, 0, 10), cxSession('2026-05-01', 23, 5, 10)];
+      const direct = cxRun(sessions);
+      expect(direct.progress.multitasker).toMatchObject({ unlocked: true, earnedAt: '2026-05-01' });
+      expect(direct.progress['midnight-crossing']).toMatchObject({ unlocked: true, earnedAt: '2026-05-01' });
+
+      const segs = [];
+      let days = {};
+      for (const s of sessions) days = mergeDays(days, aggregateCodexDays([s], [], { segsOut: segs }));
+      applyCodexSegments(days, segs);
+      for (const date of Object.keys(direct.ledger.days)) {
+        expect(days[date]).toMatchObject({ activeMin: direct.ledger.days[date].activeMin, maxParallel: direct.ledger.days[date].maxParallel, midnight: direct.ledger.days[date].midnight });
+      }
+
+      const subs = [cxSession('2026-06-01', 10, 0, 5), cxSession('2026-06-01', 10, 0, 5, 5, '{"subagent":"x"}'), cxSession('2026-06-01', 10, 0, 5, 5, '{"subagent":"y"}')];
+      expect(cxRun(subs).progress.multitasker.unlocked).toBe(false);
+    });
+
+    it('子代理派遣只算自己发起的会话；高产日按线程数', () => {
+      const own = facts([meta(at('2026-05-01', 10)), call(at('2026-05-01', 10, 1), 'spawn_agent'), call(at('2026-05-01', 10, 2), 'spawn_agent')]);
+      const sub = facts([meta(at('2026-05-01', 11), '{"subagent":"x"}'), call(at('2026-05-01', 11, 1), 'spawn_agent')]);
+      const threads = Array.from({ length: 20 }, (_, i) => ({ created_at_ms: ms('2026-05-01', 9, i), source: 'cli', model: 'gpt-a' }));
+      const { ledger, progress } = cxRun([own, sub], threads);
+      expect(ledger.days['2026-05-01'].dispatches).toBe(2);
+      expect(progress['productive-day']).toMatchObject({ unlocked: true, earnedAt: '2026-05-01' });
+      expect(JSON.stringify(ledger)).not.toContain(SECRET);
+    });
+
+    it('节日：Codex 的生日是 4 月 16 日', () => {
+      const p = cxRun([cxSession('2026-04-16', 10, 0, 2), cxSession('2026-02-24', 10, 0, 2)]).progress;
+      expect(p['tool-birthday']).toMatchObject({ unlocked: true, earnedAt: '2026-04-16' });
+    });
   });
 });

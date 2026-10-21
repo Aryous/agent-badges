@@ -9,6 +9,7 @@ import {
   modelFamily,
 } from '../src/data/claude-code-metrics.js';
 import { dailySeries } from '../src/data/daily.js';
+import { holidays } from '../src/data/metrics-common.js';
 
 const hash = (s) => `h:${s.length}:${s.charCodeAt(0)}`;
 const SECRET = 'sk-ant-SECRET-should-never-leak-123';
@@ -281,5 +282,130 @@ describe('账本合并', () => {
     const merged = mergeLedger(ledger, {}, { statsDays: daysFromStatsCache(stats) });
     expect(merged.days['2026-04-07']).toMatchObject({ tokens: 81147, humanTurns: 0 });
     expect(merged.days['2026-04-08']).toMatchObject({ tokens: 10, humanTurns: 1 });
+  });
+});
+
+describe('会话活动与新徽章', () => {
+  const SECRET = 'sk-SECRET-should-never-leak-789';
+  const hash = (s) => `h${s.length}`;
+  const at = (date, h, m = 0) => new Date(`${date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`).toISOString();
+  const ms = (date, h, m = 0) => Date.parse(at(date, h, m));
+  const MIN = 60_000;
+
+  // 分级门槛：测试用，和正式配置无关
+  const TIERS = (...t) => t.map((threshold) => ({ threshold }));
+  const BADGES = [
+    { id: 'active-hours', tiers: TIERS(10, 100, 1000, 5000) },
+    { id: 'dispatches', tiers: TIERS(10, 100, 1000, 10000) },
+    { id: 'web-research', tiers: TIERS(10, 100, 1000, 10000) },
+    { id: 'file-edits', tiers: TIERS(100, 1000, 10000, 100000) },
+  ];
+
+  // ---------- Claude Code 记录 ----------
+  const user = (sessionId, ts) => ({ type: 'user', sessionId, timestamp: ts, message: { role: 'user', content: SECRET } });
+  let seq = 0;
+  const assistant = (sessionId, ts, tools = [], sidechain = false) => {
+    const id = `m${++seq}`;
+    return {
+      type: 'assistant', sessionId, timestamp: ts, isSidechain: sidechain,
+      message: {
+        id, model: 'claude-opus-5-5', usage: { input_tokens: 1, output_tokens: 1 },
+        content: tools.map((name, i) => ({ type: 'tool_use', id: `${id}-${i}`, name, input: { url: SECRET } })),
+      },
+    };
+  };
+  const ccRun = (records, today = '2026-10-21') => {
+    const facts = records.map((r) => extractFacts(r, { hash })).filter(Boolean);
+    const ledger = mergeLedger(null, aggregateDays(facts));
+    return { ledger, progress: computeProgress(ledger, BADGES, today) };
+  };
+  /** 一个会话：从 start 起每隔 step 分钟一条记录，共 n 条 */
+  const ccSession = (id, date, h, m, n, step = 5) =>
+    Array.from({ length: n }, (_, i) => user(id, new Date(ms(date, h, m) + i * step * MIN).toISOString()));
+
+  describe('习惯、里程碑、节日（0.5 起）', () => {
+    it('跨日夜战：22:59 开始、02:01 还在，中间间隔不超过 60 分钟', () => {
+      const recs = [];
+      for (let t = ms('2026-05-01', 22, 59); t <= ms('2026-05-02', 2, 1); t += 50 * MIN) recs.push(user('s1', new Date(t).toISOString()));
+      recs.push(user('s1', at('2026-05-02', 2, 1)));
+      expect(ccRun(recs).progress['midnight-crossing']).toMatchObject({ unlocked: true, earnedAt: '2026-05-01' });
+    });
+
+    it('跨日夜战：中间断了 61 分钟不算；不同会话接力也不算', () => {
+      const gap = [user('s1', at('2026-05-01', 22, 30)), user('s1', at('2026-05-01', 23, 59)), user('s1', at('2026-05-02', 1)), user('s1', at('2026-05-02', 2, 1))];
+      expect(ccRun(gap).progress['midnight-crossing'].unlocked).toBe(false);
+      const relay = [...ccSession('a', '2026-05-01', 22, 30, 20), ...ccSession('b', '2026-05-02', 0, 10, 30)];
+      expect(ccRun(relay).progress['midnight-crossing'].unlocked).toBe(false);
+    });
+
+    it('高产日：一天 20 个会话；子代理不算会话', () => {
+      const recs = Array.from({ length: 19 }, (_, i) => user(`s${i}`, at('2026-05-01', 9, i)));
+      expect(ccRun(recs).progress['productive-day']).toMatchObject({ unlocked: false, progress: { current: 19, target: 20 } });
+      recs.push(assistant('side', at('2026-05-01', 10), [], true));
+      expect(ccRun(recs).progress['productive-day'].unlocked).toBe(false);
+      recs.push(user('s19', at('2026-05-01', 11)));
+      expect(ccRun(recs).progress['productive-day']).toMatchObject({ unlocked: true, earnedAt: '2026-05-01' });
+    });
+
+    it('多线并行：恰好 3 个会话重叠才解锁', () => {
+      const two = [...ccSession('a', '2026-05-01', 10, 0, 6), ...ccSession('b', '2026-05-01', 10, 3, 6)];
+      expect(ccRun(two).progress.multitasker.unlocked).toBe(false);
+      const three = [...two, ...ccSession('c', '2026-05-01', 10, 20, 3)];
+      expect(ccRun(three).progress.multitasker).toMatchObject({ unlocked: true, earnedAt: '2026-05-01' });
+    });
+
+    it('全勤月：当月每个工作日都有活动，记在最后一个工作日', () => {
+      // 2026 年 6 月：1 日周一，30 日周二
+      const recs = [];
+      for (let d = 1; d <= 30; d++) {
+        const date = `2026-06-${String(d).padStart(2, '0')}`;
+        const w = new Date(`${date}T00:00:00`).getDay();
+        if (w >= 1 && w <= 5) recs.push(user(`s${d}`, at(date, 10)));
+      }
+      expect(ccRun(recs).progress['perfect-month']).toMatchObject({ unlocked: true, earnedAt: '2026-06-30' });
+      expect(ccRun(recs.slice(0, -1)).progress['perfect-month'].unlocked).toBe(false);
+    });
+
+    it('里程碑：子代理派遣只算主会话；联网检索和文件编辑含子代理；协作时长按小时', () => {
+      const recs = [
+        assistant('s1', at('2026-05-01', 10), ['Agent', 'Agent', 'Task', 'WebSearch', 'Edit']),
+        assistant('s1', at('2026-05-01', 10, 1), ['WebFetch', 'Write', 'MultiEdit', 'NotebookEdit']),
+        assistant('s1', at('2026-05-01', 10, 2), ['Agent', 'WebSearch', 'Edit'], true), // 子代理
+      ];
+      const { ledger, progress } = ccRun(recs);
+      const d = ledger.days['2026-05-01'];
+      expect(d).toMatchObject({ dispatches: 3, webCalls: 3, editCalls: 5 });
+      expect(progress.dispatches).toMatchObject({ value: 3, earnedAt: null });
+      expect(JSON.stringify(ledger)).not.toContain(SECRET);
+
+      const long = ccSession('s1', '2026-05-02', 0, 0, 12 * 12 + 1); // 每 5 分钟一条，持续 12 小时
+      expect(ccRun(long).progress['active-hours']).toMatchObject({ value: 12, earnedAt: '2026-05-02' });
+    });
+
+    it('自动驾驶：/loop、定时任务或 Workflow', () => {
+      expect(ccRun([assistant('s1', at('2026-05-01', 10), ['Bash'])]).progress.autopilot.unlocked).toBe(false);
+      for (const tool of ['ScheduleWakeup', 'CronCreate', 'Workflow']) {
+        expect(ccRun([assistant('s1', at('2026-05-01', 10), [tool])]).progress.autopilot).toMatchObject({ unlocked: true });
+      }
+    });
+
+    it('节日：元旦、春节（表内）、圣诞、生日（发布当年及之后）', () => {
+      const p = ccRun(['2026-01-01', '2027-02-06', '2025-12-25', '2026-02-24'].map((d, i) => user(`s${i}`, at(d, 10)))).progress;
+      expect(p['new-year']).toMatchObject({ unlocked: true, earnedAt: '2026-01-01' });
+      expect(p['spring-festival']).toMatchObject({ unlocked: true, earnedAt: '2027-02-06' });
+      expect(p.christmas).toMatchObject({ unlocked: true, earnedAt: '2025-12-25' });
+      expect(p['tool-birthday']).toMatchObject({ unlocked: true, earnedAt: '2026-02-24' });
+      expect(holidays['spring-festival']('2036-01-28')).toBe(false); // 表外年份不判定
+      expect(holidays.birthday('2025-02-24')('2024-02-24')).toBe(false);
+    });
+
+    it('旧账本缺新字段不报错，记录被清理后徽章保留', () => {
+      const old = { version: 1, days: { '2025-12-25': { sessions: 1, humanTurns: 1, tokens: 0, toolCalls: 0, hours: Array(24).fill(0), models: [], mcp: [] } } };
+      const ledger = mergeLedger(old, {});
+      const p = computeProgress(ledger, BADGES, '2026-10-21');
+      expect(p.christmas.unlocked).toBe(true);
+      expect(p['active-hours']).toMatchObject({ value: 0 });
+      expect(p.multitasker.unlocked).toBe(false);
+    });
   });
 });

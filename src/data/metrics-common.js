@@ -64,9 +64,7 @@ export function once(date, current = date ? 1 : 0, target = 1) {
 export function tiered(tiers, value, reachedOn) {
   let earnedAt = null;
   for (const t of tiers ?? []) if (value >= t.threshold) earnedAt = reachedOn(t.threshold);
-  // firstAt：第一级的达成日期，决定闪光款（升级后不变）
-  const firstAt = tiers?.[0] && value >= tiers[0].threshold ? reachedOn(tiers[0].threshold) : null;
-  return { value, earnedAt, firstAt };
+  return { value, earnedAt };
 }
 
 // ---------- 会话活动段：协作时长、多线并行、跨日夜战 ----------
@@ -204,7 +202,7 @@ export function perfectMonth(dates, today) {
   return { date, current: cur.filter((d) => active.has(d)).length, target: cur.length };
 }
 
-/** 分级徽章（单位换算版）：value 用于显示和比较门槛，reached 按原始累计值查日期。 */
+/** 协作时长：按分钟累计，value 和门槛都按整小时算。 */
 export function hoursSeries(dates, days, field = 'activeMin') {
   const s = cumulative(dates, days, field);
   return { value: Math.floor(s.value / 60), reachedOn: (h) => s.reachedOn(h * 60) };
