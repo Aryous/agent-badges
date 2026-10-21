@@ -63,3 +63,22 @@ describe('版式：内外呼应、留够呼吸距离', () => {
     expect(report).toBeTypeOf('object');
   });
 });
+
+import { innerRadius } from '../src/engine/shapes.js';
+import { innerRadiusOf } from '../src/brands/shared/fit.js';
+
+describe('不依赖 three 的内切半径', () => {
+  it('和引擎的精确结果一致或略小（偏保守），用于所有徽章外形', () => {
+    for (const b of [...ccBadges, ...codexBadges]) {
+      const shapes = [b.shape, ...(b.tiers ?? []).flatMap((t) => (t.variants ?? []).map((v) => v.shape ?? b.shape))];
+      for (const shape of shapes) {
+        for (const inset of [0, 0.167]) {
+          const exact = innerRadius(shape, inset);
+          const fast = innerRadiusOf(shape, inset);
+          expect(fast, `${b.id} ${shape.type}`).toBeLessThanOrEqual(exact + 2e-3);
+          expect(fast, `${b.id} ${shape.type}`).toBeGreaterThan(exact - 0.04);
+        }
+      }
+    }
+  });
+});

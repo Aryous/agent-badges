@@ -1,5 +1,5 @@
 import { PLUS } from './pixel-art.js';
-import { innerRadius } from '../../engine/shapes.js';
+import { innerRadiusOf } from './fit.js';
 
 // 各品牌共用的奖章构图。坐标单位：徽章中心为原点，外接半径为 1。
 //
@@ -138,7 +138,7 @@ const BREATH = 0.065; // 比版式检查的下限（0.06）多留一点
  * 所以星形、花形、盾形这类内切圆较小的外形会整体内缩，不会贴边。
  */
 export function roundMedal({ brandText, bottom, shape, metal, band, disc, art = [], k, textSize = 0.095, extra = [], contour = true }) {
-  const edge = innerRadius(shape, FACE_INSET + CONTOUR_GAP + CONTOUR_W);
+  const edge = innerRadiusOf(shape, FACE_INSET + CONTOUR_GAP + CONTOUR_W);
   const fit = Math.min(1, (edge - BREATH) / TEXT_OUTER(textSize));
   const kk = Math.min(k ?? 1, fit);
   return {
