@@ -293,7 +293,7 @@ npm run check:pack       # 打包、装进临时目录、真跑一次 CLI
 ```
 src/
 ├─ engine/    徽章引擎：轮廓、材质、浮雕、文字、分级（不含任何品牌信息）
-├─ brands/    每个工具一个目录：色板、徽章配置、英文文字
+├─ brands/    每个工具一个目录：色板，以及按系列分目录、一枚徽章一个文件
 ├─ data/      统计口径、按天数据、示例数据
 ├─ collect/   本机采集、汇总、成就卡片（CLI 使用）
 ├─ viewer/    舞台、陈列墙、单枚查看、热力图、海报、导出
@@ -307,16 +307,33 @@ plugin.json、.agents/plugins/  Codex 插件和市场
 
 ### 新增一枚徽章
 
-在 `src/brands/<工具>/series/` 对应系列的文件里加一份配置，再在 `src/brands/<工具>/en.js` 里写上英文名和说明，不用改引擎。
+一枚徽章一个文件：`src/brands/<工具>/<系列>/<徽章 id>.js` 里放这枚徽章的配置、专属像素图和英文文案（`en`）。新建文件后，在该系列目录的 `index.js` 里加一行（这里的顺序就是陈列墙上的顺序），不用改引擎。
 
-- **轮廓**：`circle`（可加 `reeded` 滚花边）、`polygon`（八边形、圆角方形等）、`starburst`、`shield`、`gear`
+```
+src/brands/
+├─ shared/        layout.js（标准圆章、文字环、圆盘）、parts.js（终端、烟花、灯笼、日历……）、
+│                 top-tier.js（顶级三款）、pixel-art.js
+├─ claude-code/   brand.js（色板）、mascot.js（像素小怪物）、app-icon.js（功能系列骨架）、
+│                 medal.js、milestones/ habits/ features/ limited/
+└─ codex/         brand.js、mark.js（Codex 标志）、feature-frame.js、medal.js，同样四个系列
+```
+
+- **最快的起点**：用工具目录下 `medal.js` 的 `medal({ bottom, shape, metal, band, disc, art })` 生成标准圆章：金属外圈、沿外形的细描边、环形文字和中心圆盘。内容大小按外形自动算，星形、花形、盾形也不会贴边。`art` 按半径 0.56 的圆盘来画。
+- **轮廓**：`circle`（可加 `reeded` 滚花边）、`polygon`、`starburst`、`flower`（圆形花瓣，凹口是圆角）、`shield`、`gear`
 - **材质**：`enamel`、`polished-metal`、`brushed-metal`、`ceramic`、`anodized`（阳极氧化铝）、`holographic`（全息镭射）、`crystal`（水晶宝石）
-- **浮雕基元**：`capsule` 胶囊线条、`circle` 圆片、`ring` 圆环、`pixels` 像素图（字符画，`'#'` 为实心）、`text-arc` 弧形立体文字、`text` 水平立体文字、`gem` 宝石、`path` SVG 路径
+- **浮雕基元**：`capsule` 胶囊线条、`circle` 圆片、`ring` 圆环、`contour` 沿徽章外形的描边、`pixels` 像素图（字符画，`'#'` 为实心）、`rounded-rect` 圆角方块、`text-arc` 弧形立体文字、`text` 水平立体文字、`gem` 宝石、`path` SVG 路径
 - **底纹**：在 `face` 层或浮雕上加 `pattern: 'sunburst' | 'rings'`
 - **叠放**：浮雕的 `z` 表示在正面板之上再抬高多少，用于把图案放在中心圆盘上
-- **分级**：写 `tiers: [{ threshold, metal, label, accent? }]`，造型里用 `'$metal'`、`'$accent'`、`'{label}'` 占位，引擎按数据算出等级并逐级校验
+- **分级**：写 `tiers: [{ threshold, metal, label, accent? }]`，造型里用 `'$metal'`、`'$accent'`、`'{label}'` 占位；`shared/top-tier.js` 的 `withTopTier` / `topTierFromLast` 把最高一级变成三款随机
 - **隐藏**：`hidden: true`，未解锁时正面只显示像素问号，标题显示为 `???`
 - **坐标和颜色**：以徽章中心为原点、外接半径约为 1；颜色写品牌色板里的键名，不直接写色值
+
+设计原则（由 `tests/layout.test.js` 检查）：
+
+1. **内外呼应**：贴边的细描边沿外形走（`contour`），圆形细描边只用在圆形徽章上。
+2. **呼吸距离**：文字环、圆盘离外框至少留徽章半径的 6%。
+3. **轮廓节奏**：多边形最多 8 条边，再多就用圆形；异形用少而舒展的起伏，一条轮廓里不同时出现尖角和圆弧。
+4. **系列感**：功能系列用各工具统一的骨架，其余系列按题材挑外形。
 
 配置会在启动时校验，写错的字段会在开发模式下直接显示在页面上。设计时可以用截图工具：
 
@@ -328,7 +345,7 @@ node scripts/peek.mjs "http://localhost:5199/?preview=unlocked" out.png <徽章i
 
 ### 新增一个工具
 
-新建 `src/brands/<id>/`（色板、构图工具、徽章配置、`en.js`），在 `src/brands/index.js` 登记，在 `src/data/progress.js` 加上数据源和示例数据，再在 `src/collect/` 写一个采集器并配上泄漏测试。欢迎 PR。
+新建 `src/brands/<id>/`（色板、按系列分目录的徽章文件、`index.js`），在 `src/brands/index.js` 登记，在 `src/data/progress.js` 加上数据源和示例数据，再在 `src/collect/` 写一个采集器并配上泄漏测试。欢迎 PR。
 
 ## 致谢
 

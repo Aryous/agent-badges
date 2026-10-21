@@ -294,7 +294,7 @@ Useful URL parameters on the wall: `?source=mock` (sample data), `?lang=en|zh`, 
 ```
 src/
 ├─ engine/    badge engine: shapes, materials, relief, text, tiers (no brand knowledge)
-├─ brands/    one folder per tool: palette, badge configs, English text
+├─ brands/    one folder per tool: palette and one file per badge, grouped by series
 ├─ data/      metrics, daily series, mock data
 ├─ collect/   local collectors, summary, achievement card (used by the CLI)
 ├─ viewer/    stage, wall, inspector, heatmap, poster, export
@@ -308,19 +308,37 @@ plugin.json, .agents/plugins/  Codex plugin and marketplace
 
 ### Adding a badge
 
-Add a config to the right series file in `src/brands/<tool>/series/` and its English text to `src/brands/<tool>/en.js`. No engine changes needed.
+Each badge is one file: `src/brands/<tool>/<series>/<badge-id>.js` holds its config, its own pixel art and its English text (`en`). Add the file, then add one line to the series' `index.js` (which sets the order on the wall). No engine changes needed.
 
-- **Shapes:** `circle` (optionally with a reeded edge), `polygon`, `starburst`, `shield`, `gear`
+```
+src/brands/
+├─ shared/        layout.js (round medal, text ring, medallion), parts.js (terminal, fireworks,
+│                 lantern, calendar…), top-tier.js (the three top-tier designs), pixel-art.js
+├─ claude-code/   brand.js (palette), mascot.js (the pixel mascot), app-icon.js (feature family),
+│                 medal.js, milestones/ habits/ features/ limited/
+└─ codex/         brand.js, mark.js (the Codex mark), feature-frame.js, medal.js, the same four series
+```
+
+- **Quickest start:** `medal({ bottom, shape, metal, band, disc, art })` from the tool's `medal.js` builds a round medal: metal rim, an edge line that follows the outline, a text ring and a center disc. It sizes the content to the outline, so star, flower and shield shapes keep their breathing room. Draw `art` for a disc of radius 0.56.
+- **Shapes:** `circle` (optionally reeded), `polygon`, `starburst`, `flower` (round petals with rounded notches), `shield`, `gear`
 - **Materials:** `enamel`, `polished-metal`, `brushed-metal`, `ceramic`, `anodized`, `holographic`, `crystal`
-- **Relief:** `capsule`, `circle`, `ring`, `pixels` (ASCII art), `text-arc`, `text`, `gem`, `path` (SVG)
-- **Tiers:** `tiers: [{ threshold, metal, label, accent? }]`, then use `'$metal'`, `'$accent'` and `'{label}'` in the design
+- **Relief:** `capsule`, `circle`, `ring`, `contour` (a line that follows the badge outline), `pixels` (ASCII art), `rounded-rect`, `text-arc`, `text`, `gem`, `path` (SVG)
+- **Tiers:** `tiers: [{ threshold, metal, label, accent? }]`, then use `'$metal'`, `'$accent'` and `'{label}'` in the design. `withTopTier` / `topTierFromLast` from `shared/top-tier.js` turn the top tier into the three random designs.
 - **Hidden:** `hidden: true` shows a pixel question mark until it is earned
+- **Coordinates and colors:** the badge center is the origin and its outer radius is about 1; colors are palette keys, not hex values
 
-Configs are validated at startup, and mistakes show up on the page in dev mode.
+Design principles, checked by `tests/layout.test.js`:
+
+1. **Inside follows outside.** The thin edge line follows the outline (`contour`); a round edge line belongs on round badges only.
+2. **Breathing room.** Text rings and discs keep at least 6% of the radius from the edge.
+3. **Calm outlines.** At most 8 sides (beyond that, use a circle); lobed shapes use a few broad lobes, and one outline never mixes sharp and round corners.
+4. **Series feel.** Features use the tool's feature family; other series pick shapes that suit the theme.
+
+Configs are validated at startup, and mistakes show up on the page in dev mode. To look at one while designing: `node scripts/peek.mjs "http://localhost:5199/?preview=unlocked" out.png <badge-id> [angle]`.
 
 ### Adding a tool
 
-Create `src/brands/<id>/` (palette, helpers, badges, `en.js`), register it in `src/brands/index.js`, add a data source and sample data in `src/data/progress.js`, and write a collector in `src/collect/` with a leak test. Pull requests welcome.
+Create `src/brands/<id>/` (palette, one file per badge in series folders, `index.js`), register it in `src/brands/index.js`, add a data source and sample data in `src/data/progress.js`, and write a collector in `src/collect/` with a leak test. Pull requests welcome.
 
 ## Credits
 
