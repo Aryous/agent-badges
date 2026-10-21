@@ -90,6 +90,23 @@ describe('分层', () => {
   });
 });
 
+describe('入口和采集层的边界', () => {
+  it('src/collect/ 是纯逻辑：不输出到控制台，不引用 i18n', () => {
+    const bad = filesUnder('src/collect').filter((f) => /\bconsole\./.test(withoutComments(read(f))) || importsOf(f).some((s) => /i18n/.test(s)));
+    expect(bad).toEqual([]);
+  });
+
+  it('bin/ 只是命令行入口：相对路径引用只指向 src/cli/', () => {
+    const bad = [];
+    for (const file of filesUnder('bin')) {
+      for (const spec of importsOf(file).filter((s) => s.startsWith('.'))) {
+        if (!relative(root, resolve(root, dirname(file), spec)).startsWith('src/cli/')) bad.push(`${file} → ${spec}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+});
+
 describe('不手写工具 id', () => {
   const ids = BRAND_IDS.join('|');
   // 工具专属的文件可以写自己的 id

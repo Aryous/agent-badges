@@ -61,7 +61,7 @@ Agent Badges 只读取 Claude Code 和 Codex 在你本机留下的记录里的�
 
 - **只在本机。** 读取 `~/.claude` 和 `~/.codex`，结果写到 `~/.agent-badges`。页面只监听 `127.0.0.1`，局域网里的其他设备也访问不到。没有网络请求，没有统计。
 - **只读元数据。** 每一行记录解析后立刻只保留白名单字段：时间戳、Token 计数、工具名、模式取值。对话内容、代码、工具参数和结果当场丢弃，从不保存。可能透露你在做什么的名字（MCP 服务名、Codex 的模型名）会哈希；Claude 的模型名只保留家族名（opus、sonnet、haiku、fable）。
-- **从不打开的文件。** Claude Code：`settings.json`、`.credentials.json`、MCP 配置、`history.jsonl`、`shell-snapshots`、`session-env`、`paste-cache`、`file-history`。Codex：`auth.json`、`config.toml`、`*.env`、`history.jsonl`、`transcription-history.jsonl`、`thread_history*.sqlite`、`logs*.sqlite`、`memories*`、`shell_snapshots`。
+- **从不打开的文件。** Claude Code：`settings.json`、`.credentials.json`、MCP 配置、`history.jsonl`、`shell-snapshots`、`session-env`、`paste-cache`、`file-history`。Codex：`auth.json`、`config.toml`、`*.env`、`history.jsonl`、`transcription-history.jsonl`、`thread_history*.sqlite`、`logs*.sqlite`、`memories*`、`shell_snapshots`、`chatgpt-meetings`。
 - **Codex 会话索引库。** `state_*.sqlite` 以只读方式打开，只 SELECT 六列：创建时间、来源、会话类型、模型、推理强度、审批策略。标题、首条消息、预览、路径、git 信息、账号 id 一律不读。
 - **保存了什么。** `~/.agent-badges` 里是按天汇总的账本，只有数字、日期和哈希。工具清理旧记录之后，已经拿到的徽章也不会消失。
 - **有测试。** 测试会在伪造的 `~/.claude` 和 `~/.codex` 里塞入假密钥、对话、路径和会话标题，真跑一遍采集和导出，确认它们不会出现在任何输出里。

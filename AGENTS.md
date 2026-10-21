@@ -25,7 +25,7 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 | `src/engine/` | Badge rendering: shapes, materials, relief, text, tier resolution, config validation (`validate.js`), layout checks (`layout.js`). No brand knowledge | engine, three, json |
 | `src/brands/` | Tool registry (`index.js`: `BRANDS`, `BRAND_IDS`, `brandById`, `getBrand`, `DEFAULT_BRAND`); per tool: `brand.js` (palette, `launchDate`), one file per badge under `milestones/ habits/ features/ limited/`; `shared/` medal layout, parts, top-tier designs | brands (Node built-ins only) |
 | `src/data/` | Per-tool metrics (`<tool>-metrics.js`: `RULES`, `computeProgress`), shared rules (`metrics-common.js`), ledger normalization, daily series, tiers, sample data (`mock-<tool>.js`), `progress.js` (`DATA_SOURCES`, page data loading) | data, brands (Node built-ins only) |
-| `src/collect/` | Local collectors (`<tool>.js`: `BRAND_ID`, `TURNS_FIELD`, `collect()`), `COLLECTORS`, summary (`BRAND_INFO`), card SVG, public page data, publish. Pure logic: no console, no i18n | collect, data, brands (Node built-ins only) |
+| `src/collect/` | Local collectors (`<tool>.js`: `BRAND_ID`, `TURNS_FIELD`, `collect()`), `COLLECTORS`, summary (`BRAND_INFO`), card SVG, public page data, publish. Pure logic: no `console.`, no i18n import (guarded) | collect, data, brands (Node built-ins only) |
 | `src/cli/` | Argument parsing and help (`args.js`, every flag literal), terminal output and i18n, local HTTP server, commands (`commands/*.js`) | cli, collect, data, brands (Node built-ins only) |
 | `src/viewer/` | Browser UI parts: stage, grid/wall, inspector, heatmap, poster, shelf, profile, i18n, describe, mount-badge, snapshot, export | viewer, engine, data, brands, three |
 | `src/app/` | The wall page split into panels (context, load, topbar, overview, wall, inspect, export, poster, shelf, loop, `window.__badgeApp` automation). Panels talk via `ctx.emit`, not imports | anything (entry layer) |
@@ -33,7 +33,7 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 | `src/project/` | The Agent Badges logo and the asset studio script (`tools/studio.html`) | anything (entry layer) |
 | `src/styles/` | Wall CSS by component; `src/style.css` `@import`s them in order | CSS only |
 | `src/main.js`, `src/style.css` | Wall page composer and the CSS entry | anything (entry layer) |
-| `bin/` | `agent-badges.mjs`, a thin entry into `src/cli/main.js` | cli |
+| `bin/` | `agent-badges.mjs`, a thin entry into `src/cli/main.js` (relative imports only into `src/cli/`, guarded) | cli |
 | `tools/` | Dev-only pages: `studio.html`, `promo.html`, `promo/` | anything (entry layer) |
 | `scripts/` | Build, check, screenshot, asset and promo scripts (`*.mjs`, run by hand or npm scripts) | anything |
 | `skills/` | The user-facing `badges` skill, shipped with the plugin. Don't move it | — |
@@ -56,7 +56,8 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 12. Claude Code: only main-session and sub-agent transcripts are read — `tests/claude-code-files.test.js`
 13. The public profile page embeds only what it shows (no locked hidden badges, date-only update time) — `tests/profile.test.js`
 14. Plugin manifests match `package.json` (name, version); the skill's commands are pre-approved and its CLI flags exist — `tests/plugin.test.js`
-15. Docs match the code: this Map lists every `src/` dir, cited tests exist, README badge counts, tool birthdays and `tier` values match the registry, and README anchors linked from the READMEs, landing page and skill exist — `tests/docs.test.js`
+15. `src/collect/` has no `console.` and no i18n import; `bin/` imports only `src/cli/` — `tests/contracts.test.js`
+16. Docs match the code: this Map lists every `src/` dir, cited tests exist, README badge counts (the exact count sentence), tool birthdays and `tier` values match the registry, and README anchors linked from the READMEs, landing page and skill exist — `tests/docs.test.js`
 
 ## Workflows
 
@@ -79,7 +80,7 @@ Which checks to run:
 
 - Keeps only tool names, event types, timestamps, token counts and mode values: each log line is reduced to an allowlist the moment it is parsed.
 - Conversation text, command arguments and output, file paths and file contents are dropped at parse time and never stored, logged or printed. MCP server names and Codex model names are hashed; Claude model names keep only the family.
-- Never opens (also when debugging on a real machine): `~/.claude/settings.json`, `~/.claude/.credentials.json`, MCP configs, `history.jsonl`, `shell-snapshots`, `session-env`, `paste-cache`, `file-history`; `~/.codex/auth.json`, `~/.codex/config.toml`, `*.env`, `transcription-history.jsonl`, `thread_history*.sqlite`, `logs*.sqlite`, `memories*`, `shell_snapshots`; the CC Switch database.
+- Never opens (also when debugging on a real machine). Claude Code, under `~/.claude`: `settings.json`, `.credentials.json`, MCP configs, `history.jsonl`, `shell-snapshots`, `session-env`, `paste-cache`, `file-history`. Codex, under `~/.codex`: `auth.json`, `config.toml`, `*.env`, `history.jsonl`, `transcription-history.jsonl`, `thread_history*.sqlite`, `logs*.sqlite`, `memories*`, `shell_snapshots`, `chatgpt-meetings`. Also the CC Switch database. (`src/collect/claude-code.js` and `codex.js` header comments carry the same lists; keep README Privacy in sync.)
 - Codex `state_*.sqlite` is opened read-only and only six columns are selected (created time, source, thread type, model, reasoning effort, approval mode).
 - Writes only to `~/.agent-badges` (or `AGENT_BADGES_HOME`), plus the output of `export`, `card`, `shelf` and `profile`. A new ledger field needs a privacy review and a leak-test case.
 

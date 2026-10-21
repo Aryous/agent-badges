@@ -51,8 +51,9 @@ describe('CONTRIBUTING.md', () => {
   });
 
   it('「Adding a tool」列出了每一张按工具 id 索引的表', () => {
+    // 这一节读到下一个 `##` 标题为止，所以它自己不能再有 `###` 以外的子标题（`##` 开头的行都会截断）
     const section = read('CONTRIBUTING.md').split(/^### Adding a tool/m)[1]?.split(/^##/m)[0] ?? '';
-    for (const place of ['src/brands/index.js', 'src/collect/index.js', 'src/data/progress.js', 'src/data/mock-', 'src/data/', 'launchDate', 'TURNS_FIELD']) {
+    for (const place of ['src/brands/index.js', 'src/collect/index.js', 'src/data/progress.js', 'src/data/mock-', '-metrics.js', 'package.json', 'tests/contracts.test.js', 'launchDate', 'TURNS_FIELD']) {
       expect(section, place).toContain(place);
     }
   });
@@ -66,8 +67,12 @@ describe('README', () => {
   for (const file of ['README.md', 'README.zh-CN.md']) {
     it(`${file}：徽章数量和代码一致`, () => {
       const text = read(file);
-      expect(text).toContain(String(total));
-      for (const { brand, badges } of BRANDS) expect(text, brand.id).toContain(String(badges.length));
+      // 匹配 README 里真正写数量的那句话，不是随便出现的数字（如「30 minutes」「27 / 32」）
+      const zh = file.includes('zh');
+      expect(text).toContain(zh ? `${total} 枚徽章` : `**${total} badges across`);
+      for (const { brand, badges } of BRANDS) {
+        expect(text, brand.id).toContain(zh ? `${brand.name} ${badges.length} 枚` : `${badges.length} for ${brand.name}`);
+      }
     });
 
     it(`${file}：工具生日的日期和配置一致`, () => {
