@@ -67,7 +67,7 @@ describe('Skill', () => {
   });
 
   it('正文里的 CLI 参数都是 CLI 认识的', () => {
-    const cli = readFileSync(join(ROOT, 'bin/agent-badges.mjs'), 'utf8');
+    const cli = readFileSync(join(ROOT, 'src/cli/args.js'), 'utf8');
     for (const flag of new Set(body.match(/--[a-z][a-z-]*/g))) expect(cli, flag).toContain(`'${flag}'`);
   });
 

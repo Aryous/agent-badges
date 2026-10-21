@@ -1,7 +1,7 @@
 // GitHub 主页徽章陈列图：挑哪些徽章、文字、排版，以及命令行接收图片的规则。
 import { afterEach, describe, expect, it } from 'vitest';
 import { createServer } from 'node:http';
-import { parseArgs } from '../bin/agent-badges.mjs';
+import { parseArgs } from '../src/cli/args.js';
 import { BRAND_INFO } from '../src/collect/summary.js';
 import { normalizeProgress } from '../src/data/normalize.js';
 import { SHELF, pickShelf, shelfCount, shelfLabel, shelfLayout } from '../src/data/shelf.js';

@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
-import { parseArgs } from '../bin/agent-badges.mjs';
+import { parseArgs } from '../src/cli/args.js';
 import { collectAll } from '../src/collect/index.js';
 import { injectData } from '../src/collect/inject.js';
 import { aggregateCodexDays, extractRolloutFacts, mergeDays } from '../src/data/codex-metrics.js';

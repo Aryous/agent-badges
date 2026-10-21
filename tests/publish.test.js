@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseArgs } from '../bin/agent-badges.mjs';
+import { parseArgs } from '../src/cli/args.js';
 import { BLOCK_END, BLOCK_START, PublishStop, executePublish, preparePublish, readmeBlock, upsertBlock } from '../src/collect/publish.js';
 
 const URL = 'https://me.github.io/me/';

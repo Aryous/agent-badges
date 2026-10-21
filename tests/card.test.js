@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatTokens, renderCard } from '../src/collect/card.js';
-import { parseArgs } from '../bin/agent-badges.mjs';
+import { parseArgs } from '../src/cli/args.js';
 
 const brands = [
   { id: 'claude-code', name: 'Claude Code', accent: '#D97757', unlocked: 12, total: 19, daily: { '2026-10-01': [1000, 2], '2026-10-02': [5000, 4] } },
