@@ -172,6 +172,15 @@ async function writeCard(data, opts) {
 
 const SHELF_TIMEOUT = 120_000;
 
+/** 浅色图的文件名：x.png → x-light.png */
+const lightPath = (file) => file.replace(/(\.png)?$/i, '-light.png');
+
+/** README 里的图片：浅色主题用浅色图，其余用深色图。 */
+const shelfPicture = (dark, light, url = null) => {
+  const pic = `<picture><source media="(prefers-color-scheme: light)" srcset="./${light}"><img src="./${dark}" alt="Agent Badges" width="720"></picture>`;
+  return `  ${url ? `<a href="${url}">${pic}</a>` : pic}`;
+};
+
 /**
  * 陈列图：徽章要用 WebGL 渲染，所以交给浏览器。
  * 打开本地页面 → 页面渲染已解锁的徽章 → 把 PNG 交回这里 → 写文件、退出。
@@ -183,9 +192,11 @@ async function writeShelf(data, opts, { snippet = true } = {}) {
   if (!unlocked) throw new Error(t('还没有解锁的徽章，陈列图是空的。先多用用 Claude Code 或 Codex 吧', 'No badges unlocked yet, so the shelf would be empty'));
 
   const file = resolve(opts.out ?? 'agent-badges-shelf.png');
-  const receiver = createReceiver();
+  // 深色、浅色各一张：GitHub 按访客的主题自动切换（浅色图在文件名后加 -light）
+  const lightFile = lightPath(file);
+  const receiver = createReceiver({ themes: ['dark', 'light'] });
   const { server, port } = await serve(await appHtml(data), opts.port, { handle: receiver.handle });
-  const query = new URLSearchParams({ task: 'shelf', nonce: receiver.nonce, shelfLang: opts.cardLang, lang });
+  const query = new URLSearchParams({ task: 'shelf', nonce: receiver.nonce, shelfLang: opts.cardLang, lang, themes: 'dark,light' });
   if (opts.brand) query.set('brand', opts.brand);
   const url = `http://127.0.0.1:${port}/?${query}`;
   const shut = () => {
@@ -208,10 +219,11 @@ async function writeShelf(data, opts, { snippet = true } = {}) {
     );
   });
   try {
-    const { png, respond } = await Promise.race([receiver.received, timeout]);
+    const { pngs, respond } = await Promise.race([receiver.received, timeout]);
     try {
       mkdirSync(dirname(file), { recursive: true });
-      writeFileSync(file, png);
+      writeFileSync(file, pngs.dark);
+      writeFileSync(lightFile, pngs.light);
     } catch (e) {
       respond(500, { error: e.message });
       throw e;
@@ -223,10 +235,10 @@ async function writeShelf(data, opts, { snippet = true } = {}) {
     await new Promise((r) => setTimeout(r, 200));
     shut();
   }
-  console.log(t(`\n徽章陈列图：${file}`, `\nShelf saved to ${file}`));
+  console.log(t(`\n徽章陈列图：${file}\n浅色版：${lightFile}`, `\nShelf saved to ${file}\nLight version: ${lightFile}`));
   if (!snippet) return;
-  console.log(t('放进 GitHub 个人主页 README：', 'Add it to your profile README:'));
-  console.log(`  <img src="./${basename(file)}" alt="Agent Badges" width="720">`);
+  console.log(t('放进 GitHub 个人主页 README（按访客的深浅主题自动切换）：', 'Add it to your profile README (switches with the visitor\'s theme):'));
+  console.log(shelfPicture(basename(file), basename(lightFile)));
 }
 
 const PROJECT_SITE = 'https://aryous.github.io/agent-badges/';
@@ -329,7 +341,7 @@ async function writeProfile(data, opts) {
 
   const url = pages?.url ?? 'https://<you>.github.io/<repo>/';
   console.log(t('\nREADME 里这样写，点图片就会打开徽章墙：', '\nIn the README, link the image to the badge wall:'));
-  console.log(`  <a href="${url}"><img src="./agent-badges-shelf.png" alt="Agent Badges" width="720"></a>`);
+  console.log(shelfPicture('agent-badges-shelf.png', 'agent-badges-shelf-light.png', url));
   console.log(
     t(
       `\n网页会公开你每天的 Token 用量和对话轮数（热力图）、徽章进度和解锁日期；推送后旧版本会留在 git 历史里。\n第一次需要开启 GitHub Pages：仓库 Settings → Pages → Deploy from a branch → main / (root)`,

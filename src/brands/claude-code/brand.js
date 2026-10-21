@@ -51,6 +51,7 @@ export default {
   },
   ui: {
     accent: '#D97757',
+    accentLight: '#C15F3C', // 浅色背景上的品牌色（主页浅色图）
     text: '#F0EEE6',
     muted: '#8F8B82',
   },

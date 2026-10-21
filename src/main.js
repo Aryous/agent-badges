@@ -7,7 +7,7 @@ import { loadDaily, loadProgress, sourceInfo } from './data/progress.js';
 import { createHeatmap, markersFrom } from './viewer/heatmap.js';
 import { createProfile } from './viewer/profile.js';
 import { renderPoster } from './viewer/poster.js';
-import { renderShelf, shelfGroups } from './viewer/shelf.js';
+import { renderShelves, shelfGroups } from './viewer/shelf.js';
 import { applyStatic, formatBig, lang, t } from './i18n.js';
 import { badgeDescription, badgeTitle, tierKey, tierLabel } from './brands/shared/text.js';
 import { createStage, supportsWebGL } from './viewer/scene.js';
@@ -305,7 +305,8 @@ async function main() {
   const shelfEl = $('#shelf');
   const shelfDownload = $('[data-shelf-download]');
   const shelfStatus = $('[data-shelf-status]');
-  const task = params.get('task') === 'shelf' ? { nonce: params.get('nonce') ?? '' } : null;
+  // themes：命令行要哪几张（主页图要深色、浅色两张）
+  const task = params.get('task') === 'shelf' ? { nonce: params.get('nonce') ?? '', themes: (params.get('themes') ?? 'dark').split(',').filter((x) => ['dark', 'light'].includes(x)) } : null;
   const shelfLang = ['en', 'zh'].includes(params.get('shelfLang')) ? params.get('shelfLang') : lang;
   let shelfURL = null;
   let shelfBusy = null;
@@ -314,17 +315,21 @@ async function main() {
   $('[data-shelf-close]').setAttribute('aria-label', t('poster.close'));
   shelfDownload.textContent = t('poster.download');
 
-  async function sendShelf(canvas) {
+  async function sendShelf(canvases) {
     shelfStatus.textContent = t('shelf.sending');
     try {
-      const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
-      const res = await fetch(`/__agent-badges/shelf?nonce=${encodeURIComponent(task.nonce)}`, {
-        method: 'POST',
-        headers: { 'content-type': 'image/png' },
-        body: blob,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+      let body = {};
+      // 依次交回；命令行收齐所有主题后才回复最后一张
+      for (const theme of task.themes) {
+        const blob = await new Promise((r) => canvases[theme].toBlob(r, 'image/png'));
+        const res = await fetch(`/__agent-badges/shelf?nonce=${encodeURIComponent(task.nonce)}&theme=${theme}`, {
+          method: 'POST',
+          headers: { 'content-type': 'image/png' },
+          body: blob,
+        });
+        body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
       shelfStatus.textContent = t('shelf.saved', { file: body.file });
     } catch (e) {
       shelfStatus.textContent = t('shelf.failed', { msg: e.message });
@@ -343,17 +348,18 @@ async function main() {
       making.textContent = t('shelf.empty');
       return;
     }
-    const canvas = await renderShelf(groups, {
+    const canvases = await renderShelves(groups, {
       lang: shelfLang,
+      themes: task ? [...new Set(['dark', ...task.themes])] : ['dark'],
       onProgress: (done, total) => (making.textContent = t('shelf.making', { done, total })),
     });
-    shelfURL = canvas.toDataURL('image/png');
+    shelfURL = canvases.dark.toDataURL('image/png');
     const img = new Image();
     img.alt = t('shelf.title');
     img.src = shelfURL;
     preview.replaceChildren(img);
     shelfDownload.disabled = false;
-    if (task) await sendShelf(canvas);
+    if (task) await sendShelf(canvases);
     else shelfStatus.textContent = t('shelf.hint');
   }
 

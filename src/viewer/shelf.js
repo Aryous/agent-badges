@@ -1,5 +1,5 @@
 // GitHub 主页徽章陈列图：用离屏 3D 舞台把每枚已解锁徽章渲染成小图，再用 2D Canvas 排版。
-// 透明背景、中性灰文字，GitHub 深浅两种主题下都能看清。
+// 透明背景。按 GitHub 的深浅主题各出一张（字色不同），主页 README 用 <picture> 自动切换。
 import { Group } from 'three';
 import { BRANDS } from '../brands/index.js';
 import { buildBadge } from '../engine/badge.js';
@@ -12,7 +12,11 @@ import { nextFrame } from './frame.js';
 
 const SERIF = `'Iowan Old Style', 'Palatino Linotype', 'Songti SC', Georgia, serif`;
 const SANS = `system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', sans-serif`;
-const GRAY = '#8B949E'; // GitHub 自己的次要文字色，深浅主题都可读
+/** 两种主题的字色，取自 GitHub 自己的文字色。 */
+export const SHELF_THEMES = {
+  dark: { title: '#D1D7E0', meta: '#9198A1', count: '#9198A1', line: 'rgba(145, 152, 161, 0.35)', accent: (b) => b.ui.accent },
+  light: { title: '#1F2328', meta: '#59636E', count: '#59636E', line: 'rgba(89, 99, 110, 0.3)', accent: (b) => b.ui.accentLight ?? b.ui.accent },
+};
 const THUMB = 256; // 徽章小图边长（显示 104，输出 2 倍即 208）
 
 const loadImage = (src) =>
@@ -80,12 +84,33 @@ function fitText(g, text, maxW, size, weight, minSize = 11) {
 
 /**
  * @param {{ brand, items: { config, state }[] }[]} groups  shelfGroups() 的结果
- * @param {{ lang: 'en' | 'zh', onProgress?: (done, total) => void }} opts
- * @returns {Promise<HTMLCanvasElement>}
+ * @param {{ lang: 'en' | 'zh', themes?: string[], onProgress?: (done, total) => void }} opts
+ * @returns {Promise<Record<string, HTMLCanvasElement>>}  每种主题一张；徽章小图只渲染一次
  */
-export async function renderShelf(groups, { lang = 'en', onProgress } = {}) {
+export async function renderShelves(groups, { lang = 'en', themes = ['dark', 'light'], onProgress } = {}) {
   const L = SHELF;
   const layout = shelfLayout(groups, L);
+  const total = groups.reduce((n, gr) => n + gr.items.length, 0);
+  let done = 0;
+  const images = new Map();
+  for (const group of layout.groups) {
+    for (const it of group.items) {
+      images.set(it, await badgeImage(it.config, group.brand, it.state, lang));
+      onProgress?.(++done, total);
+    }
+  }
+  const out = {};
+  for (const theme of themes) out[theme] = drawShelf(layout, images, SHELF_THEMES[theme], lang);
+  return out;
+}
+
+/** 只要一张（默认深色）。 */
+export async function renderShelf(groups, opts = {}) {
+  return (await renderShelves(groups, { ...opts, themes: ['dark'] })).dark;
+}
+
+function drawShelf(layout, images, C, lang) {
+  const L = SHELF;
   const canvas = document.createElement('canvas');
   canvas.width = layout.width * L.scale;
   canvas.height = layout.height * L.scale;
@@ -93,40 +118,35 @@ export async function renderShelf(groups, { lang = 'en', onProgress } = {}) {
   g.scale(L.scale, L.scale);
   g.textBaseline = 'alphabetic';
 
-  const total = groups.reduce((n, gr) => n + gr.items.length, 0);
-  let done = 0;
   for (const group of layout.groups) {
     const { brand } = group;
     // 组标题：品牌色的工具名，右侧灰色的已解锁数量，下面一条细线
     const base = group.y + 28;
-    g.fillStyle = brand.ui.accent;
+    g.fillStyle = C.accent(brand);
     g.font = `500 24px ${SERIF}`;
     g.textAlign = 'left';
     g.fillText(brand.name, L.pad, base);
-    g.fillStyle = GRAY;
+    g.fillStyle = C.count;
     g.font = `500 14px ${SANS}`;
     g.textAlign = 'right';
     g.fillText(shelfCount(group.items.length, lang), layout.width - L.pad, base);
-    g.fillStyle = 'rgba(139, 148, 158, 0.35)';
+    g.fillStyle = C.line;
     g.fillRect(L.pad, base + 12, layout.width - L.pad * 2, 1);
 
     g.textAlign = 'center';
     for (const it of group.items) {
-      const img = await badgeImage(it.config, brand, it.state, lang);
-      g.drawImage(img, it.x, it.y, L.badge, L.badge);
+      g.drawImage(images.get(it), it.x, it.y, L.badge, L.badge);
       const cx = it.x + L.badge / 2;
       const maxW = layout.cell - 10;
       const { title, meta } = shelfLabel(it.config, it.state, lang);
-      g.fillStyle = GRAY;
+      g.fillStyle = C.title;
       const name = fitText(g, title, maxW, 14, 600);
       g.fillText(name, cx, it.y + L.badge + 22);
       if (meta) {
+        g.fillStyle = C.meta;
         const m = fitText(g, meta, maxW, 12, 400);
-        g.globalAlpha = 0.8;
         g.fillText(m, cx, it.y + L.badge + 40);
-        g.globalAlpha = 1;
       }
-      onProgress?.(++done, total);
     }
   }
   return canvas;

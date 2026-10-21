@@ -32,7 +32,7 @@ describe('README 标记块', () => {
   });
 
   it('徽章图链接到公开版徽章墙', () => {
-    expect(block).toContain(`<a href="${URL}"><img src="./agent-badges-shelf.png"`);
+    expect(block).toContain(`<a href="${URL}"><picture><source media="(prefers-color-scheme: light)" srcset="./agent-badges-shelf-light.png"><img src="./agent-badges-shelf.png"`);
   });
 });
 
@@ -90,7 +90,7 @@ function world(name, { exists = false, isPrivate = false, pages = null, files = 
     executePublish(plan, {
       gh,
       pageHtml: '<html><script>window.__AGENT_BADGES_PUBLIC__ = {};</script></html>',
-      renderShelf: async (file) => writeFileSync(file, 'PNG'),
+      renderShelf: async (file) => (writeFileSync(file, 'PNG'), writeFileSync(file.replace('.png', '-light.png'), 'PNG')),
       fetchStatus: async () => 200,
       sleep: async () => {},
       ...extra,
@@ -152,7 +152,7 @@ describe('完整流程', () => {
     expect(await w.execute(plan2)).toEqual({ changed: false, live: true });
     expect(git(w.bare, 'rev-parse', 'main')).toBe(first);
 
-    await w.execute(await w.prepare(), { renderShelf: async (file) => writeFileSync(file, 'PNG2') });
+    await w.execute(await w.prepare(), { renderShelf: async (file) => (writeFileSync(file, 'PNG2'), writeFileSync(file.replace('.png', '-light.png'), 'PNG2')) });
     expect(git(w.bare, 'rev-list', '--count', 'main')).toBe('2');
     expect(remoteFile(w.bare, 'agent-badges-shelf.png')).toBe('PNG2');
     expect(w.state.calls.filter(([c]) => c === 'enablePages')).toHaveLength(1);
@@ -172,7 +172,7 @@ describe('完整流程', () => {
     git(edit, '-c', 'user.name=x', '-c', 'user.email=x@x', 'commit', '-qam', 'edit');
     git(edit, 'push', '-q', 'origin', 'HEAD:main');
 
-    await w.execute(await w.prepare(), { renderShelf: async (file) => writeFileSync(file, 'PNG3') });
+    await w.execute(await w.prepare(), { renderShelf: async (file) => (writeFileSync(file, 'PNG3'), writeFileSync(file.replace('.png', '-light.png'), 'PNG3')) });
     expect(remoteFile(w.bare, 'README.md')).toBe(`# Hello\n\n${block}`);
   });
 

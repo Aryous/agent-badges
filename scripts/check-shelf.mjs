@@ -93,6 +93,8 @@ async function runWithBrowser(args, { hidden = false } = {}) {
   check('shelf：命令打印了带 task=shelf 和 nonce 的本地网址', /task=shelf/.test(r.url) && /nonce=[0-9a-f]{32}/.test(r.url), r.url);
   check('shelf：命令正常退出', r.code === 0, `exit ${r.code}`);
   check('shelf：PNG 写到了 --out 指定的位置', existsSync(out) && readFileSync(out).subarray(1, 4).toString() === 'PNG', out);
+  const lightOut = out.replace('.png', '-light.png');
+  check('shelf：同时写出浅色版', existsSync(lightOut) && readFileSync(lightOut).subarray(1, 4).toString() === 'PNG' && !readFileSync(lightOut).equals(readFileSync(out)), lightOut);
   check('shelf：终端给出可粘贴进 README 的一行', r.stdout.includes('<img src="./agent-badges-shelf.png"'));
   check('shelf：页面显示已保存到哪里', r.status.includes(out), r.status);
   check('shelf：页面没有报错', r.errors.length === 0, r.errors.join(' | '));
@@ -121,8 +123,8 @@ async function runWithBrowser(args, { hidden = false } = {}) {
   execFileSync('git', ['-C', repo, 'remote', 'add', 'origin', 'https://github.com/Someone/someone.git']);
   const r = await runWithBrowser(['profile', repo]);
   check('profile：命令正常退出', r.code === 0, r.code === 0 ? '' : `exit ${r.code}\n${r.stdout}`);
-  check('profile：写出了徽章图和网页', existsSync(join(repo, 'agent-badges-shelf.png')) && existsSync(join(repo, 'index.html')));
-  check('profile：README 片段链接到 GitHub Pages', r.stdout.includes('<a href="https://someone.github.io/someone/"><img src="./agent-badges-shelf.png"'));
+  check('profile：写出了深浅两张徽章图和网页', existsSync(join(repo, 'agent-badges-shelf.png')) && existsSync(join(repo, 'agent-badges-shelf-light.png')) && existsSync(join(repo, 'index.html')));
+  check('profile：README 片段链接到 GitHub Pages，按主题切换图片', r.stdout.includes('<a href="https://someone.github.io/someone/"><picture><source media="(prefers-color-scheme: light)" srcset="./agent-badges-shelf-light.png"><img src="./agent-badges-shelf.png"'));
 
   // 用访客的眼光打开公开版网页
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });

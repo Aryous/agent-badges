@@ -115,6 +115,19 @@ describe('陈列图：命令行接收图片', () => {
     expect((await post(PNG)).status).toBe(409);
   });
 
+  it('深浅两张：前一张先回 202，收齐后由命令回复', async () => {
+    const { receiver, base } = await start({ themes: ['dark', 'light'] });
+    const post = (theme) => fetch(`${base}?nonce=${receiver.nonce}&theme=${theme}`, { method: 'POST', headers: { 'content-type': 'image/png' }, body: PNG });
+    expect((await fetch(`${base}?nonce=${receiver.nonce}&theme=sepia`, { method: 'POST', headers: { 'content-type': 'image/png' }, body: PNG })).status).toBe(400);
+    expect((await post('light')).status).toBe(202);
+    expect((await post('light')).status).toBe(409);
+    const last = post('dark');
+    const { pngs, respond } = await receiver.received;
+    expect(Object.keys(pngs).sort()).toEqual(['dark', 'light']);
+    respond(200, { ok: true });
+    expect((await last).status).toBe(200);
+  });
+
   it('不归它管的路径交还给页面服务', async () => {
     const { base } = await start();
     expect((await fetch(base.replace(SHELF_PATH, '/'))).status).toBe(404);

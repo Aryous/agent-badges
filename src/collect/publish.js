@@ -9,6 +9,8 @@ import { pagesFromRemote } from './public.js';
 export const BLOCK_START = '<!-- agent-badges:start -->';
 export const BLOCK_END = '<!-- agent-badges:end -->';
 export const SHELF_FILE = 'agent-badges-shelf.png';
+/** 浅色主题用的徽章图（GitHub 按访客的主题自动切换） */
+export const SHELF_LIGHT_FILE = 'agent-badges-shelf-light.png';
 const PAGE_MARK = '__AGENT_BADGES_PUBLIC__';
 // git 网络操作临时用 gh 的凭证，不改用户的全局 git 配置
 const GH_CREDENTIAL = ['-c', 'credential.helper=', '-c', 'credential.helper=!gh auth git-credential'];
@@ -81,7 +83,7 @@ export function createGitHub(exec = run) {
 export function readmeBlock(url) {
   return [
     BLOCK_START,
-    `<a href="${url}"><img src="./${SHELF_FILE}" alt="Achievement badges earned with Claude Code and Codex" width="720"></a>`,
+    `<a href="${url}"><picture><source media="(prefers-color-scheme: light)" srcset="./${SHELF_LIGHT_FILE}"><img src="./${SHELF_FILE}" alt="Achievement badges earned with Claude Code and Codex" width="720"></picture></a>`,
     '',
     '<sub>Earned with Claude Code and Codex · made with <a href="https://github.com/Aryous/agent-badges">agent-badges</a></sub>',
     BLOCK_END,
@@ -204,7 +206,7 @@ export async function executePublish(plan, { pageHtml, renderShelf, gh, exec = r
   const readme = existsSync(readmePath) ? readFileSync(readmePath, 'utf8') : '';
   writeFileSync(readmePath, upsertBlock(readme, readmeBlock(plan.url)).text);
 
-  await must(git(['add', 'README.md', 'index.html', '.nojekyll', SHELF_FILE]));
+  await must(git(['add', 'README.md', 'index.html', '.nojekyll', SHELF_FILE, SHELF_LIGHT_FILE]));
   const staged = await git(['diff', '--cached', '--quiet']);
   const changed = staged.code !== 0;
   if (changed) {
