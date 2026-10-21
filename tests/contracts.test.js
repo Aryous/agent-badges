@@ -179,11 +179,26 @@ describe('门槛只写在配置里', () => {
       });
 
       it(`${brand.id}/${badge.id}：中英文说明里写的是配置的门槛`, () => {
-        const t = String(badge.criteria.target);
-        expect(badge.description).toContain(t);
-        expect(badge.en.description).toContain(t);
+        // 数字两侧不能再连着数字：5 不能靠「50」蒙混过关
+        const t = new RegExp(`(?<!\\d)${badge.criteria.target}(?!\\d)`);
+        expect(badge.description).toMatch(t);
+        expect(badge.en.description).toMatch(t);
       });
     }
+  }
+
+  // anniversary 的 target 是 1，isCounted 会跳过它；这里单独证明规则读的是 criteria.target（年数）
+  for (const { brand, badges } of BRANDS) {
+    it(`${brand.id}/anniversary：target 是年数，改成 2 要满 730 天才解锁`, () => {
+      const badge = badges.find((b) => b.id === 'anniversary');
+      const two = { ...badge, criteria: { ...badge.criteria, target: 2 } };
+      const first = '2024-03-02';
+      const days = { [first]: baseDay(brand.id) };
+      const at = (n) => METRICS[brand.id].computeProgress({ days }, [two], addDays(first, n))[badge.id].unlocked;
+      expect(at(365)).toBe(false);
+      expect(at(729)).toBe(false);
+      expect(at(730)).toBe(true);
+    });
   }
 
   it('criteria 只有 target、unit、dynamic；分级徽章不写 criteria', () => {

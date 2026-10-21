@@ -9,7 +9,7 @@ const multitasker = {
   title: '多线并行',
   titleEn: 'MULTITASKER',
   description: '同一时刻有 3 个会话一起在跑。三块屏幕三只小家伙，各干各的，互不打扰。',
-  en: { title: 'Multitasker', description: '3 sessions running at the same moment. Three screens, three little guys, each minding its own work.' },
+  en: { title: 'Multitasker', description: 'Ran 3 sessions at the same moment. One screen each, three little guys, each minding its own work.' },
   criteria: { target: 3 },
   ...medal({
     bottom: 'MULTITASKER',

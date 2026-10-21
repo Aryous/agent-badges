@@ -213,3 +213,84 @@ export function hoursSeries(dates, days, field = 'activeMin') {
   const s = cumulative(dates, days, field);
   return { value: Math.floor(s.value / 60), reachedOn: (h) => s.reachedOn(h * 60) };
 }
+
+// ---------- 规则共用部分（claude-code / codex 两个品牌的 RULES 表都从这里取） ----------
+
+/**
+ * 规则共用的上下文：活跃日期、按天数据，以及几个常用的算法。
+ * 什么算「活跃日」由品牌自己的 isActive(day) 决定，其余完全一致。
+ *   dates / first / on / cum / maxOf / peak  只看活跃日
+ *   all / firstAll                            看账本里的所有日期（只有子代理、审查记录的日子也算）
+ */
+export function metricsContext(ledger, today, isActive) {
+  const days = ledger.days;
+  const all = Object.keys(days).sort();
+  const dates = all.filter((date) => isActive(days[date]));
+  let streak;
+  return {
+    ledger,
+    days,
+    dates,
+    all,
+    today,
+    first: (pred) => firstDate(dates, days, pred),
+    firstAll: (pred) => firstDate(all, days, pred),
+    on: (pred) => once(firstDate(dates, days, (_, date) => pred(date))),
+    cum: (field) => cumulative(dates, days, field),
+    maxOf: (field) => Math.max(0, ...dates.map((d) => days[d][field] ?? 0)),
+    peak: (field, target) => dayPeak(dates, days, field, target),
+    get streak() {
+      return (streak ??= streaks(dates));
+    },
+  };
+}
+
+/** 分级徽章：按徽章自己的 tiers 取等级，series 是 { value, reachedOn }。 */
+export const tier = (badge, series) => tiered(badge.tiers, series.value, series.reachedOn);
+
+/** 分级徽章「累计某个按天字段」：品牌表里写成 tierOf('tokens') 一行。 */
+export const tierOf = (field) => (c, b) => tier(b, c.cum(field));
+
+/** 工具生日：从 launchDate 起每年同月同日。每个品牌传自己的上线日期。 */
+export const birthdayRule = (launchDate) => (c) => c.on(holidays.birthday(launchDate));
+
+/**
+ * 两个品牌里 id 相同、实现也完全相同的规则。
+ * 只放两边都有的徽章；品牌独有的、或同 id 但口径不同的（如 productive-day 看的字段不同）留在各自的 RULES 里。
+ * tests/contracts.test.js 要求每个品牌的 RULES 键恰好等于它的徽章 id。
+ */
+export const COMMON_RULES = {
+  // 里程碑
+  tokens: tierOf('tokens'),
+  'active-hours': (c, b) => tier(b, hoursSeries(c.dates, c.days)),
+  dispatches: tierOf('dispatches'),
+
+  // 连续与习惯
+  'seven-day-streak': (c, { criteria: { target: t } }) => once(c.streak.reached[t] ?? null, Math.min(c.streak.best, t), t),
+  'streak-days': (c, b) => tiered(b.tiers, c.streak.best, (n) => c.streak.reached[n] ?? null),
+  'night-owl': (c) => once(c.first((d) => d.hours.slice(0, 5).some((h) => h > 0))),
+  'early-bird': (c) => once(c.first((d) => d.hours[5] + d.hours[6] > 0)),
+  // 周末战士：同一个周末的周六和周日都有使用，记在周日
+  'weekend-warrior': (c) => once(c.first((_, date) => weekday(date) === 0 && c.dates.includes(addDays(date, -1)))),
+  // 门槛单位是小时，账本里是分钟
+  marathon: (c, { criteria: { target: t } }) => once(c.first((d) => d.longestSessionMin >= t * 60), Math.floor(c.maxOf('longestSessionMin') / 60), t),
+  'midnight-crossing': (c) => once(c.first((d) => d.midnight)),
+  multitasker: (c, b) => c.peak('maxParallel', b.criteria.target),
+  // 门槛是当月的工作日数，由规则自己算（配置里的 target 只是显示兜底）
+  'perfect-month': (c) => {
+    const pm = perfectMonth(c.dates, c.today);
+    return once(pm.date, pm.current, pm.target);
+  },
+
+  // 限定与彩蛋
+  'programmers-day': (c) => c.on((date) => date.endsWith('-10-24')),
+  // 门槛是年数
+  anniversary: (c, { criteria: { target: years } }) => {
+    const firstDay = [c.ledger.firstSeen, c.dates[0]].filter(Boolean).sort()[0];
+    const anniv = firstDay ? addDays(firstDay, 365 * years) : null;
+    return once(anniv && anniv <= c.today ? anniv : null);
+  },
+  'new-year': (c) => c.on(holidays['new-year']),
+  'spring-festival': (c) => c.on(holidays['spring-festival']),
+  christmas: (c) => c.on(holidays.christmas),
+};
