@@ -3,12 +3,11 @@
 // scripts/promo.mjs 逐帧截图后用 ffmpeg 合成视频。参数：?aspect=16x9|9x16&lang=en|zh
 // showcase: 手工挑选的展示徽章，id 由 tests/contracts.test.js 核对
 import './promo.css';
-import { Group } from 'three';
 import { BRANDS } from '../brands/index.js';
-import { buildBadge, setEngravingSize } from '../engine/badge.js';
 import { badgeTitle, tierName } from '../brands/shared/text.js';
 import { createStage } from '../viewer/scene.js';
-import { renderBadgePNG } from '../viewer/export.js';
+import { renderBadgePNG } from '../viewer/snapshot.js';
+import { mountBadge } from '../viewer/mount-badge.js';
 import { LOGO_STATE, logoBadge, logoBrand } from '../project/logo.js';
 import { renderShelf, shelfGroups } from '../viewer/shelf.js';
 import { CLICK_AT, DONE_AT, DURATION, END_GLINT, END_LAND, HERO_GLINT, HERO_LAND, LINE_AT, TIER_AT, TYPE, TYPED, wallPopAt } from './timeline.js';
@@ -99,14 +98,8 @@ function showcase(config, tier = null) {
 }
 
 function holderFor(config, brand, state, { sharpBack = false } = {}) {
-  const badge = buildBadge(config, brand, state, { lang: LANG });
-  if (sharpBack) setEngravingSize(badge, 2048); // 旋转和翻面时会看到背面
-  stage.applyEnvironment(badge);
-  const pivot = new Group();
-  const holder = new Group();
-  pivot.add(badge);
-  holder.add(pivot);
-  return { holder, pivot, badge };
+  // sharpBack：旋转和翻面时会看到背面，刻字贴图用大尺寸
+  return mountBadge(config, brand, state, { stage, lang: LANG, engraving: sharpBack ? 2048 : undefined });
 }
 
 /** 画面像素坐标（中心、半径）→ 3D 世界坐标。 */

@@ -1,13 +1,11 @@
 // GitHub 主页徽章陈列图：用离屏 3D 舞台把每枚已解锁徽章渲染成小图，再用 2D Canvas 排版。
 // 透明背景。按 GitHub 的深浅主题各出一张（字色不同），主页 README 用 <picture> 自动切换。
-import { Group } from 'three';
-import { BRANDS } from '../brands/index.js';
-import { buildBadge } from '../engine/badge.js';
 import { partitionBadges } from '../engine/validate.js';
-import { loadProgress, sourceInfo } from '../data/progress.js';
+import { loadAllProgress } from '../data/brand-progress.js';
 import { SHELF, pickShelf, shelfCount, shelfLabel, shelfLayout } from '../data/shelf.js';
 import { createStage } from './scene.js';
-import { renderBadgePNG } from './export.js';
+import { renderBadgePNG } from './snapshot.js';
+import { mountBadge } from './mount-badge.js';
 import { nextFrame } from './frame.js';
 
 const SERIF = `'Iowan Old Style', 'Palatino Linotype', 'Songti SC', Georgia, serif`;
@@ -29,13 +27,7 @@ const loadImage = (src) =>
 
 /** 读取各工具的进度，挑出要陈列的徽章。only：只放某个工具；forceMock：和页面一样用示例数据。 */
 export async function shelfGroups({ only = null, forceMock = false } = {}) {
-  const entries = [];
-  for (const b of BRANDS) {
-    if (only && b.brand.id !== only) continue;
-    const { valid } = partitionBadges(b.badges, b.brand);
-    const { progress } = await loadProgress(b.brand.id, valid, undefined, { forceMock });
-    entries.push({ brand: b.brand, badges: valid, progress, local: sourceInfo(b.brand.id, { forceMock }).kind === 'local' });
-  }
+  const entries = await loadAllProgress({ only, forceMock, daily: false, badgesOf: (b) => partitionBadges(b.badges, b.brand).valid });
   return pickShelf(entries);
 }
 
@@ -53,15 +45,10 @@ function offscreenStage() {
 
 async function badgeImage(config, brand, state, lang) {
   const s = offscreenStage();
-  const badge = buildBadge(config, brand, state, { lang });
-  s.applyEnvironment(badge);
-  const holder = new Group();
-  const pivot = new Group();
-  pivot.add(badge);
-  holder.add(pivot);
-  s.scene.add(holder);
   // renderBadgePNG 用 === 判断显示哪一枚，items 里必须是同一个对象
-  const item = { holder };
+  const item = mountBadge(config, brand, state, { stage: s, lang });
+  const { badge, holder } = item;
+  s.scene.add(holder);
   const src = renderBadgePNG({ stage: s, items: [item], item, size: THUMB, fill: 0.92 });
   s.scene.remove(holder);
   badge.traverse((o) => o.isMesh && o.geometry.dispose());

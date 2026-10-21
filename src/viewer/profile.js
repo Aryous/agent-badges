@@ -3,9 +3,7 @@ import { highlights } from '../data/highlights.js';
 import { dailyStats } from '../data/daily.js';
 import { formatBig, lang, t } from './i18n.js';
 import { badgeTitle } from '../brands/shared/text.js';
-import { describeState } from './grid.js';
-
-const fmtDate = (iso) => (iso ? iso.replaceAll('-', '.') : '');
+import { describeState, fmtDate } from './describe.js';
 
 /** 进度环：Apple 健身圆环那样的一圈，按解锁比例填满。 */
 function ring(ratio) {

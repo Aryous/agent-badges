@@ -30,7 +30,7 @@ export function computeFocusLayout(view, reserve = {}) {
   return { x: 0, y, r, scale: r / 1.06 };
 }
 
-export function createInspector({ stage, items }) {
+export function createInspector({ stage }) {
   const { renderer, view } = stage;
   const el = renderer.domElement;
   let current = null;
@@ -112,13 +112,6 @@ export function createInspector({ stage, items }) {
     }
 
     const k = 1 - Math.exp(-dt * 6);
-    for (const item of items) {
-      if (item === current) continue;
-      const s = item.holder.scale.x * Math.exp(-dt * 14);
-      item.holder.scale.setScalar(s);
-      item.holder.visible = s > 0.02;
-    }
-
     const h = current.holder;
     if (override.active) {
       h.position.set(layout.x, layout.y, override.z);

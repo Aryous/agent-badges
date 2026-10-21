@@ -1,12 +1,11 @@
 // 徽章工作台（仅开发服务器）：window.__studio.render(...) 把一枚徽章渲染成 PNG data URL。
 // scripts/assets.mjs 用它生成 README 横幅、动图帧和项目标志。
-import { Group } from 'three';
 import { BRANDS, getBrand } from '../brands/index.js';
-import { buildBadge, setEngravingSize } from '../engine/badge.js';
 import { normalizeProgress } from '../data/normalize.js';
 import { DATA_SOURCES } from '../data/progress.js';
 import { createStage } from '../viewer/scene.js';
-import { renderBadgePNG } from '../viewer/export.js';
+import { renderBadgePNG } from '../viewer/snapshot.js';
+import { mountBadge } from '../viewer/mount-badge.js';
 import { LOGO_STATE, logoBadge, logoBrand } from './logo.js';
 
 const stage = createStage(document.querySelector('#stage'));
@@ -45,16 +44,10 @@ async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, la
     if (unlocked !== undefined) state = { ...state, unlocked, earnedAt: state.earnedAt ?? '2026-05-02' };
     if (tier !== undefined) state = { ...state, unlocked: true, tier, earnedAt: state.earnedAt ?? '2026-05-02' };
   }
-  const badge = buildBadge(config, brand, state, { lang });
-  setEngravingSize(badge, engraving);
-  stage.applyEnvironment(badge);
-  const pivot = new Group();
-  const holder = new Group();
-  pivot.add(badge);
-  holder.add(pivot);
+  const item = mountBadge(config, brand, state, { stage, lang, engraving });
+  const { badge, pivot, holder } = item;
   pivot.rotation.set(tilt, angle, 0);
   stage.scene.add(holder);
-  const item = { holder, pivot, badge };
   try {
     return renderBadgePNG({ stage, items: [item], item, size, fill, background });
   } finally {

@@ -4,7 +4,7 @@
 import { dailyStats, dailyYears } from '../data/daily.js';
 import { levelOf, levelThresholds, today, yearWeeks } from '../data/calendar.js';
 import { formatBig, formatDay, lang, t } from './i18n.js';
-import { describeState } from './grid.js';
+import { describeState } from './describe.js';
 
 const ALPHA = [0, 0.3, 0.5, 0.74, 1];
 const EMPTY = 'rgba(240, 238, 230, 0.06)';

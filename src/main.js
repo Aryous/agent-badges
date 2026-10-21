@@ -1,9 +1,9 @@
 import './style.css';
-import { Group } from 'three';
 import { BRANDS, getBrand } from './brands/index.js';
-import { buildBadge, setEngravingSize } from './engine/badge.js';
+import { setEngravingSize } from './engine/badge.js';
 import { partitionBadges, validateBrand } from './engine/validate.js';
-import { loadDaily, loadProgress, sourceInfo } from './data/progress.js';
+import { sourceInfo } from './data/progress.js';
+import { loadAllProgress } from './data/brand-progress.js';
 import { createHeatmap, markersFrom } from './viewer/heatmap.js';
 import { createProfile } from './viewer/profile.js';
 import { renderPoster } from './viewer/poster.js';
@@ -11,16 +11,18 @@ import { renderShelves, shelfGroups } from './viewer/shelf.js';
 import { applyStatic, formatBig, lang, t } from './viewer/i18n.js';
 import { badgeDescription, badgeTitle, tierKey, tierLabel } from './brands/shared/text.js';
 import { createStage, supportsWebGL } from './viewer/scene.js';
-import { createGrid, describeState } from './viewer/grid.js';
+import { createGrid } from './viewer/grid.js';
+import { describeState, fmtDate } from './viewer/describe.js';
+import { mountBadge } from './viewer/mount-badge.js';
 import { createInspector } from './viewer/inspector.js';
 import { playAward } from './viewer/award-animation.js';
-import { EXPORT_FILL, downloadDataURL, renderBadgePNG } from './viewer/export.js';
+import { downloadDataURL } from './viewer/export.js';
+import { EXPORT_FILL, renderBadgePNG } from './viewer/snapshot.js';
 import { createAccumulator, signature } from './viewer/accumulate.js';
 import { Tweens } from './viewer/anim.js';
 import { nextFrame } from './viewer/frame.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
-const fmtDate = (iso) => (iso ? iso.replaceAll('-', '.') : '');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const THUMB_SIZE = 480;
 
@@ -112,7 +114,14 @@ async function main() {
   }
 
   const forceMock = params.get('source') === 'mock';
-  const { progress, error } = await loadProgress(brand.id, valid, undefined, { forceMock });
+  // 所有可选工具的进度和按天用量一起读：热力图要把各工具叠在一起看。当前工具用上面校验过的列表
+  const all = await loadAllProgress({
+    brands: AVAILABLE,
+    forceMock,
+    badgesOf: (b) => (b.brand.id === brand.id ? valid : partitionBadges(b.badges, b.brand).valid),
+  });
+  const mine = all.find((o) => o.brand.id === brand.id);
+  const { progress, error } = mine;
   const source = sourceInfo(brand.id, { forceMock });
   applyPreview(valid, progress);
   if (error) {
@@ -167,31 +176,17 @@ async function main() {
   /** 按需组装 3D 徽章；缩略图和单枚查看共用同一份。 */
   function ensureBuilt(item) {
     if (item.holder) return item;
-    item.badge = buildBadge(item.config, brand, item.state, { lang });
-    stage.applyEnvironment(item.badge);
-    item.pivot = new Group();
-    item.holder = new Group();
-    item.pivot.add(item.badge);
-    item.holder.add(item.pivot);
-    return item;
+    return Object.assign(item, mountBadge(item.config, brand, item.state, { stage, lang }));
   }
 
   // ---------- 档案 + 热力图 ----------
   // 热力图把所有工具叠在一起看，所以每个工具的按天用量和解锁日期都要读
-  const others = await Promise.all(
-    AVAILABLE.map(async (b) => {
-      const isCurrent = b.brand.id === brand.id;
-      const list = isCurrent ? valid : partitionBadges(b.badges, b.brand).valid;
-      const p = isCurrent ? progress : (await loadProgress(b.brand.id, list, undefined, { forceMock })).progress;
-      const daily = await loadDaily(b.brand.id, { forceMock });
-      return { b, list, p, daily };
-    }),
-  );
-  const markers = markersFrom(others.map((o) => ({ brand: o.b.brand, badges: o.list, progress: o.p })), brand.id);
-  const heatSeries = others
-    .filter((o) => Object.keys(o.daily).length || o.b.brand.id === brand.id)
-    .map((o) => ({ id: o.b.brand.id, name: o.b.brand.name, color: o.b.brand.ui.accent, daily: o.daily }));
-  const currentDaily = others.find((o) => o.b.brand.id === brand.id).daily;
+  // ?preview 改的是 mine.progress 本身，热力图上的解锁标记也跟着变
+  const markers = markersFrom(all, brand.id);
+  const heatSeries = all
+    .filter((o) => Object.keys(o.daily).length || o.brand.id === brand.id)
+    .map((o) => ({ id: o.brand.id, name: o.brand.name, color: o.brand.ui.accent, daily: o.daily }));
+  const currentDaily = mine.daily;
 
   const select = (item, viaKeyboard) => open(item, { viaKeyboard });
   const profile = createProfile({
@@ -412,7 +407,7 @@ async function main() {
   // ---------- 单枚查看 ----------
   const overlay = $('#overlay');
   const inspectorEl = $('#inspector');
-  const inspector = createInspector({ stage, items: [] });
+  const inspector = createInspector({ stage });
   let mode = 'wall';
   let exportBg = 'transparent';
   let awardRunning = false;

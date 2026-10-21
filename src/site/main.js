@@ -6,10 +6,11 @@ import { Group } from 'three';
 import { BRANDS } from '../brands/index.js';
 import { buildBadge } from '../engine/badge.js';
 import { badgeTitle } from '../brands/shared/text.js';
-import { loadDaily, loadProgress } from '../data/progress.js';
+import { loadAllProgress } from '../data/brand-progress.js';
 import { addStrings, applyStatic, lang, t } from '../viewer/i18n.js';
 import { createStage, supportsWebGL } from '../viewer/scene.js';
-import { renderBadgePNG } from '../viewer/export.js';
+import { renderBadgePNG } from '../viewer/snapshot.js';
+import { mountBadge } from '../viewer/mount-badge.js';
 import { createHeatmap, markersFrom } from '../viewer/heatmap.js';
 import { LOGO_STATE, logoBadge, logoBrand } from '../project/logo.js';
 import STRINGS from './strings.js';
@@ -208,16 +209,10 @@ function startGallery() {
     for (const { a, config, state } of cells) {
       const key = `${b.brand.id}/${config.id}`;
       if (!cache.has(key)) {
-        const badge = buildBadge(config, b.brand, state, { lang });
-        stage.applyEnvironment(badge);
-        const holder = new Group();
-        const pivot = new Group();
-        pivot.add(badge);
-        holder.add(pivot);
-        stage.scene.add(holder);
-        const item = { holder, pivot, badge };
+        const item = mountBadge(config, b.brand, state, { stage, lang });
+        stage.scene.add(item.holder);
         cache.set(key, renderBadgePNG({ stage, items: [item], item, size: 360, fill: 0.92 }));
-        stage.scene.remove(holder);
+        stage.scene.remove(item.holder);
         await nextFrame();
         if (my !== token) return; // 中途切换了标签
       }
@@ -255,16 +250,11 @@ function startGallery() {
 // ---------- 年度热力图（示例数据） ----------
 
 async function startHeatmap() {
-  const list = await Promise.all(
-    BRANDS.map(async (b) => {
-      const { progress } = await loadProgress(b.brand.id, b.badges, undefined, { forceMock: true });
-      return { b, progress, daily: await loadDaily(b.brand.id, { forceMock: true }) };
-    }),
-  );
+  const list = await loadAllProgress({ forceMock: true });
   createHeatmap({
     root: $('[data-heat]'),
-    series: list.map(({ b, daily }) => ({ id: b.brand.id, name: b.brand.name, color: b.brand.ui.accent, daily })),
-    markers: markersFrom(list.map(({ b, progress }) => ({ brand: b.brand, badges: b.badges, progress })), null),
+    series: list.map(({ brand, daily }) => ({ id: brand.id, name: brand.name, color: brand.ui.accent, daily })),
+    markers: markersFrom(list, null),
   });
 }
 
