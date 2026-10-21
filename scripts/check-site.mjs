@@ -4,6 +4,11 @@ import { chromium } from 'playwright-core';
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
+import { brandById } from '../src/brands/index.js';
+
+// 徽章数量从注册表读取，新增徽章后不用再改这里（脚本属于工具，可以直接点名这两个工具）
+const CLAUDE_COUNT = brandById('claude-code').badges.length;
+const CODEX_COUNT = brandById('codex').badges.length;
 
 const ROOT = 'dist-site';
 if (!existsSync(`${ROOT}/index.html`)) throw new Error('先运行 npm run build:site');
@@ -51,11 +56,11 @@ for (const [tag, viewport] of [['desktop', { width: 1440, height: 900 }], ['mobi
   });
   check(`[${tag}] 落地页首屏 3D 画布已渲染`, heroPixels);
   await page.locator('[data-gallery]').scrollIntoViewIfNeeded();
-  await page.waitForFunction(() => document.querySelectorAll('.gallery-item.is-ready').length >= 19, null, { timeout: 60000 });
-  check(`[${tag}] 画廊渲染出全部 Claude Code 徽章`, (await page.locator('.gallery-item.is-ready').count()) === 19);
+  await page.waitForFunction((n) => document.querySelectorAll('.gallery-item.is-ready').length >= n, CLAUDE_COUNT, { timeout: 60000 });
+  check(`[${tag}] 画廊渲染出全部 ${CLAUDE_COUNT} 枚 Claude Code 徽章`, (await page.locator('.gallery-item.is-ready').count()) === CLAUDE_COUNT);
   await page.locator('[data-gallery-tabs] button').nth(1).click();
-  await page.waitForFunction(() => document.querySelectorAll('.gallery-item.is-ready').length >= 20, null, { timeout: 60000 });
-  check(`[${tag}] 切到 Codex 标签，渲染出 20 枚`, (await page.locator('.gallery-item').count()) === 20);
+  await page.waitForFunction((n) => document.querySelectorAll('.gallery-item.is-ready').length >= n, CODEX_COUNT, { timeout: 60000 });
+  check(`[${tag}] 切到 Codex 标签，渲染出 ${CODEX_COUNT} 枚`, (await page.locator('.gallery-item').count()) === CODEX_COUNT);
   check(`[${tag}] 热力图有 365 格`, (await page.locator('.heat-cell[data-date]').count()) >= 365);
   const demoHref = await page.locator('.hero-actions [data-demo-link]').getAttribute('href');
   check(`[${tag}] 演示链接指向 ./demo/`, demoHref.startsWith('./demo/'), demoHref);
@@ -81,7 +86,7 @@ for (const [tag, viewport] of [['desktop', { width: 1440, height: 900 }], ['mobi
   const source = await page.locator('[data-source]').textContent();
   check('演示页显示示例数据，并有回到首页的链接', source.startsWith('Sample data') && (await page.locator('.source-link').getAttribute('href')).startsWith('../'), source);
   check('演示页没有注入本机数据', !(await page.evaluate(() => 'window.__AGENT_BADGES_DATA__' in window && window.__AGENT_BADGES_DATA__)));
-  check('演示页 19 枚徽章都有缩略图', (await page.locator('.tile:not(.is-loading)').count()) === 19);
+  check(`演示页 ${CLAUDE_COUNT} 枚徽章都有缩略图`, (await page.locator('.tile:not(.is-loading)').count()) === CLAUDE_COUNT);
   check('演示页控制台无报错', errors.length === 0, errors.join(' | '));
   await page.close();
 }
