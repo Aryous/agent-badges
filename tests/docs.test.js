@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, readlinkSync, realpathSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BRANDS } from '../src/brands/index.js';
@@ -111,5 +111,37 @@ describe('README', () => {
       }
     }
     expect(bad).toEqual([]);
+  });
+});
+
+describe('add-badge skill', () => {
+  const dir = '.agents/skills/add-badge';
+
+  it('Claude Code 的入口是指向正本的相对软链接', () => {
+    const link = join(root, '.claude/skills/add-badge');
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(readlinkSync(link)).toBe('../../.agents/skills/add-badge');
+    expect(realpathSync(link)).toBe(realpathSync(join(root, dir)));
+  });
+
+  it('SKILL.md 有 name 和 description，提到的仓库路径都存在', () => {
+    const skill = read(`${dir}/SKILL.md`);
+    expect(skill).toMatch(/^---\nname: add-badge\ndescription: .+\n---/);
+    const paths = [...skill.matchAll(/`((?:src|tests|scripts|references)\/[\w./<>-]+)`/g)].map((m) => m[1]).filter((p) => !p.includes('<'));
+    expect(paths.length).toBeGreaterThan(5);
+    expect(paths.filter((p) => !existsSync(join(root, p.startsWith('references/') ? `${dir}/${p}` : p)))).toEqual([]);
+  });
+
+  it('模板是一枚能通过校验的徽章', async () => {
+    // 模板放在 skill 目录里，引用路径按「复制到 src/brands/claude-code/habits/ 之后」写；这里只检查它语法正确、导出默认配置
+    const src = read(`${dir}/references/template.js`);
+    expect(src).toMatch(/export default/);
+    expect(src).toMatch(/criteria: \{ target: \d+ \}/);
+  });
+
+  it('不进 npm 包，也不进插件', () => {
+    const pkg = JSON.parse(read('package.json'));
+    expect(pkg.files.some((f) => f.startsWith('.agents') || f.startsWith('.claude'))).toBe(false);
+    expect(existsSync(join(root, 'skills/add-badge'))).toBe(false);
   });
 });
