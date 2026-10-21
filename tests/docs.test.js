@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, lstatSync, readdirSync, readFileSync, readlinkSync, realpathSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { BRANDS } from '../src/brands/index.js';
 import { tierKey } from '../src/brands/shared/text.js';
+import claudeBrand from '../src/brands/claude-code/brand.js';
+import { layoutIssues } from '../src/engine/layout.js';
+import { validateBadge } from '../src/engine/validate.js';
 
 // 文档和代码是一个整体：文档里写到的测试、目录、数字都要和仓库实际情况一致。
 
@@ -132,11 +136,31 @@ describe('add-badge skill', () => {
     expect(paths.filter((p) => !existsSync(join(root, p.startsWith('references/') ? `${dir}/${p}` : p)))).toEqual([]);
   });
 
+  it('SKILL.md 和参考文件提到的仓库路径都存在', () => {
+    for (const f of ['SKILL.md', 'references/parts.md', 'references/design-principles.md']) {
+      const text = read(`${dir}/${f}`);
+      const paths = [...text.matchAll(/`((?:src|tests|scripts|references)\/[\w./<>-]+)`/g)].map((m) => m[1]).filter((p) => !p.includes('<'));
+      expect(paths.filter((p) => !existsSync(join(root, p.startsWith('references/') ? `${dir}/${p}` : p))), f).toEqual([]);
+    }
+  });
+
   it('模板是一枚能通过校验的徽章', async () => {
-    // 模板放在 skill 目录里，引用路径按「复制到 src/brands/claude-code/habits/ 之后」写；这里只检查它语法正确、导出默认配置
-    const src = read(`${dir}/references/template.js`);
-    expect(src).toMatch(/export default/);
-    expect(src).toMatch(/criteria: \{ target: \d+ \}/);
+    // 模板放在 skill 目录里，引用路径按「复制到 src/brands/claude-code/habits/ 之后」写：
+    // 把相对引用改成真实模块的绝对地址，写到临时文件里真正导入，再跑校验和版面检查
+    const home = join(root, 'src/brands/claude-code/habits');
+    const src = read(`${dir}/references/template.js`).replace(/(from\s+)'(\.{1,2}\/[^']+)'/g, (_, from, spec) => `${from}'${pathToFileURL(resolve(home, spec)).href}'`);
+    expect(src).not.toMatch(/from\s+'\.\.?\//);
+    const tmp = mkdtempSync(join(tmpdir(), 'add-badge-template-'));
+    try {
+      const file = join(tmp, 'template.mjs');
+      writeFileSync(file, src);
+      const config = (await import(/* @vite-ignore */ pathToFileURL(file).href)).default;
+      expect(config.criteria?.target).toBeGreaterThan(1);
+      expect(validateBadge(config, claudeBrand)).toBe(true);
+      expect(layoutIssues(config)).toEqual([]);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
   });
 
   it('不进 npm 包，也不进插件', () => {

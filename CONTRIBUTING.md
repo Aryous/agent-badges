@@ -21,7 +21,7 @@ npm run check:shelf      # shelf / profile end to end with fake logs (run build 
 
 Browser checks:
 
-- `npm run check:browser` screenshots the wall and every badge, front and back, and checks drag snapping and PNG export. Start the dev server on port 5199 first: `npx vite --port 5199`.
+- `npm run check:browser` drives the app in a real browser on sample data: every badge on both walls gets a thumbnail, plus drag snapping, PNG export, the profile view and phone layout, with no console errors. It saves screenshots of the walls, not of every badge (use `peek.mjs` for those). Start the dev server on port 5199 first: `npx vite --port 5199`.
 - `npm run check:site` checks the built site (run `npm run build:site` first; it serves `dist-site/` itself).
 - `node scripts/assets.mjs` regenerates the README and landing-page images from sample data (dev server on 5199).
 

@@ -22,7 +22,7 @@ Placeholders below: `<tool>` is `claude-code` or `codex`; `<series>` is `milesto
 - Series: `milestones` (cumulative totals and firsts), `habits` (streaks, rhythm, single-day peaks), `features` (first use of a tool feature), `limited` (holidays, dates, hidden surprises). They live in `src/brands/<tool>/<series>/`.
 - Id: kebab-case, unique within the tool. Grep before choosing: `grep -rn "id: '<id>'" src/brands/<tool>/`. The same id in both tools is fine when it means the same thing (for example `productive-day`).
 - Tiered (bronze → silver → gold, levels up) or one-time? Tiered suits cumulative counts; one-time suits a peak, a first, or a date.
-- If both tools get the badge, do every step below once per tool.
+- If both tools get the badge, do steps 3, 4, 6 and 7 once per tool (each tool has its own badge file, series index, mock data and copy). The rule (step 5) goes in each tool's `RULES`, or once in `COMMON_RULES` when the rule is identical in both. `FIXTURES` in `tests/contracts.test.js` is one shared entry per id, not one per tool.
 
 ## 2. Check the data exists and is allowed
 
@@ -30,6 +30,8 @@ The rule can only read what the daily ledger already stores. The fields are list
 
 - If the field exists, go on.
 - If it does not, stop and ask the human before continuing. A new field means: extract it in the parser (`extractFacts` / `extractRolloutFacts`, `threadFacts`), aggregate it per day, merge it in the ledger merge, and add a leak-test case to `tests/claude-code-metrics.test.js` or `tests/codex-metrics.test.js` that plants secrets, prompts and paths and proves none reach the output. Readers live in `src/collect/claude-code.js` and `src/collect/codex.js`.
+  - Codex: `src/collect/codex.js` caches the facts extracted from each rollout file under `CACHE_VERSION`. When per-file facts change (a new field, a changed extraction rule), bump `CACHE_VERSION` and add a line to its comment. Otherwise anyone with an existing cache never re-parses their old files, never gets the new field, and the badge silently reads 0.
+  - Claude Code: `src/collect/claude-code.js` has no per-file cache or version; every run re-reads all transcript files, so there is nothing to bump. Days whose transcripts were already deleted live only in the ledger (`mergeLedger` keeps their old values), so they never gain the new field; that is expected.
 - Allowed: tool names, event types, timestamps, token counts, mode values. Never: conversation text, command arguments or output, file paths, file contents, credentials. Never open the files AGENTS.md › Data boundary lists, not even to debug. A badge idea that needs forbidden data is dropped, not worked around.
 
 ## 3. Write the badge file
@@ -94,11 +96,15 @@ Preview:
 
 ```bash
 npx vite --port 5199          # keep running
-node scripts/peek.mjs "http://localhost:5199/?preview=unlocked" front.png <id>
-node scripts/peek.mjs "http://localhost:5199/?preview=unlocked" back.png <id> 3.14159
+node scripts/peek.mjs "http://localhost:5199/?preview=unlocked&source=mock" front.png <id>
+node scripts/peek.mjs "http://localhost:5199/?preview=unlocked&source=mock" back.png <id> 3.14159
 ```
 
-Add `&brand=codex` for Codex badges and `&tier=N` for each tier (the top tier too). `hold:0.6` as the angle pins the badge at a slant to check the sides of holographic and metal parts. In a browser: `http://localhost:5199/?preview=unlocked#<id>`.
+Add `&source=mock` to every preview URL. Without it, a machine that has local data for only one tool lists only that tool, and `brand=` for the other falls back to it; `source=mock` lists both tools with sample data. Add `&brand=codex` for Codex badges.
+
+For tiered badges add `&tier=N` for each tier. `N` is 0-based and clamped to the last tier (`src/app/preview.js`); without it the top tier is shown. The top tier has three variants, and the URL cannot pick one: the variant is chosen by a hash of the tier's `salt` plus the badge's `earnedAt` (`pickVariant` in `src/data/normalize.js`), and preview keeps the sample data's `earnedAt`. To see all three, change `earnedAt` in the badge's mock-data entry until each variant has come up (keep the final value varied), or check them in the design review through the studio (`src/project/studio.js`, `tools/studio.html`), which renders the sample state. `npm test` already runs `layoutIssues` on every variant. Do not ship a top tier you have only seen once.
+
+`hold:0.6` as the angle pins the badge at a slant to check the sides of holographic and metal parts. In a browser: `http://localhost:5199/?preview=unlocked&source=mock#<id>`.
 
 Show the human the front, back and every tier, say which principles you checked, and iterate until they approve. Do not approve your own design.
 
@@ -110,7 +116,7 @@ npm run build
 npm run check:browser    # dev server on 5199; every badge renders on both walls, no console errors
 ```
 
-Also `npm run check:pack` if you touched collectors or `package.json` `files`. Then commit (the message ends with the `Co-Authored-By` line the session uses).
+Also `npm run check:pack` if you touched collectors or `package.json` `files`. Commit only after the human has approved the design review (step 8); the message ends with the `Co-Authored-By` line the session uses.
 
 What each test catches if a step was missed:
 
@@ -124,6 +130,13 @@ What each test catches if a step was missed:
 | README counts | `tests/docs.test.js` |
 | A badge that throws while rendering | `npm run check:browser` (thumbnail count, console errors) |
 | Sample data (step 6), design (step 8) | Nothing. That is why they are steps |
+
+## Adding a tier to an existing badge
+
+- Add `{ threshold, metal, label }` to `tiers` in its badge file, in ascending order; the rule reads `badge.tiers`, so it needs no change.
+- If it has a top tier (`withTopTier()` / `topTierFromLast()` from `src/brands/shared/top-tier.js`), the new tier goes before it; the top tier stays last.
+- Update the mock data value (step 6), the descriptions if they name thresholds, and the badge's row in the READMEs' counting table ("How badges are counted" / 「统计口径」) if it lists the thresholds. A new metal also needs a palette key in each brand and a `tier` value in the READMEs' JSON output notes (`tests/docs.test.js` checks that).
+- Preview each tier with `&tier=N`, run the same review and checks.
 
 ## Redesigning an existing badge
 

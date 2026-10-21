@@ -1,6 +1,6 @@
 # Design principles
 
-Four principles, the same ones listed in CONTRIBUTING.md › Design principles. They are principles, not a whitelist: any shape, color or scene is fine as long as it keeps them. The maintainer's phrase for this is 随心所欲不逾矩: free within the rules.
+Four principles, the same ones listed in CONTRIBUTING.md › Design principles. They are principles, not a whitelist: any shape, color or scene is fine as long as it keeps them. The maintainer's motto for this is "随心所欲不逾矩" ("do as you please, without overstepping the rules"): free within the rules.
 
 Principles 1 and 2 are executable: `layoutIssues()` in `src/engine/layout.js` checks them, and `tests/layout.test.js` runs it on every badge, every tier and every top-tier design. Principles 3 and 4 are judged by eye in design review.
 
@@ -9,14 +9,14 @@ Principles 1 and 2 are executable: `layoutIssues()` in `src/engine/layout.js` ch
 The thin edge line inside the rim follows the outline. On a star, flower, shield or polygon, use a `contour` relief; a round edge `ring` belongs on round badges only.
 
 - Do: `medal()` adds `{ kind: 'contour', inset: 0.155, width: 0.012, ... }` for you, so a ten-point star gets a ten-point edge line.
-- Don't: put `{ kind: 'ring', radius: 0.86, width: 0.012 }` (a centered ring 0.02 wide or thinner) inside an octagon. The check reports "非圆外形里用了圆形细描边，应改用沿外形的描边（contour）".
+- Don't: put `{ kind: 'ring', radius: 0.86, width: 0.012 }` (a centered ring 0.02 wide or thinner) inside an octagon. The check reports "非圆外形里用了圆形细描边，应改用沿外形的描边（contour）" (the message is in Chinese: a round thin edge line in a non-round outline; use a contour instead).
 
 ## 2. Breathing room
 
 Centered content (the text ring, the center disc and its metal ring, any centered circle or ring wider than 0.02) keeps at least `BREATHING` = 0.06 of the radius from the inner edge of the edge line (or of the face, when there is no edge line).
 
 - Do: let `medal()` size the content. It computes the inner radius of the outline and shrinks the text ring and disc so the gap is 0.065.
-- Don't: hand-place a text ring at radius 0.72 inside a flower whose notches reach in to 0.8. The check reports "内容离外框太近：留白 …, 至少 0.06".
+- Don't: hand-place a text ring at radius 0.72 inside a flower whose notches reach in to 0.8. The check reports "内容离外框太近：留白 …, 至少 0.06" (content too close to the frame: gap …, at least 0.06).
 
 ## 3. Calm outlines
 
