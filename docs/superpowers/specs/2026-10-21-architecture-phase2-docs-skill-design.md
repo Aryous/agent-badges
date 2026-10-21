@@ -42,7 +42,7 @@ README 和代码是一个整体：文档里写下的每条约定，都有代码�
   - `scripts/assets.mjs`。
 - 各层仍保留自己的、按 id 索引的表，都不向上引用：
   - collect：`COLLECTORS`。每个采集模块导出 `BRAND_ID`、`turnsField`、`collect()`。
-  - data（浏览器端）：`progress.js` 的三张表合并为一个 `DATA_SOURCES = { [id]: { mock, mockDaily, source } }` 并导出；`project/studio.js` 和 `assets.mjs` 改为引用它。
+  - data（浏览器端）：每个 `mock-<id>.js` 导出 `BRAND_ID` 和 `MOCK_DAILY`（从 `progress.js` 挪过去）；`progress.js` 由它们推出并导出 `DATA_SOURCES = { [id]: { mock, mockDaily } }`，不再手写 id；`project/studio.js` 和 `assets.mjs` 改为引用它。
 - 由测试保证 `BRANDS`、`COLLECTORS`、`DATA_SOURCES`、`BRAND_INFO` 的 id 集合完全相同。
 
 ### 1.2 徽章门槛只写在配置里（规则按 id 登记）
@@ -53,9 +53,9 @@ README 和代码是一个整体：文档里写下的每条约定，都有代码�
 - `computeProgress(ledger, badges, today)` 签名不变，改成遍历 `badges`，逐个调用 `RULES[badge.id]`。
   - 某枚徽章没有对应规则：抛错。
   - 有规则但没有这枚徽章：由测试拦下。
-- 删除 `criteria.metric`，它一直没被使用。`criteria` 只保留 `target`，以及可选的 `unit`（例如马拉松 `{ target: 4, unit: 'h' }`，规则内部换算成分钟）。
+- 删除 `criteria.metric`，它一直没被使用。一次性徽章的 `criteria` 只保留 `target`，以及可选的 `unit`（例如马拉松 `{ target: 4, unit: 'h' }`，规则内部换算成分钟）；分级徽章的门槛在 `tiers` 里，不再写 `criteria`。`validate.js` 照此校验，`criteria` 出现其他键就报错。
 - 门槛随时间变化的徽章写 `criteria: { target: 22, dynamic: true }`，`target` 只作显示兜底，真实门槛由规则计算。目前只有全勤月。`validate.js` 接受这个字段。
-- 周年和工具生日的参数分别取自 `criteria`（365 天）和 `brand.launchDate`。
+- 周年取 `criteria.target`（年数，规则换算成 `target × 365` 天）；工具生日取 `brand.launchDate`（统计模块引用自己品牌的 `brand.js`）。
 - 示例数据可以省略 `target`，由 `normalize` 从配置补齐。
 
 ### 1.3 分层归位
@@ -63,7 +63,6 @@ README 和代码是一个整体：文档里写下的每条约定，都有代码�
 | 改动 | 原因 |
 | --- | --- |
 | `tierIndexFor` 从 `engine/tiers.js` 移到 `src/data/tiers.js`（引擎自身不用它，只有 `normalize.js` 和测试用），`tests/tiers.test.js` 跟着改引用 | data 不再依赖 engine；`files` 不再需要带上 `src/engine/tiers.js` |
-| 删除 `engine/tiers.js` 的 `TIER_NAMES` | 没人用，和 `brands/shared/text.js` 重复 |
 | `daily.js` 的 `TURNS_FIELD` 删除，由采集器经 `saveBrand(..., { turnsField })` 传入，`dailySeries(ledger, field)` | 通用模块里不放品牌知识 |
 | `metrics-common.js` 的 `LAUNCH_DATES` 删除，改用 `brand.launchDate` | 同上 |
 | 更新 `brands/index.js` 里过时的「如何加工具」注释，改为指向 CONTRIBUTING | 文档与代码一致 |
@@ -86,7 +85,7 @@ README 和代码是一个整体：文档里写下的每条约定，都有代码�
 2. **注册表一致**：`BRANDS`、`COLLECTORS`、`DATA_SOURCES`、`BRAND_INFO` 的 id 集合相同；每个品牌都有 `launchDate`。
 3. **门槛一致**：对每枚一次性的非 `dynamic` 徽章，在刚好达到 `criteria.target` 的构造账本上解锁，差 1 时不解锁；`progress.target === criteria.target`；中英文说明里都出现这个数字（按 `unit` 换算后）。布尔型徽章（target 1）只测解锁。
 4. **分层**：沿静态 import 遍历，检查 1.3 的依赖方向表。
-5. **不手写 id**：`src/`、`bin/`、`vite.config.js` 中，除 `brands/<id>/`、`collect/<id>.js` 和带 `// showcase` 标记的展示文件外，不出现 `'claude-code'` 或 `'codex'` 字面量。
+5. **不手写 id**：`src/`、`bin/`、`vite.config.js` 中，除品牌专属文件（`brands/<id>/`、`brands/index.js` 的默认品牌、`collect/<id>.js`、`data/<id>-metrics.js`、`data/mock-<id>.js`）和带 `// showcase` 标记的展示文件外，不出现 `'claude-code'` 或 `'codex'` 字面量。
 6. **展示列表有效**：site、promo、`assets.mjs` 里挑选的 `{ brand, id }` 都存在。
 
 文档同步类测试见第 5 节。
