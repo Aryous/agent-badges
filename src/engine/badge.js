@@ -89,7 +89,7 @@ function formatDate(iso) {
 }
 
 /**
- * @param {object} config  徽章配置（见 brands/<id>/badges.js）
+ * @param {object} config  徽章配置（见 brands/<id>/<系列>/<徽章>.js）
  * @param {object} brand   品牌主题（见 brands/<id>/brand.js）
  * @param {object} state   { unlocked, earnedAt, tier?, progress: { current, target } }
  * @param {object} [options]

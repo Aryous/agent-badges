@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import badges from '../src/brands/codex/badges.js';
+import badges from '../src/brands/codex/index.js';
 import {
   aggregateCodexDays,
   applyStreams,

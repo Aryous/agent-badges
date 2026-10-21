@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import brand from '../src/brands/claude-code/brand.js';
-import badges from '../src/brands/claude-code/badges.js';
+import badges from '../src/brands/claude-code/index.js';
 import { partitionBadges, validateBadge, validateBrand } from '../src/engine/validate.js';
 
 const byId = (id) => badges.find((b) => b.id === id);

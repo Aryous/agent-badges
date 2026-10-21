@@ -10,7 +10,7 @@ import { createReadStream, existsSync, readdirSync, statSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import badges from '../brands/claude-code/badges.js';
+import badges from '../brands/claude-code/index.js';
 import {
   aggregateDays,
   computeProgress,

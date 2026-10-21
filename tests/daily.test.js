@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { dailySeries, dailyStats, dailyYears, mockDaily } from '../src/data/daily.js';
 import { highlights } from '../src/data/highlights.js';
 import { normalizeProgress } from '../src/data/normalize.js';
-import badges from '../src/brands/claude-code/badges.js';
+import badges from '../src/brands/claude-code/index.js';
 
 describe('按天使用量', () => {
   it('从账本取 Token 和对话轮数，跳过空白日', () => {

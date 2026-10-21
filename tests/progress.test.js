@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import badges from '../src/brands/claude-code/badges.js';
+import badges from '../src/brands/claude-code/index.js';
 import { loadProgress, normalizeProgress } from '../src/data/progress.js';
 
 describe('normalizeProgress', () => {

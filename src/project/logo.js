@@ -2,7 +2,7 @@
 // 金色玫瑰花结外形 + 午夜蓝环带 + 象牙白圆盘，中心一颗四角星：
 // 从 Claude 橙渐变到 Codex 蓝，表示「每一个 Agent 的成就」。
 import { engravingLines } from '../brands/shared/text.js';
-import { MEDALLION_H, medallion, textRing } from '../brands/shared/medal.js';
+import { MEDALLION_H, medallion, textRing } from '../brands/shared/layout.js';
 
 /** 主星 + 右上角一颗小星（24 × 24 viewBox）。 */
 export const SPARKLE =

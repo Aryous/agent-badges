@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Box3 } from 'three';
 import brand from '../src/brands/claude-code/brand.js';
-import badges from '../src/brands/claude-code/badges.js';
+import badges from '../src/brands/claude-code/index.js';
 import { buildBadge } from '../src/engine/badge.js';
 import { resolveTier } from '../src/engine/tiers.js';
 

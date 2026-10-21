@@ -1,7 +1,7 @@
 import claudeBrand from './claude-code/brand.js';
-import claudeBadges, { SERIES as claudeSeries } from './claude-code/badges.js';
+import claudeBadges, { SERIES as claudeSeries } from './claude-code/index.js';
 import codexBrand from './codex/brand.js';
-import codexBadges, { SERIES as codexSeries } from './codex/badges.js';
+import codexBadges, { SERIES as codexSeries } from './codex/index.js';
 
 // 品牌注册表。新增品牌：建 brands/<id>/，在这里登记，再在 data/progress.js 里登记数据源。
 

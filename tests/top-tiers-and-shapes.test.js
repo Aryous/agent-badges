@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeOutline } from '../src/engine/shapes.js';
-import ccBadges from '../src/brands/claude-code/badges.js';
-import codexBadges from '../src/brands/codex/badges.js';
+import ccBadges from '../src/brands/claude-code/index.js';
+import codexBadges from '../src/brands/codex/index.js';
 
 describe('顶级三款', () => {
   it('所有分级徽章的最高一级都是三款随机，门槛不变', () => {

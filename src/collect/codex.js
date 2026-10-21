@@ -11,7 +11,7 @@ import { join as joinPath } from 'node:path';
 import { zstdDecompressSync } from 'node:zlib';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import badges from '../brands/codex/badges.js';
+import badges from '../brands/codex/index.js';
 import { aggregateCodexDays, applyCodexSegments, applyStreams, computeCodexProgress, extractRolloutFacts, mergeCodexLedger, mergeDays, threadFacts } from '../data/codex-metrics.js';
 import { localDate } from '../data/metrics-common.js';
 import { hash, readJSON, saveBrand, writeJSON } from './common.js';

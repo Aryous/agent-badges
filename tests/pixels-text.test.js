@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ShapeUtils } from 'three';
 import { pixelShapes } from '../src/engine/pixels.js';
 import { arcTextGeometry, glyphShapes, layoutArc } from '../src/engine/text.js';
-import { CLAWD } from '../src/brands/claude-code/pixel-art.js';
+import { CLAWD } from '../src/brands/claude-code/mascot.js';
 
 describe('pixelShapes', () => {
   it('实心方块 → 1 个外轮廓、4 个顶点', () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ShapeUtils } from 'three';
 import { parseSvgPath, svgShapes } from '../src/engine/svgpath.js';
-import { CODEX_MARK } from '../src/brands/codex/icons.js';
+import { CODEX_MARK } from '../src/brands/codex/mark.js';
 
 const area = (s) => Math.abs(ShapeUtils.area(s.getPoints()));
 

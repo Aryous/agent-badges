@@ -1,8 +1,8 @@
 // 采集结果的文字汇总：解锁数、最近获得、即将解锁。CLI 和 Claude Code Skill 共用。
 import claudeBrand from '../brands/claude-code/brand.js';
-import claudeBadges from '../brands/claude-code/badges.js';
+import claudeBadges from '../brands/claude-code/index.js';
 import codexBrand from '../brands/codex/brand.js';
-import codexBadges from '../brands/codex/badges.js';
+import codexBadges from '../brands/codex/index.js';
 import { normalizeProgress } from '../data/normalize.js';
 import { highlights } from '../data/highlights.js';
 import { badgeTitle, tierKey, tierLabel } from '../brands/shared/text.js';
