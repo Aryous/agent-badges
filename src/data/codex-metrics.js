@@ -11,11 +11,17 @@
 import { fnv1a } from './claude-code-metrics.js';
 import {
   addDays,
+  applySessionSegments,
   cumulative,
   distinctOver,
   firstDate,
   localDate,
+  holidays,
+  hoursSeries,
+  LAUNCH_DATES,
   once,
+  perfectMonth,
+  segmentsOf,
   streaks,
   tiered,
   weekday,
@@ -137,6 +143,11 @@ const emptyDay = () => ({
   review: false,
   vscode: false,
   models: [],
+  // 0.5 新增
+  dispatches: 0,
+  activeMin: 0,
+  maxParallel: 0,
+  midnight: false,
 });
 
 const IDLE_GAP_MS = 30 * 60 * 1000;
@@ -149,12 +160,15 @@ const IDLE_GAP_MS = 30 * 60 * 1000;
  * @param {object} [opts]
  * @param {Array}  [opts.streamsOut]  传入时，旧版 token_count 用量不直接计入，而是以 [指纹, 日期, Token] 放进这里，
  *   由调用方合并所有文件后用 applyStreams 统一去重（采集时按文件缓存，跨文件去重只能放到最后做）
+ * @param {Array}  [opts.segsOut]  传入时，自己发起的会话的活动段放进这里，由调用方合并所有文件后用
+ *   applySessionSegments 统一计算协作时长、多线并行、跨日夜战（这三项要跨会话一起算）
  */
-export function aggregateCodexDays(sessions, threads, { streamsOut = null } = {}) {
+export function aggregateCodexDays(sessions, threads, { streamsOut = null, segsOut = null } = {}) {
   const days = {};
   const day = (ts) => (days[localDate(ts)] ??= emptyDay());
   const seenUsage = new Set();
   const seenStreams = new Set();
+  const allSegs = segsOut ?? [];
 
   for (const facts of sessions) {
     const sorted = facts.filter((f) => f && f.ts !== null).sort((a, b) => a.ts - b.ts);
@@ -165,6 +179,7 @@ export function aggregateCodexDays(sessions, threads, { streamsOut = null } = {}
     let lastTotal = null;
     let last = null;
     let activeMs = 0;
+    if (human && sorted.length) allSegs.push(segmentsOf(sorted.map((f) => f.ts)));
     for (const f of sorted) {
       const d = day(f.ts);
       if (human && last !== null) {
@@ -195,7 +210,11 @@ export function aggregateCodexDays(sessions, threads, { streamsOut = null } = {}
       if (f.kind === 'tool') {
         if (f.name === 'apply_patch') d.patches += 1;
         if (f.name === 'update_plan') d.plan = true;
-        if (f.name === 'spawn_agent') d.spawn = true;
+        if (f.name === 'spawn_agent') {
+          d.spawn = true;
+          // 子代理再派出去的不算，只算自己发起的会话派出的
+          if (human) d.dispatches += 1;
+        }
       }
       if (f.kind === 'compact') d.compactions += 1;
       if (f.kind === 'context') {
@@ -219,6 +238,7 @@ export function aggregateCodexDays(sessions, threads, { streamsOut = null } = {}
     if (t.fullAuto) d.fullAuto = true;
     if (t.model && !d.models.includes(t.model)) d.models.push(t.model);
   }
+  if (!segsOut && allSegs.length) applySessionSegments(days, allSegs, emptyDay);
   return days;
 }
 
@@ -226,6 +246,11 @@ export function aggregateCodexDays(sessions, threads, { streamsOut = null } = {}
  * 合并两份按天汇总（用于把各个会话文件的缓存结果加起来）：
  * 计数相加，标记取或，最长会话取最大，模型取并集。
  */
+/** 把各文件交出来的活动段统一计入（就地修改 days）。 */
+export function applyCodexSegments(days, segs) {
+  return applySessionSegments(days, segs, emptyDay);
+}
+
 /** 把 aggregateCodexDays 交出来的旧版用量按指纹去重后计入（就地修改 days）。 */
 export function applyStreams(days, streams) {
   const seen = new Set();
@@ -241,9 +266,10 @@ export function mergeDays(a, b) {
   const out = structuredClone(a);
   for (const [date, d] of Object.entries(b)) {
     const t = (out[date] ??= emptyDay());
-    for (const k of ['threads', 'turns', 'tokens', 'patches', 'compactions']) t[k] += d[k];
-    for (const k of ['spawn', 'plan', 'highEffort', 'fullAuto', 'review', 'vscode']) t[k] ||= d[k];
+    for (const k of ['threads', 'turns', 'tokens', 'patches', 'compactions', 'dispatches', 'activeMin']) t[k] += d[k] ?? 0;
+    for (const k of ['spawn', 'plan', 'highEffort', 'fullAuto', 'review', 'vscode', 'midnight']) t[k] ||= d[k] ?? false;
     t.longestSessionMin = Math.max(t.longestSessionMin, d.longestSessionMin);
+    t.maxParallel = Math.max(t.maxParallel, d.maxParallel ?? 0);
     d.hours.forEach((h, i) => (t.hours[i] += h));
     for (const m of d.models) if (!t.models.includes(m)) t.models.push(m);
   }
@@ -316,5 +342,28 @@ export function computeCodexProgress(ledger, badges, today) {
     const s = cumulative(all, days, 'compactions');
     out.compactor = once(s.reachedOn(20), Math.min(s.value, 20), 20);
   }
+
+  // ---- 0.5 新增 ----
+  const maxOf = (field) => Math.max(0, ...dates.map((d) => days[d][field] ?? 0));
+  // 习惯
+  out['midnight-crossing'] = once(firstDate(dates, days, (d) => d.midnight));
+  out['productive-day'] = once(firstDate(dates, days, (d) => d.threads >= 20), Math.min(maxOf('threads'), 20), 20);
+  out.multitasker = once(firstDate(dates, days, (d) => (d.maxParallel ?? 0) >= 3), Math.min(maxOf('maxParallel'), 3), 3);
+  {
+    const pm = perfectMonth(dates, today);
+    out['perfect-month'] = once(pm.date, pm.current, pm.target);
+  }
+  // 里程碑
+  {
+    const h = hoursSeries(dates, days);
+    out['active-hours'] = tiered(tiersOf('active-hours'), h.value, h.reachedOn);
+  }
+  tier('dispatches', 'dispatches');
+  // 节日限定
+  const on = (pred) => once(firstDate(dates, days, (_, date) => pred(date)));
+  out['new-year'] = on(holidays['new-year']);
+  out['spring-festival'] = on(holidays['spring-festival']);
+  out['tool-birthday'] = on(holidays.birthday(LAUNCH_DATES.codex));
+  out.christmas = on(holidays.christmas);
   return out;
 }

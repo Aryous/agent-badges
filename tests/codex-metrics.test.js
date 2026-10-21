@@ -140,7 +140,7 @@ describe('统计口径', () => {
     recs.push(tool(at('2026-05-01', 11), 'update_plan'), tool(at('2026-05-01', 11), 'spawn_agent'));
     for (let i = 0; i < 20; i++) recs.push({ type: 'compacted', timestamp: at('2026-05-01', 12, i), payload: { message: SECRET } });
     const { progress } = run([session(recs)]);
-    expect(progress.patches).toEqual({ value: 12, earnedAt: '2026-05-01' });
+    expect(progress.patches).toMatchObject({ value: 12, earnedAt: '2026-05-01' });
     expect(progress['plan-tracker'].unlocked).toBe(true);
     expect(progress['multi-agent'].unlocked).toBe(true);
     expect(progress.compactor).toMatchObject({ unlocked: true, earnedAt: '2026-05-01' });

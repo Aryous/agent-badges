@@ -18,7 +18,7 @@ const label = (b, s, lang, { next = false } = {}) => badgeTitle(b, lang, next ? 
 /** 一个品牌的汇总数据（结构化，供 --json 输出）。 */
 export function summarize(brandId, rawProgress, { lang = 'en' } = {}) {
   const { brand, badges } = BRAND_INFO[brandId];
-  const p = normalizeProgress(rawProgress, badges);
+  const p = normalizeProgress(rawProgress, badges, brandId);
   const h = highlights(badges, p);
   const unlocked = h.unlocked;
   const recent = h.recent.map(({ badge: b, state: st }) => ({ id: b.id, title: label(b, st, lang), earnedAt: st.earnedAt }));
@@ -33,8 +33,8 @@ export function summarize(brandId, rawProgress, { lang = 'en' } = {}) {
 export function newUnlocks(brandId, prevRaw, nextRaw, { lang = 'en' } = {}) {
   if (!prevRaw) return [];
   const { badges } = BRAND_INFO[brandId];
-  const prev = normalizeProgress(prevRaw, badges);
-  const next = normalizeProgress(nextRaw, badges);
+  const prev = normalizeProgress(prevRaw, badges, brandId);
+  const next = normalizeProgress(nextRaw, badges, brandId);
   return badges
     .filter((b) => next[b.id].unlocked && (!prev[b.id].unlocked || (b.tiers && next[b.id].tier > prev[b.id].tier)))
     .map((b) => {
@@ -42,9 +42,12 @@ export function newUnlocks(brandId, prevRaw, nextRaw, { lang = 'en' } = {}) {
       const tier = b.tiers?.[st.tier];
       // 顶级有几款时，告诉用户抽到了哪一款
       const design = tier?.variants ? tierLabel(tier, st.variant, lang) : null;
+      // 第一次解锁就是闪光款（1/20）：大声说出来
+      const shiny = st.shiny && !prev[b.id].unlocked;
       return {
         id: b.id,
-        title: label(b, st, lang) + (design ? (lang === 'zh' ? `（${design}）` : ` (${design})`) : ''),
+        title: label(b, st, lang) + (design ? (lang === 'zh' ? `（${design}）` : ` (${design})`) : '') + (shiny ? (lang === 'zh' ? ' ✨闪光！' : ' ✨Shiny!') : ''),
+        ...(shiny ? { shiny: true } : {}),
         earnedAt: st.earnedAt,
         ...(tier ? { tier: tierKey(tier, st.variant), upgrade: prev[b.id].unlocked } : {}),
       };

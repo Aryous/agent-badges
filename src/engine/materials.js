@@ -1,5 +1,5 @@
-import { MeshPhysicalMaterial } from 'three';
-import { brushedTexture, holoTexture, radialAnisotropyTexture } from './textures.js';
+import { Color, MeshPhysicalMaterial } from 'three';
+import { auroraTexture, brushedTexture, conicTexture, glitterTexture, holoTexture, nacreTexture, radialAnisotropyTexture } from './textures.js';
 
 // 材质预设。color 为 sRGB 十六进制色值。
 // overrides 用于背面刻字等需要替换贴图的场景。
@@ -81,6 +81,51 @@ const PRESETS = {
     clearcoat: 1,
     clearcoatRoughness: 0.02,
     specularIntensity: 1,
+  }),
+
+  // ---- 闪光款（1/20 概率）：整枚徽章的金属部分换成下面三种之一 ----
+
+  // 镭射虹彩：像烧过的钛，颜色沿圆周流转一圈；表面撒细闪粉，转动时一粒粒闪。
+  // 和「全息镭射」的区别：全息是同心彩虹环、没有闪粉
+  'shiny-iris': (c, { browser }) => ({
+    color: new Color(c).lerp(new Color('#ffffff'), 0.35),
+    metalness: 1,
+    roughness: 0.16,
+    iridescence: 1,
+    iridescenceIOR: 2.2,
+    iridescenceThicknessRange: [180, 820],
+    clearcoat: 0.7,
+    clearcoatRoughness: 0.04,
+    ...(browser ? { iridescenceThicknessMap: conicTexture(), roughnessMap: glitterTexture(), bumpMap: glitterTexture(), bumpScale: 0.6 } : {}),
+  }),
+
+  // 珠光贝母：乳白底，云雾状的粉绿光晕，像贝壳内壁
+  'shiny-pearl': (c, { browser }) => ({
+    color: new Color(c).lerp(new Color('#fbf6ee'), 0.6),
+    metalness: 0.7,
+    roughness: 0.14,
+    iridescence: 1,
+    iridescenceIOR: 1.9,
+    iridescenceThicknessRange: [300, 720],
+    sheen: 1,
+    sheenColor: new Color('#ffd6e6'),
+    sheenRoughness: 0.35,
+    clearcoat: 1,
+    clearcoatRoughness: 0.03,
+    ...(browser ? { iridescenceThicknessMap: nacreTexture() } : {}),
+  }),
+
+  // 极光：偏冷的金属底，竖向光带在青绿和紫之间流动；同样撒闪粉
+  'shiny-aurora': (c, { browser }) => ({
+    color: new Color(c).lerp(new Color('#a8f0e0'), 0.4),
+    metalness: 1,
+    roughness: 0.16,
+    iridescence: 1,
+    iridescenceIOR: 1.7,
+    iridescenceThicknessRange: [550, 1000],
+    clearcoat: 0.8,
+    clearcoatRoughness: 0.04,
+    ...(browser ? { iridescenceThicknessMap: auroraTexture(), roughnessMap: glitterTexture(), bumpMap: glitterTexture(), bumpScale: 0.6 } : {}),
   }),
 
   locked: (c) => ({

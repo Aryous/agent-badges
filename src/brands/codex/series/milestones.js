@@ -1,6 +1,6 @@
 import { MEDALLION_H, around, codexMark, medallion, textRing } from '../helpers.js';
 import { CODEX_MARK } from '../icons.js';
-import { tokenTopVariants } from '../../shared/medal.js';
+import { topTierFromLast, topVariants } from '../../shared/medal.js';
 
 // Codex 里程碑系列：起步与累计用量。分级徽章按 铜 → 银 → 金 → 白金 升级（Token 徽章还有顶级彩蛋），
 // 外圈和数字跟着等级换金属，中心圆盘每级换一种珐琅色（$accent）。
@@ -109,7 +109,7 @@ const tokensBase = {
 // 顶级 100B：三款彩蛋随机解锁一款（白瓷金 / 黑瓷金 / 蓝宝石），由达到这一级的日期决定
 const tokens = {
   ...tokensBase,
-  tiers: [...tokensBase.tiers, { threshold: 100_000_000_000, label: '100B', salt: 'codex/tokens', variants: tokenTopVariants(tokensBase) }],
+  tiers: [...tokensBase.tiers, { threshold: 100_000_000_000, label: '100B', salt: 'codex/tokens', variants: topVariants(tokensBase) }],
 };
 
 // ---------------------------------------------------------------------------
@@ -188,4 +188,5 @@ const patches = {
   back: { material: 'brushed-metal', color: '$metal' },
 };
 
-export default [firstThread, threads, tokens, patches];
+// 最高一级：三款随机（与 Token 顶级同一家族）
+export default [firstThread, topTierFromLast(threads, 'codex/threads'), tokens, topTierFromLast(patches, 'codex/patches')];

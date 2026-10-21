@@ -51,7 +51,7 @@ export async function loadProgress(brandId, badges, sources = SOURCES, options =
   try {
     if (!source) throw new Error(`没有品牌「${brandId}」的数据源`);
     const raw = await source(options);
-    return { progress: normalizeProgress(raw, badges), error: null };
+    return { progress: normalizeProgress(raw, badges, brandId), error: null };
   } catch (error) {
     return { progress: normalizeProgress({}, badges), error };
   }

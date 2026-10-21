@@ -1,5 +1,6 @@
 import { CLAWD, CLAWD_EYES, PLUS, SEVEN } from '../pixel-art.js';
 import { MEDALLION_H, around, clawd, medallion, onClawd, textRing } from '../helpers.js';
+import { topTierFromLast } from '../../shared/medal.js';
 
 // 连续与习惯系列：坚持、作息和节奏。小怪物会按主题换装。
 
@@ -386,4 +387,4 @@ const marathon = {
   back: { material: 'brushed-metal', color: 'gold' },
 };
 
-export default [sevenDayStreak, streakDays, nightOwl, earlyBird, weekendWarrior, marathon];
+export default [sevenDayStreak, topTierFromLast(streakDays, 'claude-code/streak-days'), nightOwl, earlyBird, weekendWarrior, marathon];

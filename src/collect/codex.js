@@ -12,7 +12,7 @@ import { zstdDecompressSync } from 'node:zlib';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import badges from '../brands/codex/badges.js';
-import { aggregateCodexDays, applyStreams, computeCodexProgress, extractRolloutFacts, mergeCodexLedger, mergeDays, threadFacts } from '../data/codex-metrics.js';
+import { aggregateCodexDays, applyCodexSegments, applyStreams, computeCodexProgress, extractRolloutFacts, mergeCodexLedger, mergeDays, threadFacts } from '../data/codex-metrics.js';
 import { localDate } from '../data/metrics-common.js';
 import { hash, readJSON, saveBrand, writeJSON } from './common.js';
 
@@ -98,14 +98,16 @@ async function threadRows(dir) {
 /**
  * 统计口径变了就加一，旧缓存作废、所有会话记录重新解析。
  * 2：认出旧版 token_count 用量。3：行业通用口径（含缓存命中）；旧版用量跨文件去重。
+ * 4：缓存会话活动段（协作时长、多线并行、跨日夜战）和子代理派遣次数。
  */
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 4;
 
 function rolloutDays(files, cachePath, onProgress) {
   const cache = readJSON(cachePath);
   const old = cache?.version === CACHE_VERSION ? cache.files : {};
   const next = {};
   let days = {};
+  const allSegs = []; // 自己发起的会话的活动段：协作时长等要跨会话一起算
   const allStreams = []; // 旧版 token_count 用量：分叉 / 子代理会话会复制父会话的记录，全部文件读完再统一去重
   let parsed = 0;
   let facts = 0;
@@ -118,14 +120,17 @@ function rolloutDays(files, cachePath, onProgress) {
       facts += f.length;
       parsed += 1;
       const streams = [];
-      entry = { size, mtimeMs, days: aggregateCodexDays([f], [], { streamsOut: streams }), streams };
+      const segs = [];
+      entry = { size, mtimeMs, days: aggregateCodexDays([f], [], { streamsOut: streams, segsOut: segs }), streams, segs };
     }
     next[key] = entry;
     days = mergeDays(days, entry.days);
     allStreams.push(...entry.streams);
+    allSegs.push(...entry.segs);
     onProgress?.(i + 1, files.length);
   });
   applyStreams(days, allStreams);
+  applyCodexSegments(days, allSegs);
   writeJSON(cachePath, { version: CACHE_VERSION, files: next });
   return { days, parsed, facts };
 }

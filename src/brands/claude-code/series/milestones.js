@@ -1,5 +1,5 @@
 import { MEDALLION_H, clawd, medallion, textRing } from '../helpers.js';
-import { tokenTopVariants } from '../../shared/medal.js';
+import { topTierFromLast, topVariants } from '../../shared/medal.js';
 
 // 里程碑系列：起步与累计用量。分级徽章按 铜 → 银 → 金 → 白金 升级，
 // 外圈和数字跟着等级换金属，中心圆盘每级换一种珐琅色（$accent），升级有惊喜感。
@@ -120,7 +120,7 @@ const tokensBase = {
 // 顶级 100B：三款彩蛋随机解锁一款（白瓷金 / 黑瓷金 / 蓝宝石），由达到这一级的日期决定
 const tokens = {
   ...tokensBase,
-  tiers: [...tokensBase.tiers, { threshold: 100_000_000_000, label: '100B', salt: 'claude-code/tokens', variants: tokenTopVariants(tokensBase) }],
+  tiers: [...tokensBase.tiers, { threshold: 100_000_000_000, label: '100B', salt: 'claude-code/tokens', variants: topVariants(tokensBase) }],
 };
 
 // ---------------------------------------------------------------------------
@@ -167,4 +167,5 @@ const toolCalls = {
   back: { material: 'brushed-metal', color: '$metal' },
 };
 
-export default [firstSession, sessions, tokens, toolCalls];
+// 最高一级：三款随机（与 Token 顶级同一家族）
+export default [firstSession, topTierFromLast(sessions, 'claude-code/sessions'), tokens, topTierFromLast(toolCalls, 'claude-code/tool-calls')];

@@ -27,7 +27,7 @@ const MOCKS = { 'claude-code': mockClaudeCode, codex: mockCodex };
  * @param {boolean} [o.unlocked] 覆盖解锁状态（默认用示例数据）
  * @param {number} [o.engraving]  背面刻字贴图边长（默认 2048，素材都按近看的清晰度出）
  */
-async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, lang = 'en', unlocked, tier, showcase = false, fill = 0.92, background = null, engraving = 2048 }) {
+async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, lang = 'en', unlocked, tier, shiny, showcase = false, fill = 0.92, background = null, engraving = 2048 }) {
   let brand, config, state;
   if (brandId === 'logo') {
     brand = logoBrand;
@@ -37,7 +37,7 @@ async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, la
     const b = getBrand(brandId);
     brand = b.brand;
     config = b.badges.find((x) => x.id === id);
-    state = normalizeProgress(await MOCKS[brandId](), b.badges)[id];
+    state = normalizeProgress(await MOCKS[brandId](), b.badges, brandId)[id];
     // 展示用：分级徽章看最高级，隐藏徽章保持神秘，其余都已解锁
     if (showcase) {
       state = config.hidden
@@ -46,6 +46,7 @@ async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, la
     }
     if (unlocked !== undefined) state = { ...state, unlocked, earnedAt: state.earnedAt ?? '2026-05-02' };
     if (tier !== undefined) state = { ...state, unlocked: true, tier, earnedAt: state.earnedAt ?? '2026-05-02' };
+    if (shiny !== undefined) state = { ...state, shiny };
   }
   const badge = buildBadge(config, brand, state, { lang });
   setEngravingSize(badge, engraving);

@@ -8,6 +8,8 @@ export default async function mockCodex() {
     threads: { value: 420, earnedAt: '2026-06-02' }, // 银（100）
     tokens: { value: 12_000_000_000, earnedAt: '2026-08-15' }, // 白金（100 亿），下一级是顶级彩蛋
     patches: { value: 64, earnedAt: '2026-05-01' }, // 铜（10）
+    'active-hours': { value: 502, earnedAt: '2026-07-20' }, // 银（100 小时）
+    dispatches: { value: 489, earnedAt: '2026-08-11' }, // 银（100）
 
     // 连续与习惯
     'seven-day-streak': { unlocked: true, earnedAt: '2026-04-20', progress: { current: 7, target: 7 } },
@@ -16,6 +18,10 @@ export default async function mockCodex() {
     'early-bird': { unlocked: false, progress: { current: 0, target: 1 } },
     'weekend-warrior': { unlocked: true, earnedAt: '2026-04-26' },
     marathon: { unlocked: false, progress: { current: 2, target: 4 } },
+    'midnight-crossing': { unlocked: false, progress: { current: 0, target: 1 } },
+    'productive-day': { unlocked: false, progress: { current: 15, target: 20 } },
+    multitasker: { unlocked: true, earnedAt: '2026-05-06', shiny: true }, // 闪光款
+    'perfect-month': { unlocked: true, earnedAt: '2026-08-31' },
 
     // 功能探索
     'multi-agent': { unlocked: true, earnedAt: '2026-06-18' },
@@ -30,5 +36,9 @@ export default async function mockCodex() {
     anniversary: { unlocked: false, progress: { current: 0, target: 1 } },
     'model-collector': { unlocked: true, earnedAt: '2026-09-02' }, // 隐藏，已解锁
     compactor: { unlocked: false, progress: { current: 12, target: 20 } }, // 隐藏，未解锁
+    'new-year': { unlocked: false, progress: { current: 0, target: 1 } },
+    'spring-festival': { unlocked: false, progress: { current: 0, target: 1 } },
+    'tool-birthday': { unlocked: true, earnedAt: '2026-04-16' },
+    christmas: { unlocked: false, progress: { current: 0, target: 1 } },
   };
 }

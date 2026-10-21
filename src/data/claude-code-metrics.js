@@ -7,7 +7,9 @@
 //   - MCP 服务名只用于去重计数，保存前做哈希。
 //   - 输出（账本 + 进度）只包含数字、日期和哈希。
 //
-// 这个模块是纯函数，不碰文件系统；读文件的部分在 scripts/collect-claude-code.mjs。
+// 这个模块是纯函数，不碰文件系统；读文件的部分在 src/collect/claude-code.js。
+
+import { applySessionSegments, holidays, hoursSeries, LAUNCH_DATES, perfectMonth, segmentsOf } from './metrics-common.js';
 
 // ---------- 1. 单条记录 → 白名单事实 ----------
 
@@ -142,7 +144,20 @@ const emptyDay = () => ({
   hooks: false,
   models: [],
   mcp: [],
+  // 0.5 新增
+  activeMin: 0,
+  maxParallel: 0,
+  midnight: false,
+  dispatches: 0,
+  webCalls: 0,
+  editCalls: 0,
+  autopilot: false,
 });
+
+const WEB_TOOLS = new Set(['WebSearch', 'WebFetch']);
+const EDIT_TOOLS = new Set(['Edit', 'MultiEdit', 'Write', 'NotebookEdit']);
+/** /loop（ScheduleWakeup）、定时任务（CronCreate）、Workflow 编排 */
+const AUTOPILOT_TOOLS = new Set(['ScheduleWakeup', 'CronCreate', 'Workflow']);
 
 const IDLE_GAP_MS = 30 * 60 * 1000; // 两条记录间隔超过 30 分钟视为离开，不计入会话时长
 
@@ -157,12 +172,17 @@ export function aggregateDays(facts) {
   const seenTools = new Set();
   const sessions = new Map(); // sessionId → { first, last, activeMs }
   const agentsPerMessage = new Map(); // messageId → { ts, count }
+  const sessionTimes = new Map(); // sessionId → 主会话的活动时间点
+  const seenAllTools = new Set(); // 含子代理：联网检索、文件编辑、自动驾驶
 
   for (const f of facts) {
     if (!f || f.ts === null) continue;
     const d = day(f.ts);
 
     if (f.sessionId && !f.sidechain) {
+      let times = sessionTimes.get(f.sessionId);
+      if (!times) sessionTimes.set(f.sessionId, (times = []));
+      times.push(f.ts);
       const s = sessions.get(f.sessionId);
       if (!s) sessions.set(f.sessionId, { first: f.ts, last: f.ts, activeMs: 0, crossed: null });
       else {
@@ -191,6 +211,16 @@ export function aggregateDays(facts) {
         else f.usage.forEach((v, i) => (m.usage[i] = Math.max(m.usage[i], v)));
       }
       if (f.model && !d.models.includes(f.model)) d.models.push(f.model);
+      // 联网检索、文件编辑、自动驾驶：子代理里的调用也算（也是在替你干活）
+      for (const t of f.tools) {
+        if (t.id) {
+          if (seenAllTools.has(t.id)) continue;
+          seenAllTools.add(t.id);
+        }
+        if (WEB_TOOLS.has(t.name)) d.webCalls += 1;
+        if (EDIT_TOOLS.has(t.name)) d.editCalls += 1;
+        if (AUTOPILOT_TOOLS.has(t.name)) d.autopilot = true;
+      }
       // 子代理的工具调用暂不计入工具类徽章：以前不读子代理记录，口径保持不变（Token 和模型照常计入）
       for (const t of f.sidechain ? [] : f.tools) {
         if (t.id) {
@@ -203,6 +233,7 @@ export function aggregateDays(facts) {
         if (t.name === 'EnterPlanMode' || t.name === 'ExitPlanMode') d.plan = true;
         if (t.mcp && !d.mcp.includes(t.mcp)) d.mcp.push(t.mcp);
         if (t.name === 'Agent' || t.name === 'Task') {
+          d.dispatches += 1;
           const key = f.messageId ?? `${f.ts}`;
           const e = agentsPerMessage.get(key) ?? { ts: f.ts, count: 0 };
           e.count += 1;
@@ -222,6 +253,7 @@ export function aggregateDays(facts) {
     const d = day(e.ts);
     d.maxParallelAgents = Math.max(d.maxParallelAgents, e.count);
   }
+  applySessionSegments(days, [...sessionTimes.values()].map((t) => segmentsOf(t)), emptyDay);
   return days;
 }
 
@@ -323,7 +355,9 @@ export function computeProgress(ledger, badges, today) {
     const ts = tiers(id);
     let earnedAt = null;
     for (const t of ts) if (series.value >= t.threshold) earnedAt = series.reachedOn(t.threshold);
-    out[id] = { value: series.value, earnedAt };
+    // firstAt：第一级的达成日期，决定闪光款（升级后不变）
+    const firstAt = ts[0] && series.value >= ts[0].threshold ? series.reachedOn(ts[0].threshold) : null;
+    out[id] = { value: series.value, earnedAt, firstAt };
   };
   /** 一次性徽章 */
   const once = (id, date, current = date ? 1 : 0, target = 1) => {
@@ -352,7 +386,7 @@ export function computeProgress(ledger, badges, today) {
     const ts = tiers('streak-days');
     let earnedAt = null;
     for (const t of ts) if (best >= t.threshold) earnedAt = runReached[t.threshold];
-    out['streak-days'] = { value: best, earnedAt };
+    out['streak-days'] = { value: best, earnedAt, firstAt: ts[0] ? runReached[ts[0].threshold] ?? null : null };
   }
 
   // 作息（按本地小时）
@@ -407,6 +441,29 @@ export function computeProgress(ledger, badges, today) {
     const maxBash = Math.max(0, ...dates.map((d) => days[d].bashCalls));
     once('bash-maniac', firstDate(dates, days, (d) => d.bashCalls >= 500), Math.min(maxBash, 500), 500);
   }
+
+  // ---- 0.5 新增 ----
+  const maxOf = (field) => Math.max(0, ...dates.map((d) => days[d][field] ?? 0));
+  // 习惯
+  once('midnight-crossing', firstDate(dates, days, (d) => d.midnight));
+  once('productive-day', firstDate(dates, days, (d) => d.sessions >= 20), Math.min(maxOf('sessions'), 20), 20);
+  once('multitasker', firstDate(dates, days, (d) => (d.maxParallel ?? 0) >= 3), Math.min(maxOf('maxParallel'), 3), 3);
+  {
+    const pm = perfectMonth(dates, today);
+    once('perfect-month', pm.date, pm.current, pm.target);
+  }
+  // 里程碑
+  tiered('active-hours', hoursSeries(dates, days));
+  tiered('dispatches', cumulative(dates, days, 'dispatches'));
+  tiered('web-research', cumulative(dates, days, 'webCalls'));
+  tiered('file-edits', cumulative(dates, days, 'editCalls'));
+  // 功能
+  once('autopilot', firstDate(dates, days, (d) => d.autopilot));
+  // 节日限定
+  once('new-year', firstDate(dates, days, (_, date) => holidays['new-year'](date)));
+  once('spring-festival', firstDate(dates, days, (_, date) => holidays['spring-festival'](date)));
+  once('tool-birthday', firstDate(dates, days, (_, date) => holidays.birthday(LAUNCH_DATES['claude-code'])(date)));
+  once('christmas', firstDate(dates, days, (_, date) => holidays.christmas(date)));
 
   return out;
 }

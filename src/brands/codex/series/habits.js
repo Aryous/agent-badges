@@ -1,4 +1,5 @@
 import { MEDALLION_H, around, codexMark, medallion, onMark, textRing } from '../helpers.js';
+import { topTierFromLast } from '../../shared/medal.js';
 
 // Codex 连续与习惯系列：坚持、作息和节奏。
 // 与 Claude Code 同主题徽章错开外形：七边形、链轮、八角星、太阳、五边形、表盘。
@@ -211,4 +212,4 @@ const marathon = {
   back: { material: 'brushed-metal', color: 'platinum' },
 };
 
-export default [sevenDayStreak, streakDays, nightOwl, earlyBird, weekendWarrior, marathon];
+export default [sevenDayStreak, topTierFromLast(streakDays, 'codex/streak-days'), nightOwl, earlyBird, weekendWarrior, marathon];

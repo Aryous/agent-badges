@@ -1,6 +1,6 @@
 // 引擎能识别的名字。配置校验和构建都以这里为准。
 
-export const SHAPE_TYPES = ['circle', 'polygon', 'starburst', 'shield', 'gear'];
+export const SHAPE_TYPES = ['circle', 'polygon', 'starburst', 'shield', 'gear', 'flower'];
 
 export const MATERIAL_TYPES = [
   'enamel',          // 珐琅：有色底 + 清漆高光
@@ -10,6 +10,9 @@ export const MATERIAL_TYPES = [
   'holographic',     // 全息镭射
   'anodized',        // 阳极氧化铝
   'crystal',         // 水晶宝石
+  'shiny-iris',      // 闪光款：镭射虹彩
+  'shiny-pearl',     // 闪光款：珠光贝母
+  'shiny-aurora',    // 闪光款：极光
   'locked',          // 未解锁剪影
 ];
 

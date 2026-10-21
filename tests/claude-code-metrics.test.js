@@ -152,7 +152,7 @@ describe('统计口径', () => {
     for (let i = 0; i < 12; i++) records.push(user(`s${i}`, at(`2026-07-${String(i + 1).padStart(2, '0')}`, 12)));
     const { progress } = run(records);
     // 第 10 个会话在 7/10 → 达到 10 次那一级
-    expect(progress.sessions).toEqual({ value: 12, earnedAt: '2026-07-10' });
+    expect(progress.sessions).toMatchObject({ value: 12, earnedAt: '2026-07-10' });
   });
 
   it('子代理：同一条消息里并行调度的 Agent 数', () => {

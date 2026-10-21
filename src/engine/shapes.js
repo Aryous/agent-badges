@@ -100,7 +100,32 @@ function gear({ teeth = 12, radius = 1, rootRadius = 0.84, roundness = 0.025, ro
   return roundedPolygon(verts, Math.max(0.005, roundness - inset * 0.2));
 }
 
-const BUILDERS = { circle, polygon, starburst, shield, gear };
+/**
+ * 花形：n 片圆形花瓣围成一圈，相邻花瓣相交处是凹口（如五瓣梅花）。
+ * radius 为外接半径；petal 为花瓣半径占外接半径的比例。内缩时花瓣半径同步减小，凹口重新求交，等距准确。
+ */
+function flower({ petals = 5, radius = 1, petal = 0.44, rotation = Math.PI / 2 }, inset) {
+  const p0 = radius * petal;
+  const c = radius - p0; // 花瓣圆心到中心的距离
+  const p = p0 - inset;
+  const half = Math.PI / petals;
+  // 相邻两片花瓣的外侧交点（凹口）到中心的距离
+  const v = c * Math.cos(half) + Math.sqrt(Math.max(0, p * p - (c * Math.sin(half)) ** 2));
+  const shape = new Shape();
+  for (let i = 0; i < petals; i++) {
+    const t = rotation + i * 2 * half;
+    const cx = Math.cos(t) * c;
+    const cy = Math.sin(t) * c;
+    // 这片花瓣从右侧凹口（t - half）逆时针走到左侧凹口（t + half）
+    const a0 = Math.atan2(Math.sin(t - half) * v - cy, Math.cos(t - half) * v - cx);
+    const a1 = Math.atan2(Math.sin(t + half) * v - cy, Math.cos(t + half) * v - cx);
+    shape.absarc(cx, cy, p, a0, a1 < a0 ? a1 + Math.PI * 2 : a1, false);
+  }
+  shape.closePath();
+  return shape;
+}
+
+const BUILDERS = { circle, polygon, starburst, shield, gear, flower };
 
 /**
  * 根据轮廓配置生成 Shape。inset 为向内收缩的距离，用于生成内层。
@@ -115,6 +140,7 @@ export function makeOutline(shapeCfg, inset = 0) {
 export function outlineSegments(shapeCfg) {
   if (shapeCfg.type === 'circle') return 64;
   if (shapeCfg.type === 'shield') return 24;
+  if (shapeCfg.type === 'flower') return 40;
   return 10;
 }
 

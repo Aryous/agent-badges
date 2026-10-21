@@ -82,15 +82,58 @@ const TOKEN_TOP = [
 const withoutPattern = ({ pattern: _p, ...rest }) => rest;
 
 /**
- * 由 Token 徽章本身的造型生成顶级的三款：换外形和底面材质，去掉纹理和方形外框才需要的四角铆钉，内容内缩。
- * @param {object} base  不含顶级的 Token 徽章配置
+ * 由分级徽章本身的造型生成顶级的三款：换外形和底面材质，去掉纹理和方形外框才需要的四角铆钉，内容内缩。
+ * 所有分级徽章的顶级共用这一家族（白瓷金 / 黑瓷金 / 蓝宝石），一眼能认出是顶级。
+ * @param {object} base  不含顶级的徽章配置
  */
-export function tokenTopVariants(base) {
+export function topVariants(base) {
   return TOKEN_TOP.map(({ face, inner, ...v }) => ({
     ...v,
-    layers: base.layers.map((l) => (l.kind === 'face' ? withoutPattern({ ...l, ...face }) : l)),
+    // 顶级外形的倒角更厚，面层内缩至少要 倒角 × 2 + 0.01
+    layers: base.layers.map((l) => (l.kind === 'face' ? withoutPattern({ ...l, ...face, inset: Math.max(l.inset ?? 0, (v.shape.bevel ?? 0.04) * 2 + 0.01) }) : l)),
     relief: base.relief
       .filter((r) => !(r.kind === 'circle' && r.radius < 0.04 && r.color === '$metal'))
       .map((r) => scaleRelief(r.kind === 'circle' && r.color === '$accent' ? withoutPattern(r) : r, inner)),
   }));
+}
+
+/** 旧名（Token 徽章最先用上这套顶级款式）。 */
+export const tokenTopVariants = topVariants;
+
+/**
+ * 分级徽章的顶级：门槛和标签照旧，造型换成三款随机（由达到这一级的日期决定）。
+ * @param {object} base   不含顶级的徽章配置
+ * @param {object} tier   { threshold, label }
+ * @param {string} salt   '<品牌>/<徽章 id>'
+ */
+export function withTopTier(base, { threshold, label }, salt) {
+  return { ...base, tiers: [...base.tiers, { threshold, label, salt, variants: topVariants(base) }] };
+}
+
+/** 把已有分级徽章的最后一级换成顶级三款（门槛和标签不变）。 */
+export function topTierFromLast(config, salt) {
+  const last = config.tiers.at(-1);
+  return withTopTier({ ...config, tiers: config.tiers.slice(0, -1) }, last, salt);
+}
+
+/**
+ * 标准圆章：金属外圈 → 深色珐琅环带（上弧品牌、下弧成就名）→ 亮色圆盘 → 画面。
+ * 画面按 k = 1（圆盘半径 0.56）设计，外形内切圆较小时传 k < 1 整体内缩。
+ */
+export function roundMedal({ brandText, bottom, shape, metal, band, disc, art = [], k = 1, ring = true, textSize = 0.095, extra = [] }) {
+  return {
+    shape,
+    layers: [
+      { kind: 'rim', material: 'polished-metal', color: metal },
+      { kind: 'face', material: 'enamel', color: band, inset: 0.11, pattern: 'rings' },
+    ],
+    relief: [
+      ...(ring ? [{ kind: 'ring', radius: 0.845 * k, width: 0.012, material: 'polished-metal', color: metal, height: 0.014 }] : []),
+      ...extra.map((a) => scaleRelief(a, k)),
+      ...textRing({ top: brandText, bottom, radius: 0.715 * k, size: textSize, metal: 'polished-metal', color: metal }),
+      ...medallion({ radius: 0.56 * k, color: disc, metal: 'polished-metal', metalColor: metal }),
+      ...art.map((a) => scaleRelief(a, k)),
+    ],
+    back: { material: 'brushed-metal', color: metal },
+  };
 }
