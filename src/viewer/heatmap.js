@@ -3,7 +3,7 @@
 // 那天解锁了徽章，格子中间加一个小圆点；悬停看详情，点圆点打开对应徽章。
 import { dailyStats, dailyYears } from '../data/daily.js';
 import { levelOf, levelThresholds, today, yearWeeks } from '../data/calendar.js';
-import { formatBig, formatDay, lang, t } from '../i18n.js';
+import { formatBig, formatDay, lang, t } from './i18n.js';
 import { describeState } from './grid.js';
 
 const ALPHA = [0, 0.3, 0.5, 0.74, 1];

@@ -1,7 +1,7 @@
 // 分享海报：一张竖版 PNG，徽章墙 + 三个关键数字 + 当年热力图。
 // 全部用 2D Canvas 画：徽章直接用陈列墙已经渲染好的缩略图，不再走 3D。
 import { levelOf, levelThresholds, today, yearWeeks } from '../data/calendar.js';
-import { formatBig, t } from '../i18n.js';
+import { formatBig, t } from './i18n.js';
 
 const W = 1080;
 const PAD = 72;

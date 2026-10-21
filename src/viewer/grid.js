@@ -1,5 +1,5 @@
 import { badgeTitle, seriesSubtitle, seriesTitle, tierKey, tierLabel } from '../brands/shared/text.js';
-import { formatBig, lang, t } from '../i18n.js';
+import { formatBig, lang, t } from './i18n.js';
 
 // 陈列墙：按系列分组的网格。徽章是预先渲染好的静态图，
 // 悬停时用 CSS 3D 倾斜 + 高光模拟立体感；点开后才进入实时 3D。

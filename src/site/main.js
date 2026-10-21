@@ -7,7 +7,7 @@ import { BRANDS } from '../brands/index.js';
 import { buildBadge } from '../engine/badge.js';
 import { badgeTitle } from '../brands/shared/text.js';
 import { loadDaily, loadProgress } from '../data/progress.js';
-import { addStrings, applyStatic, lang, t } from '../i18n.js';
+import { addStrings, applyStatic, lang, t } from '../viewer/i18n.js';
 import { createStage, supportsWebGL } from '../viewer/scene.js';
 import { renderBadgePNG } from '../viewer/export.js';
 import { createHeatmap, markersFrom } from '../viewer/heatmap.js';

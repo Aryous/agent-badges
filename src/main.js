@@ -8,7 +8,7 @@ import { createHeatmap, markersFrom } from './viewer/heatmap.js';
 import { createProfile } from './viewer/profile.js';
 import { renderPoster } from './viewer/poster.js';
 import { renderShelves, shelfGroups } from './viewer/shelf.js';
-import { applyStatic, formatBig, lang, t } from './i18n.js';
+import { applyStatic, formatBig, lang, t } from './viewer/i18n.js';
 import { badgeDescription, badgeTitle, tierKey, tierLabel } from './brands/shared/text.js';
 import { createStage, supportsWebGL } from './viewer/scene.js';
 import { createGrid, describeState } from './viewer/grid.js';

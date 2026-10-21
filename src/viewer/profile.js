@@ -1,7 +1,7 @@
 // 成就档案：解锁进度环 + 三个关键数字，旁边是「最近获得」和「即将解锁」。
 import { highlights } from '../data/highlights.js';
 import { dailyStats } from '../data/daily.js';
-import { formatBig, lang, t } from '../i18n.js';
+import { formatBig, lang, t } from './i18n.js';
 import { badgeTitle } from '../brands/shared/text.js';
 import { describeState } from './grid.js';
 

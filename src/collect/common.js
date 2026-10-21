@@ -21,7 +21,8 @@ export function writeJSON(path, data) {
 }
 
 /** 写入一个品牌的账本和进度，返回进度文件内容。 */
-export function saveBrand(home, brandId, ledger, progress, { turnsField }) {
+export function saveBrand(home, brandId, ledger, progress, { turnsField } = {}) {
+  if (!turnsField) throw new Error('saveBrand 需要 turnsField（采集模块导出的 TURNS_FIELD）');
   writeJSON(join(home, `${brandId}.ledger.json`), ledger);
   const out = {
     source: 'local',

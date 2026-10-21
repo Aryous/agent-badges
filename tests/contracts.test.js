@@ -60,8 +60,6 @@ describe('分层', () => {
     cli: ['cli', 'collect', 'data', 'brands'],
     viewer: ['viewer', 'engine', 'data', 'brands'],
   };
-  // viewer 可以用界面文字模块（src/i18n.js，只读 location / navigator，不依赖 three）。
-  const VIEWER_SHARED = ['src/i18n.js'];
   // 这些层在命令行里运行：只能用 Node 自带模块
   const NODE_ONLY = ['brands', 'data', 'collect', 'cli'];
   const layerOf = (file) => {
@@ -78,7 +76,6 @@ describe('分层', () => {
         if (spec.startsWith('.')) {
           const target = relative(root, resolve(root, dirname(file), spec));
           if (!target.startsWith('src/')) continue;
-          if (from === 'viewer' && VIEWER_SHARED.includes(target)) continue;
           const to = layerOf(target);
           if (allowed && !allowed.includes(to)) bad.push(`${file} → ${target}`);
         } else if (NODE_ONLY.includes(from) && !spec.startsWith('node:')) {
