@@ -7,7 +7,6 @@ import { medal } from '../medal.js';
 const productiveDay = {
   id: 'productive-day',
   title: '高产日',
-  titleEn: 'PRODUCTIVE DAY',
   description: '一天之内开启 20 个 Codex 线程。清单一行接一行，今天的点子格外多。',
   en: { title: 'Productive Day', description: 'Started 20 Codex threads in a single day. Line after line on the list: a day full of ideas.' },
   criteria: { target: 20 },

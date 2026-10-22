@@ -1,9 +1,9 @@
 // profile 命令：往主页仓库目录写入徽章图和公开版徽章墙。
 import { existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { SHELF_FILE, SHELF_LIGHT_FILE } from '../../collect/publish.js';
+import { SHELF_FILE, SHELF_LIGHT_FILE } from '../../share/publish.js';
 import { t } from '../i18n.js';
-import { publicPage } from '../app.js';
+import { publicPage } from '../page.js';
 import { shelfPicture, writeShelf } from './shelf.js';
 
 /**
@@ -13,7 +13,7 @@ import { shelfPicture, writeShelf } from './shelf.js';
  * 不改 README，不提交，不推送。
  */
 export async function writeProfile(data, opts) {
-  const { pagesForDir } = await import('../../collect/public.js');
+  const { pagesForDir } = await import('../../share/public.js');
   const dir = resolve(opts.dir);
   if (!existsSync(dir)) throw new Error(t(`目录不存在：${dir}`, `No such directory: ${dir}`));
   const pages = pagesForDir(dir);

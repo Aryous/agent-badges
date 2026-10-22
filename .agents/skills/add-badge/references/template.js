@@ -19,11 +19,10 @@ const exampleBadge = {
   id: 'example-badge',
   // Chinese title shown on the wall and the inspector.
   title: '示例徽章',
-  // Uppercase English title engraved on the back (only glyphs the badge font has).
-  titleEn: 'EXAMPLE BADGE',
   // Chinese description; must state the target number (20) — tests/contracts.test.js checks it.
   description: '一天之内开启 20 个会话。一句画面感的话，说清这枚徽章在庆祝什么。',
   // English title and description; the description must state the same number.
+  // The back engraves en.title in uppercase, so use only glyphs the badge font has.
   en: { title: 'Example Badge', description: 'Started 20 sessions in a single day. One vivid line about what this badge celebrates.' },
   // The threshold lives here only; the rule reads it. Tiered badges use `tiers` instead and drop `criteria`.
   criteria: { target: 20 },

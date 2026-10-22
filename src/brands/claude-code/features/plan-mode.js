@@ -53,7 +53,6 @@ const LINES = [
 const planMode = appIcon({
   id: 'plan-mode',
   title: '深思熟虑',
-  titleEn: 'PLAN MODE',
   description: '用过 Plan 模式。先想清楚，再动手。',
   en: { title: 'Plan Mode', description: 'Used Plan mode. Think it through, then build.' },
   criteria: { target: 1 },

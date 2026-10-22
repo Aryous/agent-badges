@@ -1,5 +1,5 @@
 import { setEngravingSize } from '../engine/badge.js';
-import { badgeDescription, tierKey, tierLabel } from '../brands/shared/text.js';
+import { badgeDescription, tierKey, tierLabel, upperTitle } from '../brands/shared/text.js';
 import { describeState, fmtDate } from '../viewer/describe.js';
 import { playAward } from '../viewer/award-animation.js';
 import { formatBig, t } from '../viewer/i18n.js';
@@ -41,9 +41,9 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     kicker.style.color = state.unlocked ? '' : 'var(--muted)';
     $('[data-title]').textContent = d.title;
     // 中文界面在标题下面再写一行英文；英文界面不需要
-    const titleEn = $('[data-title-en]');
-    titleEn.hidden = lang !== 'zh';
-    titleEn.textContent = d.masked ? 'HIDDEN ACHIEVEMENT' : config.titleEn.replaceAll('{label}', d.tier?.label ?? config.tiers?.[0].label ?? '');
+    const subtitle = $('[data-title-en]');
+    subtitle.hidden = lang !== 'zh';
+    subtitle.textContent = d.masked ? 'HIDDEN ACHIEVEMENT' : upperTitle(config, state.tier);
     $('[data-desc]').textContent = d.masked ? t('inspect.hiddenDesc', { brand: brand.name }) : badgeDescription(config, lang);
     // 顶级彩蛋：告诉用户这一级有几款、抽到了哪一款（没抽到的不展示）
     const topTier = config.tiers?.[state.tier ?? -1];

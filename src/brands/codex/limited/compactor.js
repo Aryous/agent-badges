@@ -23,7 +23,6 @@ const MARK_C = { size: 0.18, center: [0, 0] };
 const compactor = {
   id: 'compactor',
   title: '压缩大师',
-  titleEn: 'CONTEXT COMPACTOR',
   description: '上下文压缩了 20 次。再长的对话，也能被压成刚刚好的一小块。',
   en: { title: 'Context Compactor', description: 'Context compacted 20 times. Even the longest conversation can be squeezed down to just the right size.' },
   criteria: { target: 20 },

@@ -22,7 +22,6 @@ const NEEDLE_A = 0.22;
 const deepThinker = featureBadge({
   id: 'deep-thinker',
   title: '深度思考',
-  titleEn: 'DEEP THINKER',
   description: '把推理强度开到 xhigh 或 ultra。多想一会儿，答案会更好。',
   en: { title: 'Deep Thinker', description: 'Turned reasoning effort up to xhigh or ultra. Think a little longer, get a better answer.' },
   target: 1,

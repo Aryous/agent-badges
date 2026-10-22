@@ -6,7 +6,6 @@ import { codexMark } from '../mark.js';
 const firstThread = {
   id: 'first-thread',
   title: '初次启动',
-  titleEn: 'FIRST THREAD',
   description: '在 Codex 里开启第一个会话。光标在云里闪了一下，故事就开始了。',
   en: { title: 'First Thread', description: 'Started your first Codex thread. The cursor blinked inside the cloud, and the story began.' },
   criteria: { target: 1 },

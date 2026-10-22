@@ -33,11 +33,10 @@ function scaleArt(items) {
 }
 
 /** 成套的外框、文字、圆盘和铭牌。 */
-export function featureBadge({ id, title, titleEn, description, en, target, band, panel, label, art }) {
+export function featureBadge({ id, title, description, en, target, band, panel, label, art }) {
   return {
     id,
     title,
-    titleEn,
     description,
     en,
     criteria: { target },

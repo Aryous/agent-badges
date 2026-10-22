@@ -10,7 +10,7 @@ import codexBadges from '../src/brands/codex/index.js';
 const tiered = {
   id: 'sessions',
   title: '会话里程碑',
-  titleEn: '{label} SESSIONS',
+  en: { title: '{label} Sessions', description: 'x' },
   description: 'x',
   tiers: [
     { threshold: 10, metal: 'bronze', label: '10' },
@@ -38,7 +38,7 @@ describe('分级', () => {
     const c = resolveTier(tiered, 1);
     expect(c.layers[0].color).toBe('silver');
     expect(c.relief[0].text).toBe('100');
-    expect(c.titleEn).toBe('100 SESSIONS');
+    expect(c.en.title).toBe('100 Sessions');
     expect(c.tier).toMatchObject({ index: 1, name: '银', label: '100' });
   });
 

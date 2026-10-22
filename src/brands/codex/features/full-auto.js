@@ -38,7 +38,6 @@ const PORT_C = [ROCKET_C[0], ROCKET_C[1] + 0.07];
 const fullAuto = featureBadge({
   id: 'full-auto',
   title: '全自动',
-  titleEn: 'FULL AUTO',
   description: '在无需审批的模式下放手让 Codex 干活。系好安全带，点火。',
   en: { title: 'Full Auto', description: 'Let Codex work with no approvals needed. Seatbelt on, ignition.' },
   target: 1,

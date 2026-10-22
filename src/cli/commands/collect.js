@@ -5,7 +5,7 @@ import { lang, t } from '../i18n.js';
 
 export async function collectAndReport(opts) {
   const { collectAll } = await import('../../collect/index.js');
-  const { summarize, formatSummary, newUnlocks } = await import('../../collect/summary.js');
+  const { summarize, formatSummary, newUnlocks } = await import('../summary.js');
   // 首次运行要读完全部会话记录（可能有几 GB），在终端显示进度；之后只处理新增文件
   const tty = process.stderr.isTTY && !opts.json;
   const onProgress = tty

@@ -6,7 +6,6 @@ import { medal } from '../medal.js';
 const perfectMonth = {
   id: 'perfect-month',
   title: '全勤月',
-  titleEn: 'PERFECT MONTH',
   description: '一个月里每个工作日都打开过 Codex。日历一格不落，盖个全勤章。',
   en: { title: 'Perfect Month', description: 'Opened Codex on every weekday of a month. Not a box left empty: stamped for perfect attendance.' },
   criteria: { target: 22, dynamic: true },

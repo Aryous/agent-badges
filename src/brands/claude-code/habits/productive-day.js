@@ -8,7 +8,6 @@ import { medal } from '../medal.js';
 const productiveDay = {
   id: 'productive-day',
   title: '高产日',
-  titleEn: 'PRODUCTIVE DAY',
   description: '一天之内开启 20 个会话。窗口一个叠一个，今天的点子格外多。',
   en: { title: 'Productive Day', description: 'Started 20 sessions in a single day. Window after window: a day full of ideas.' },
   criteria: { target: 20 },

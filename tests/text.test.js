@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BRANDS } from '../src/brands/index.js';
-import { badgeTitle, badgeDescription, engravingLines, tierLabel, tierName } from '../src/brands/shared/text.js';
+import { badgeTitle, badgeDescription, engravingLines, tierLabel, tierName, upperTitle } from '../src/brands/shared/text.js';
 import { resolveTier } from '../src/engine/tiers.js';
 
 describe('中英文文字', () => {
@@ -58,5 +58,16 @@ describe('中英文文字', () => {
     expect(tierLabel(top, 2, 'en')).toBe(top.variants[2].name.en);
     expect(tierLabel(top, null, 'zh')).toBe('隐藏款');
     expect(tierLabel(top, null, 'en')).toBe('Secret');
+  });
+});
+
+describe('upperTitle：英文大写标题由 en.title 转大写', () => {
+  const tiered = { title: '会话里程碑', en: { title: '{label} Sessions' }, tiers: [{ label: '10' }, { label: '1K' }] };
+  it('普通徽章', () => {
+    expect(upperTitle({ title: '程序员节', en: { title: "Programmers' Day" } })).toBe("PROGRAMMERS' DAY");
+  });
+  it('分级徽章带上等级数值，不传等级时用第一级', () => {
+    expect(upperTitle(tiered, 1)).toBe('1K SESSIONS');
+    expect(upperTitle(tiered)).toBe('10 SESSIONS');
   });
 });

@@ -10,14 +10,14 @@ export function appTemplate() {
 
 export function appHtml(data) {
   const html = appTemplate();
-  return import('../collect/inject.js').then(({ injectData }) => injectData(html, data));
+  return import('../share/inject.js').then(({ injectData }) => injectData(html, data));
 }
 
 export const PROJECT_SITE = 'https://aryous.github.io/agent-badges/';
 
 /** 公开版徽章墙的 HTML：只放页面上看得到的数据。 */
 export async function publicPage(data, name) {
-  const { publicData } = await import('../collect/public.js');
-  const { injectData } = await import('../collect/inject.js');
+  const { publicData } = await import('../share/public.js');
+  const { injectData } = await import('../share/inject.js');
   return injectData(appTemplate(), publicData(data), { name, home: PROJECT_SITE });
 }

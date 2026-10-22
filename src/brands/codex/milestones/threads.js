@@ -22,7 +22,6 @@ const ghostMark = ({ size, center, height = 0.038, z = MEDALLION_H }) => ({
 const threads = {
   id: 'threads',
   title: '线程里程碑',
-  titleEn: '{label} THREADS',
   description: '累计开启的 Codex 会话。一朵云开出一条线，线多了就织成了网。',
   en: { title: '{label} Threads', description: 'Codex threads started. A cloud spins out a thread; enough threads weave a net.' },
   tiers: [

@@ -21,7 +21,6 @@ const XMAS = { size: 0.22, center: [0, -0.1] };
 const christmas = {
   id: 'christmas',
   title: '圣诞节',
-  titleEn: 'CHRISTMAS',
   description: '12 月 25 日和 Codex 一起写代码。云朵戴上圣诞帽，今天的礼物是一个干净的补丁。',
   en: { title: "Christmas", description: "Coded with Codex on December 25. The cloud puts on a Santa hat; today's present is a clean patch." },
   criteria: { target: 1 },

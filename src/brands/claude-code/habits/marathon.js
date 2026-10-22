@@ -62,7 +62,6 @@ function laurel({ radius, from, to, count, side }) {
 const marathon = {
   id: 'marathon',
   title: '马拉松',
-  titleEn: 'MARATHON',
   description: '单次会话超过 4 小时。补给靠咖啡，配速靠 Claude，终点线在下一个 commit。',
   en: { title: 'Marathon', description: 'A single session over 4 hours. Fueled by coffee, paced by Claude, the finish line is the next commit.' },
   criteria: { target: 4, unit: 'h' },

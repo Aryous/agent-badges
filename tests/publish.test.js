@@ -6,7 +6,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseArgs } from '../src/cli/args.js';
-import { BLOCK_END, BLOCK_START, PublishStop, executePublish, preparePublish, readmeBlock, upsertBlock } from '../src/collect/publish.js';
+import { BLOCK_END, BLOCK_START, PublishStop, executePublish, preparePublish, readmeBlock, upsertBlock } from '../src/share/publish.js';
 
 const URL = 'https://me.github.io/me/';
 const block = readmeBlock(URL);

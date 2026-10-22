@@ -21,7 +21,6 @@ const XMAS = { cell: 0.03, center: [0, -0.16] };
 const christmas = {
   id: 'christmas',
   title: '圣诞节',
-  titleEn: 'CHRISTMAS',
   description: '12 月 25 日和 Claude Code 一起写代码。圣诞帽戴好，今天的礼物是一个通过的测试。',
   en: { title: "Christmas", description: "Coded with Claude Code on December 25. Santa hat on; today's present is a passing test." },
   criteria: { target: 1 },

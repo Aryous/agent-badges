@@ -6,7 +6,6 @@ import { codexMark } from '../mark.js';
 const marathon = {
   id: 'marathon',
   title: '马拉松',
-  titleEn: 'MARATHON',
   description: '一次会话连续活跃超过 4 小时。表针走了四格，Codex 还没喊累。',
   en: { title: 'Marathon', description: 'One session active for over 4 hours. The clock hand moved four ticks and Codex still is not tired.' },
   criteria: { target: 4, unit: 'h' },

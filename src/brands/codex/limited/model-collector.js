@@ -11,7 +11,6 @@ const GEMS = around(4, 0.31, Math.PI / 4).map((center, i) => ({
 const modelCollector = {
   id: 'model-collector',
   title: '模型收藏家',
-  titleEn: 'MODEL COLLECTOR',
   description: '在 Codex 里用过 4 种不同的模型。每一颗都有自己的脾气，你都摸透了。',
   en: { title: 'Model Collector', description: 'Used 4 different models in Codex. Each one has its own temper, and you have figured them all out.' },
   criteria: { target: 4 },

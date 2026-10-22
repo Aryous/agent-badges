@@ -15,7 +15,6 @@ const modelCollector = {
   id: 'model-collector',
   hidden: true,
   title: '模型收藏家',
-  titleEn: 'MODEL COLLECTOR',
   description: 'Opus、Sonnet、Haiku、Fable，4 位都请来干过活。宝石集齐，收藏柜满了。',
   en: { title: 'Model Collector', description: 'All 4 of Opus, Sonnet, Haiku and Fable have clocked in. Every gem collected, the cabinet is full.' },
   criteria: { target: 4 },

@@ -21,7 +21,6 @@ const KNOT = wwAt(1.6, 1);
 const weekendWarrior = {
   id: 'weekend-warrior',
   title: '周末战士',
-  titleEn: 'WEEKEND WARRIOR',
   description: '周六、周日都在和 Claude Code 写代码。头带一绑，周末就是主场。',
   en: { title: 'Weekend Warrior', description: 'Coded with Claude Code on both Saturday and Sunday. Headband on, the weekend is home turf.' },
   criteria: { target: 1 },

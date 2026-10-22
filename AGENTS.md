@@ -23,18 +23,19 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 | Path | Owns | May import |
 | --- | --- | --- |
 | `src/engine/` | Badge rendering: shapes, materials, relief, text, tier resolution, config validation (`validate.js`), layout checks (`layout.js`). No brand knowledge | engine, three, json |
-| `src/brands/` | Tool registry (`index.js`: `BRANDS`, `BRAND_IDS`, `brandById`, `getBrand`, `DEFAULT_BRAND`); per tool: `brand.js` (palette, `launchDate`), one file per badge under `milestones/ habits/ features/ limited/`; `shared/` medal layout, parts, top-tier designs, showcase states | brands (Node built-ins only) |
+| `src/brands/` | Tool registry (`index.js`: `BRANDS`, `BRAND_IDS`, `brandById`, `getBrand`, `DEFAULT_BRAND`); per tool: `brand.js` (palette, `launchDate`), one file per badge under `milestones/ habits/ features/ limited/`; `shared/` medal layout, parts, top-tier designs, display states (`display-states.js`) | brands (Node built-ins only) |
 | `src/data/` | Per-tool metrics (`<tool>-metrics.js`: `RULES`, `computeProgress`), shared rules (`metrics-common.js`), ledger normalization, daily series, tiers, sample data (`mock-<tool>.js`), `progress.js` (`DATA_SOURCES`, page data loading) | data, brands (Node built-ins only) |
-| `src/collect/` | Local collectors (`<tool>.js`: `BRAND_ID`, `TURNS_FIELD`, `collect()`), `COLLECTORS`, summary (`BRAND_INFO`), card SVG, public page data, publish. Pure logic: no `console.`, no i18n import (guarded) | collect, data, brands (Node built-ins only) |
-| `src/cli/` | Argument parsing and help (`args.js`, every flag literal), terminal output and i18n, local HTTP server, commands (`commands/*.js`) | cli, collect, data, brands (Node built-ins only) |
+| `src/collect/` | Local collectors (`<tool>.js`: `BRAND_ID`, `TURNS_FIELD`, `collect()`), `COLLECTORS`, the data home and ledger files (`common.js`). Pure logic: no `console.`, no i18n import (guarded) | collect, data, brands (Node built-ins only) |
+| `src/share/` | Sharing what was collected: achievement card SVG (`card.js`), public page data (`public.js`), data injection into pages (`inject.js`), `publish` to GitHub (`publish.js`), the shelf image the page hands back (`receive.js`). Same rules as `collect/` | share, collect, data, brands (Node built-ins only) |
+| `src/cli/` | Argument parsing and help (`args.js`, every flag literal), terminal summary (`summary.js`: `BRAND_INFO`), page HTML (`page.js`), terminal output and i18n, local HTTP server, commands (`commands/*.js`) | cli, share, collect, data, brands (Node built-ins only) |
 | `src/viewer/` | Browser UI parts: stage, grid/wall, inspector, heatmap, poster, shelf, profile, i18n, describe, mount-badge, badge-renderer, snapshot, export | viewer, engine, data, brands, three |
 | `src/app/` | The wall page split into panels (context, load, topbar, overview, wall, inspect, export, poster, shelf, loop, `window.__badgeApp` automation). Panels talk via `ctx.emit`, not imports | anything (entry layer) |
 | `src/site/` | Landing page (`main.js`, `strings.js`, `site.css`) | anything (entry layer) |
-| `src/project/` | The Agent Badges logo and the asset studio script (`tools/studio.html`) | anything (entry layer) |
+| `src/project/` | The Agent Badges logo (`logo.js`) | anything (entry layer) |
 | `src/styles/` | Wall CSS by component; `src/style.css` `@import`s them in order | CSS only |
 | `src/main.js`, `src/style.css` | Wall page composer and the CSS entry | anything (entry layer) |
 | `bin/` | `agent-badges.mjs`, a thin entry into `src/cli/main.js` (relative imports only into `src/cli/`, guarded) | cli |
-| `tools/` | Dev-only pages: `studio.html` (asset studio) | anything (entry layer) |
+| `tools/` | Dev-only pages: `studio.html` and `studio/main.js` (asset studio) | anything (entry layer) |
 | `scripts/` | Build, check, screenshot and asset scripts (`*.mjs`, run by hand or npm scripts) | anything |
 | `skills/` | The user-facing `badges` skill, shipped with the plugin. Don't move it | — |
 | `.agents/skills/` | Contributor skills for this repo (`add-badge`); `.claude/skills/` links here | — |
@@ -48,7 +49,7 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 4. Every badge has exactly one rule: `Object.keys(RULES)` equals the brand's badge ids, and `computeProgress` handles an empty ledger — `tests/contracts.test.js`
 5. Thresholds live only in the badge config (`criteria.target` / `tiers`). Rules read them; unlocking follows the config; the zh and en descriptions state the configured number — `tests/contracts.test.js`
 6. `criteria` is `{ target, unit?, dynamic? }` for one-time badges; tiered badges have no `criteria` — `tests/contracts.test.js`, `tests/validate.test.js`
-7. Layering follows the Map's "May import" column; brands, data, collect and cli use only `node:` built-ins — `tests/contracts.test.js`
+7. Layering follows the Map's "May import" column; brands, data, collect, share and cli use only `node:` built-ins — `tests/contracts.test.js`
 8. The CLI loads only files listed in `package.json` `files`, with no third-party packages (no three) — `tests/package-files.test.js`
 9. Every badge config validates and assembles — `tests/validate.test.js`, `tests/badge.test.js`
 10. Design principles 1–2 (edge line follows the outline; 6% breathing room) hold for every badge except the pending `LEGACY` list — `tests/layout.test.js`
@@ -56,10 +57,10 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 12. Claude Code: only main-session and sub-agent transcripts are read — `tests/claude-code-files.test.js`
 13. The public profile page embeds only what it shows (no locked hidden badges, date-only update time) — `tests/profile.test.js`
 14. Plugin manifests match `package.json` (name, version); the skill's commands are pre-approved and its CLI flags exist — `tests/plugin.test.js`
-15. `src/collect/` has no `console.` and no i18n import; `bin/` imports only `src/cli/` — `tests/contracts.test.js`
+15. `src/collect/` and `src/share/` have no `console.` and no i18n import; `src/app/` does not import `src/share/`; `bin/` imports only `src/cli/` — `tests/contracts.test.js`
 16. Docs match the code: this Map lists every `src/` dir, cited tests exist, README badge counts (the exact count sentence), tool birthdays and `tier` values match the registry, and README anchors linked from the READMEs, landing page and skill exist — `tests/docs.test.js`
 17. Badges with the same outline share body geometry. Shared geometry and textures carry `userData.shared`; free a badge only with `disposeBadge` (`src/engine/badge.js`), which keeps shared resources — `tests/badge.test.js`
-18. Badge images are made through `createBadgeRenderer` (`src/viewer/badge-renderer.js`); the only other `renderBadgePNG` caller is the export panel, which captures the badge being inspected — `tests/contracts.test.js`. The display states for the landing page and studio are `peakState` / `surpriseKeptState` in `src/brands/shared/showcase.js` (unrelated to the `// showcase` file marker in contract 2) — `tests/showcase.test.js`
+18. Badge images are made through `createBadgeRenderer` (`src/viewer/badge-renderer.js`); the only other `renderBadgePNG` caller is the export panel, which captures the badge being inspected — `tests/contracts.test.js`. The display states for the landing page and studio are `peakState` / `surpriseKeptState` in `src/brands/shared/display-states.js` — `tests/display-states.test.js`
 
 ## Workflows
 
@@ -74,7 +75,7 @@ Which checks to run:
 | Any change | `npm test` |
 | Badge config, engine, materials | + `npm run build`, `npm run check:browser`, `peek.mjs` screenshots for review |
 | Wall UI (`src/app/`, `src/viewer/`, `src/styles/`) | + `npm run build`, `npm run check:browser` |
-| CLI, collectors, `package.json` `files` | + `npm run build`, `npm run check:pack` |
+| CLI, collectors, sharing (`src/share/`), `package.json` `files` | + `npm run build`, `npm run check:pack` |
 | `shelf`, `profile`, `publish` | + `npm run build`, `npm run check:shelf` |
 | Landing page (`src/site/`, `landing.html`) | + `npm run build:site`, `npm run check:site` |
 | Refactors that must not change how anything looks (engine, `src/viewer/`, rendering) | + `node scripts/visual.mjs capture <dir>` before and after (dev server on 5199, same day), then `node scripts/visual.mjs compare <before> <after>`: any differing pixel fails |

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { BRANDS } from '../src/brands/index.js';
-import { SHOWCASE_DATE, peakState, surpriseKeptState } from '../src/brands/shared/showcase.js';
+import { SHOWCASE_DATE, peakState, surpriseKeptState } from '../src/brands/shared/display-states.js';
 
-// 两套展示用状态，期望值照抄自原来 src/site/main.js、src/project/studio.js 里手写的规则
+// 两套展示用状态，期望值照抄自原来 src/site/main.js、tools/studio/main.js 里手写的规则
 const all = BRANDS.flatMap((b) => b.badges);
 const hidden = all.find((c) => c.hidden);
 const plain = all.find((c) => !c.hidden && !c.tiers);

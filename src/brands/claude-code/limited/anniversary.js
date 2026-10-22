@@ -97,7 +97,6 @@ const ANNIV_MASCOT = { cell: 0.016, center: [0.31, -0.09] };
 const anniversary = {
   id: 'anniversary',
   title: '一周年',
-  titleEn: 'ONE YEAR',
   description: '和 Claude Code 相识满一年。吹蜡烛之前，先许个「测试全绿」的愿望吧。',
   en: { title: 'One Year', description: 'One year with Claude Code. Before blowing out the candles, wish for all-green tests.' },
   criteria: { target: 1 },

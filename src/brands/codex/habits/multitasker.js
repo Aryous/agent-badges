@@ -7,7 +7,6 @@ import { medal } from '../medal.js';
 const multitasker = {
   id: 'multitasker',
   title: '多线并行',
-  titleEn: 'MULTITASKER',
   description: '同一时刻有 3 个 Codex 会话一起在跑。三块屏幕同时滚动，云朵在中间调度。',
   en: { title: 'Multitasker', description: 'Ran 3 Codex sessions at the same moment. One screen each, all scrolling, the cloud in the middle keeping order.' },
   criteria: { target: 3 },

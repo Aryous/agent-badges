@@ -8,7 +8,6 @@ const SUN_C = [0.13, 0.15];
 const earlyBird = {
   id: 'early-bird',
   title: '早起鸟',
-  titleEn: 'EARLY BIRD',
   description: '早上五到七点就开工。太阳刚从云后面探出头，Codex 已经在跑测试了。',
   en: { title: 'Early Bird', description: 'Started work between 5 and 7 a.m. The sun just peeked out from behind the cloud, and Codex is already running tests.' },
   criteria: { target: 1 },

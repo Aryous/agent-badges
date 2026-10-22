@@ -11,7 +11,6 @@ const subAt = (r) => SUB_ANGLES.map((t) => [Math.cos(t) * r, Math.sin(t) * r]);
 const subagentCommander = {
   id: 'subagent-commander',
   title: '子代理指挥官',
-  titleEn: 'SUBAGENT COMMANDER',
   description: '在一次会话中同时调度 5 个子代理并行工作。',
   en: { title: 'Subagent Commander', description: 'Ran 5 subagents in parallel in a single session.' },
   criteria: { target: 5 },

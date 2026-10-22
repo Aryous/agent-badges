@@ -142,7 +142,7 @@ async function runWithBrowser(args, { hidden = false } = {}) {
   }));
   await page.screenshot({ path: 'screenshots/profile-page.png' });
   await page.close();
-  const { BRAND_INFO } = await import('../src/collect/summary.js');
+  const { BRAND_INFO } = await import('../src/cli/summary.js');
   const hiddenIds = new Set(BRAND_INFO['claude-code'].badges.filter((b) => b.hidden).map((b) => b.id));
   const leaked = Object.entries(seen.data['claude-code'].progress).filter(([id, p]) => hiddenIds.has(id) && !p.unlocked);
   check('profile：网页显示名字和日期，链接到项目站点', /^Someone's badges · updated \w+ \d+, \d{4}/.test(seen.source) && seen.home === 'https://aryous.github.io/agent-badges/', seen.source);

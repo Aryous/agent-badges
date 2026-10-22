@@ -2,10 +2,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createServer } from 'node:http';
 import { parseArgs } from '../src/cli/args.js';
-import { BRAND_INFO } from '../src/collect/summary.js';
+import { BRAND_INFO } from '../src/cli/summary.js';
 import { normalizeProgress } from '../src/data/normalize.js';
 import { SHELF, pickShelf, shelfCount, shelfLabel, shelfLayout } from '../src/data/shelf.js';
-import { SHELF_PATH, createReceiver } from '../src/collect/receive.js';
+import { SHELF_PATH, createReceiver } from '../src/share/receive.js';
 
 const { brand: cc, badges: ccBadges } = BRAND_INFO['claude-code'];
 const { brand: cx, badges: cxBadges } = BRAND_INFO.codex;

@@ -25,7 +25,6 @@ const HOOK = [
 const hooksSmith = appIcon({
   id: 'hooks-smith',
   title: '钩子匠人',
-  titleEn: 'HOOKS SMITH',
   description: '配置了第一个 Hook。从此每次提交前，都有人替你把关。',
   en: { title: 'Hooks Smith', description: 'Set up your first hook. From now on, something checks your work before every commit.' },
   criteria: { target: 1 },

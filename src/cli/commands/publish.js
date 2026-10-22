@@ -1,6 +1,6 @@
 // publish 命令：一条命令部署到 GitHub 主页。
 import { t } from '../i18n.js';
-import { publicPage } from '../app.js';
+import { publicPage } from '../page.js';
 import { writeShelf } from './shelf.js';
 
 const PUBLISH_STOPS = {
@@ -17,7 +17,7 @@ const PUBLISH_STOPS = {
  * 在终端里会问一次，Agent 调用时打印计划后退出，等用户同意再带 --yes 运行。
  */
 export async function writePublish(data, opts) {
-  const { createGitHub, preparePublish, executePublish, PublishStop } = await import('../../collect/publish.js');
+  const { createGitHub, preparePublish, executePublish, PublishStop } = await import('../../share/publish.js');
   const { dataHome } = await import('../../collect/common.js');
   const gh = createGitHub();
   try {

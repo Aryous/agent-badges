@@ -38,7 +38,6 @@ export const logoBrand = {
 export const logoBadge = {
   id: 'logo',
   title: 'Agent Badges',
-  titleEn: 'AGENT BADGES',
   description: 'npx agent-badges',
   en: { title: 'Agent Badges', description: 'npx agent-badges' },
   criteria: { target: 1 },

@@ -44,7 +44,6 @@ const LOW_TOP = COIN_BASE + 2 * COIN_H + COIN_GAP;
 const tokensBase = {
   id: 'tokens',
   title: 'Token 里程碑',
-  titleEn: '{label} TOKENS',
   description: '累计处理的 Token。一枚一枚攒起来，就成了一座小金山。',
   en: { title: '{label} Tokens', description: 'Tokens processed. Coin by coin, they pile up into a small mountain of gold.' },
   tiers: [

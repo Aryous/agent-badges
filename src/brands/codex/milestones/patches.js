@@ -41,7 +41,6 @@ const [fileX, fileY] = onCard(1.5, 1.5);
 const patches = {
   id: 'patches',
   title: '补丁大师',
-  titleEn: '{label} PATCHES',
   description: '累计应用的补丁。删一行、加两行，代码就这样一针一线地缝好了。',
   en: { title: '{label} Patches', description: 'Patches applied. Delete a line, add two, and the code is stitched together one stitch at a time.' },
   tiers: [

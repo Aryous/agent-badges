@@ -6,7 +6,6 @@ import { clawd } from '../mascot.js';
 const firstSession = {
   id: 'first-session',
   title: '初次相遇',
-  titleEn: 'FIRST SESSION',
   description: '完成第一次 Claude Code 会话。小家伙第一次在终端里探出头来。',
   en: { title: 'First Session', description: 'Your first Claude Code session. The little guy pokes its head out of the terminal for the first time.' },
   criteria: { target: 1 },

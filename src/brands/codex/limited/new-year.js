@@ -7,7 +7,6 @@ import { medal } from '../medal.js';
 const newYear = {
   id: 'new-year',
   title: '元旦',
-  titleEn: 'NEW YEAR',
   description: '1 月 1 日和 Codex 一起写代码。新年的第一个补丁，云朵后面在放烟花。',
   en: { title: "New Year", description: "Coded with Codex on January 1. The year's first patch, with fireworks behind the cloud." },
   criteria: { target: 1 },

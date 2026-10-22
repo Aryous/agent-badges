@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { dataHome } from './src/collect/common.js';
 import { BRAND_IDS } from './src/brands/index.js';
-import { injectData } from './src/collect/inject.js';
+import { injectData } from './src/share/inject.js';
 
 /**
  * 开发服务器：把 ~/.agent-badges 里的本机数据注入页面（npm run collect 生成）。

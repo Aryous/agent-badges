@@ -17,7 +17,6 @@ function angleBrackets({ center: [cx, cy], gap, h, w, width = 0.036 }) {
 const programmersDay = {
   id: 'programmers-day',
   title: '1024 程序员节',
-  titleEn: 'PROGRAMMERS DAY',
   description: '10 月 24 日当天和 Codex 一起写代码。2 的 10 次方，属于每一个敲下回车的人。',
   en: { title: "Programmers' Day", description: "Coded with Codex on October 24. Two to the tenth power: a holiday for everyone who hits Enter." },
   criteria: { target: 1 },

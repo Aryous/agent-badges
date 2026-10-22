@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { t } from '../i18n.js';
 import { openBrowser, serve } from '../server.js';
-import { appHtml } from '../app.js';
+import { appHtml } from '../page.js';
 
 export async function exportPage(opts, data) {
   const html = await appHtml(data);

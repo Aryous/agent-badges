@@ -19,7 +19,6 @@ const SEVEN = [
 const sevenDayStreak = {
   id: 'seven-day-streak',
   title: '七日连击',
-  titleEn: '7-DAY STREAK',
   description: '连续 7 天使用 Claude Code。习惯已经养成。',
   en: { title: '7-Day Streak', description: 'Used Claude Code 7 days in a row. The habit is formed.' },
   criteria: { target: 7 },

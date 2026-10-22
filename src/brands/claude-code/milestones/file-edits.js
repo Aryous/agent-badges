@@ -13,7 +13,6 @@ const MINUS = ['...', '###', '...'];
 const fileEditsBase = {
   id: 'file-edits',
   title: '文件编辑',
-  titleEn: '{label} EDITS',
   description: '改过、写过的文件次数。一行加，一行减，代码就是这样一点点变好的。',
   en: { title: '{label} Edits', description: 'Files edited and written. A line added, a line removed: that is how code gets better.' },
   tiers: [

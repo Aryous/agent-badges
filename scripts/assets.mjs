@@ -140,8 +140,8 @@ if (want('shots')) {
 
 // ---------- 成就卡片示例（示例数据） ----------
 if (want('card')) {
-  const { renderCard } = await import('../src/collect/card.js');
-  const { summarize, BRAND_INFO } = await import('../src/collect/summary.js');
+  const { renderCard } = await import('../src/share/card.js');
+  const { summarize, BRAND_INFO } = await import('../src/cli/summary.js');
   const { loadDaily, DATA_SOURCES } = await import('../src/data/progress.js');
   const { BRAND_IDS } = await import('../src/brands/index.js');
   const brands = [];

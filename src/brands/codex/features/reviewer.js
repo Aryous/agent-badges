@@ -19,7 +19,6 @@ const CODE_LINES = [
 const reviewer = featureBadge({
   id: 'reviewer',
   title: '审查官',
-  titleEn: 'REVIEWER',
   description: '用过自动代码审查。再小的问题，也逃不过这片放大镜。',
   en: { title: 'Reviewer', description: 'Used automatic code review. No issue is too small for this magnifying glass.' },
   target: 1,

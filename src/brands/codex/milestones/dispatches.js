@@ -8,7 +8,6 @@ import { medal } from '../medal.js';
 const dispatchesBase = {
   id: 'dispatches',
   title: '子代理派遣',
-  titleEn: '{label} DISPATCHES',
   description: '派出去的子代理次数。云朵放出一架架纸飞机，各自去把活干完。',
   en: { title: '{label} Dispatches', description: 'Subagents sent out. The cloud launches paper plane after paper plane, and each one finishes its job.' },
   tiers: [

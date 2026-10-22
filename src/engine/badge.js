@@ -144,7 +144,6 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
     config = {
       ...config,
       title: '???',
-      titleEn: '???',
       relief: [{ kind: 'pixels', rows: QUESTION, cell: 0.075, center: [0, 0], material: 'enamel', color: 'graphite', height: 0.06 }],
     };
   }
@@ -186,7 +185,6 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
     config,
     lang,
     title: config.title,
-    titleEn: config.titleEn,
     earnedAt: formatDate(state.earnedAt),
     unlocked: state.unlocked,
     progress: state.progress,

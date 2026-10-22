@@ -13,7 +13,6 @@ const SUBS = [
 const multiAgent = featureBadge({
   id: 'multi-agent',
   title: '多智能体',
-  titleEn: 'MULTI-AGENT',
   description: '派生过子代理，让几朵小云分头干活。一个人，一支队伍。',
   en: { title: 'Multi-Agent', description: 'Spawned subagents and sent little clouds off to work in parallel. One person, one team.' },
   target: 1,

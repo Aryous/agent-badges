@@ -20,7 +20,6 @@ const BOLT = [
 const skillMaster = appIcon({
   id: 'skill-master',
   title: '技能大师',
-  titleEn: 'SKILL MASTER',
   description: '调用 Skill 50 次。会的招式多了，出手就快了。',
   en: { title: 'Skill Master', description: 'Invoked Skills 50 times. The more moves you know, the faster you strike.' },
   criteria: { target: 50 },

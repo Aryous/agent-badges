@@ -23,7 +23,6 @@ const PLUG_PINS = [
 const connector = appIcon({
   id: 'connector',
   title: '连接者',
-  titleEn: 'MCP CONNECTOR',
   description: '接入 3 个 MCP 服务。小家伙的插座越来越多了。',
   en: { title: 'MCP Connector', description: 'Connected 3 MCP servers. The little guy keeps growing more sockets.' },
   criteria: { target: 3 },

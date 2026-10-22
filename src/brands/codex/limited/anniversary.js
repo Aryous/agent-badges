@@ -41,7 +41,6 @@ const CONFETTI = [
 const anniversary = {
   id: 'anniversary',
   title: '一周年',
-  titleEn: 'ONE YEAR',
   description: '和 Codex 相识满一年。云朵戴上派对帽：再来一年，继续把想法变成代码。',
   en: { title: 'One Year', description: 'One year with Codex. The cloud puts on a party hat: here is to another year of turning ideas into code.' },
   criteria: { target: 1 },

@@ -39,6 +39,9 @@ export function badgeTitle(config, lang = 'zh', tier = null) {
   return config.en.title.replaceAll('{label}', t?.label ?? '');
 }
 
+/** 英文大写标题：背面刻字和中文界面标题下面那行英文。由 en.title 转大写，分级徽章带上等级数值。 */
+export const upperTitle = (config, tier = null) => badgeTitle(config, 'en', tier).toUpperCase();
+
 export const badgeDescription = (config, lang = 'zh') => (lang === 'zh' ? config.description : config.en?.description ?? config.description);
 
 export const seriesTitle = (s, lang = 'zh') => (lang === 'zh' ? s.title : s.en?.title ?? s.title);
@@ -52,7 +55,7 @@ export function engravingLines({ brandName, config, lang = 'zh', earnedAt, unloc
     // 分级徽章不写金属名：数值已经刻在上一行（100B TOKENS），顶级再写抽到的款式
     const parts = [tier?.variant?.name.zh, earnedAt].filter(Boolean);
     const footer = unlocked ? parts.join(' · ') : `未解锁 · ${progress.current} / ${progress.target}`;
-    return [brandName.toUpperCase(), config.title, config.titleEn, footer];
+    return [brandName.toUpperCase(), config.title, upperTitle(config), footer];
   }
   const parts = [tier?.variant?.name.en.toUpperCase(), earnedAt].filter(Boolean);
   const footer = unlocked ? parts.join(' · ') : `${progress.current} / ${progress.target}`;

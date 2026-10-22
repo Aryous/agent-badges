@@ -7,7 +7,6 @@ import { codexMark } from '../mark.js';
 const streakDays = {
   id: 'streak-days',
   title: '月度坚持',
-  titleEn: '{label}-DAY STREAK',
   description: '连续使用 Codex 的天数。链条一节扣一节，转起来就停不下。',
   en: { title: '{label}-Day Streak', description: 'Consecutive days with Codex. Link by link, once the chain starts turning it does not stop.' },
   tiers: [

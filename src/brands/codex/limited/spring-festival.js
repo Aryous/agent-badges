@@ -7,7 +7,6 @@ import { medal } from '../medal.js';
 const springFestival = {
   id: 'spring-festival',
   title: '春节',
-  titleEn: 'SPRING FESTIVAL',
   description: '农历正月初一和 Codex 一起写代码。灯笼挂上云头，新春第一个补丁。',
   en: { title: 'Spring Festival', description: 'Coded with Codex on Lunar New Year. Lanterns hung by the cloud, the first patch of the new spring.' },
   criteria: { target: 1 },

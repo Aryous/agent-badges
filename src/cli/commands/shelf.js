@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { lang, t } from '../i18n.js';
 import { openBrowser, serve } from '../server.js';
-import { appHtml } from '../app.js';
+import { appHtml } from '../page.js';
 
 const SHELF_TIMEOUT = 120_000;
 
@@ -21,8 +21,8 @@ export const shelfPicture = (dark, light, url = null) => {
  * 打开本地页面 → 页面渲染已解锁的徽章 → 把 PNG 交回这里 → 写文件、退出。
  */
 export async function writeShelf(data, opts, { snippet = true } = {}) {
-  const { summarize } = await import('../../collect/summary.js');
-  const { createReceiver } = await import('../../collect/receive.js');
+  const { summarize } = await import('../summary.js');
+  const { createReceiver } = await import('../../share/receive.js');
   const unlocked = Object.entries(data).reduce((n, [id, d]) => n + summarize(id, d.progress).unlocked, 0);
   if (!unlocked) throw new Error(t('还没有解锁的徽章，陈列图是空的。先多用用 Claude Code 或 Codex 吧', 'No badges unlocked yet, so the shelf would be empty'));
 

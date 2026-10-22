@@ -8,7 +8,6 @@ import { medal } from '../medal.js';
 const midnightCrossing = {
   id: 'midnight-crossing',
   title: '跨日夜战',
-  titleEn: 'PAST MIDNIGHT',
   description: '同一个会话从前一天 23 点前一直写到第二天凌晨 2 点后。表针在 12 点重合，日期翻篇，小家伙还在。',
   en: { title: 'Past Midnight', description: 'One session that started before 11 p.m. and was still going after 2 a.m. The hands meet at twelve, the date flips, and the little guy is still here.' },
   criteria: { target: 1 },

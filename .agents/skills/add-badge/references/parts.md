@@ -64,8 +64,8 @@ Common fields on every relief: `material`, `color`, `height`, `z`, `bevel`. Opti
 | Helper | File | Builds |
 | --- | --- | --- |
 | `medal({ bottom, shape, metal, band, disc, art, textSize?, k?, extra?, contour? })` | `src/brands/<tool>/medal.js` (wraps `roundMedal` in `src/brands/shared/layout.js`) | Rim → enamel band → contour edge line → text ring (tool name on top, `bottom` below) → center disc → `art`. Auto breathing room. Use for milestones, habits and limited badges |
-| `appIcon({ id, title, titleEn, description, en, criteria, rim, face, panel, metal, name, art })` | `src/brands/claude-code/app-icon.js` | Claude Code feature family: anodized rounded square, bright panel, `name` on the bottom bar. Art sits on the panel (`mascot`, `px` from the same file) |
-| `featureBadge({ id, title, titleEn, description, en, target, band, panel, label, art })` | `src/brands/codex/feature-frame.js` | Codex feature family: flat-top rounded hexagon, brushed titanium, disc, metal nameplate with `label` |
+| `appIcon({ id, title, description, en, criteria, rim, face, panel, metal, name, art })` | `src/brands/claude-code/app-icon.js` | Claude Code feature family: anodized rounded square, bright panel, `name` on the bottom bar. Art sits on the panel (`mascot`, `px` from the same file) |
+| `featureBadge({ id, title, description, en, target, band, panel, label, art })` | `src/brands/codex/feature-frame.js` | Codex feature family: flat-top rounded hexagon, brushed titanium, disc, metal nameplate with `label` |
 
 ## Shared parts (`src/brands/shared/parts.js`)
 

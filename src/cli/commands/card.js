@@ -5,8 +5,8 @@ import { t } from '../i18n.js';
 
 /** 成就卡片：只含解锁数和几个总数，适合公开放在 GitHub 个人主页。 */
 export async function writeCard(data, opts) {
-  const { renderCard } = await import('../../collect/card.js');
-  const { BRAND_INFO, summarize } = await import('../../collect/summary.js');
+  const { renderCard } = await import('../../share/card.js');
+  const { BRAND_INFO, summarize } = await import('../summary.js');
   const brands = Object.entries(data).map(([id, d]) => {
     const { brand } = BRAND_INFO[id];
     const { unlocked, total } = summarize(id, d.progress);

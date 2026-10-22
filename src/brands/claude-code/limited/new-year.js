@@ -7,7 +7,6 @@ import { medal } from '../medal.js';
 const newYear = {
   id: 'new-year',
   title: '元旦',
-  titleEn: 'NEW YEAR',
   description: '1 月 1 日和 Claude Code 一起写代码。新年第一个提交，小家伙仰头看烟花。',
   en: { title: "New Year", description: "Coded with Claude Code on January 1. The year's first commit, and the little guy looks up at the fireworks." },
   criteria: { target: 1 },

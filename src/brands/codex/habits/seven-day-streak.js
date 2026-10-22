@@ -6,7 +6,6 @@ import { codexMark } from '../mark.js';
 const sevenDayStreak = {
   id: 'seven-day-streak',
   title: '七日连击',
-  titleEn: '7-DAY STREAK',
   description: '连续 7 天打开 Codex。一周七格，格格都亮着。',
   en: { title: '7-Day Streak', description: 'Opened Codex 7 days in a row. Seven boxes in a week, every one lit up.' },
   criteria: { target: 7 },

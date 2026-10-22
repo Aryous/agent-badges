@@ -23,7 +23,6 @@ const BITS = '10000000000';
 const programmersDay = {
   id: 'programmers-day',
   title: '1024 程序员节',
-  titleEn: 'PROGRAMMERS DAY',
   description: '在 10 月 24 日这天和 Claude Code 一起写代码。2 的 10 次方，属于我们的节日。',
   en: { title: "Programmers' Day", description: "Coded with Claude Code on October 24. Two to the tenth power: a holiday that belongs to us." },
   criteria: { target: 1 },

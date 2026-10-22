@@ -38,15 +38,16 @@ src/
 ├─ brands/    the tool registry (index.js) and one folder per tool: palette, launch date,
 │             one file per badge grouped by series
 ├─ data/      per-tool metrics and rules, shared rules, normalization, daily series, sample data
-├─ collect/   local collectors, summary, achievement card, public page, publish (used by the CLI)
-├─ cli/       argument parsing and help, terminal output, local server, commands/
+├─ collect/   local collectors and the ledger files (used by the CLI)
+├─ share/     achievement card, public page data, page data injection, publish (used by the CLI)
+├─ cli/       argument parsing and help, terminal summary, page HTML, local server, commands/
 ├─ viewer/    stage, wall, inspector, heatmap, poster, shelf, i18n, badge renderer, snapshot and export
 ├─ app/       the wall page, one module per panel; src/main.js composes them
 ├─ styles/    wall CSS by component; src/style.css imports them in order
 ├─ site/      landing page
-└─ project/   the Agent Badges logo and the asset studio
+└─ project/   the Agent Badges logo
 bin/          the CLI entry (thin wrapper around src/cli/main.js)
-tools/        dev-only pages: studio.html
+tools/        dev-only pages: studio.html and studio/ (asset studio)
 scripts/      build, check, screenshot and asset scripts
 tests/        Vitest suites, including contracts.test.js and docs.test.js
 skills/       the user-facing agent skill, shipped with the plugin
@@ -55,7 +56,7 @@ skills/       the user-facing agent skill, shipped with the plugin
 plugin.json, .agents/plugins/  Codex plugin and marketplace
 ```
 
-Layers only import downward: `engine` stands alone, `brands` imports nothing else, `data` reads `brands`, `collect` and `cli` build on those, `viewer` adds `engine` and three.js. `app`, `site`, `project` and `tools` are entry points and may import anything. The CLI side (`brands`, `data`, `collect`, `cli`) uses only Node built-ins, and the npm package ships only what `package.json` `files` lists. `tests/contracts.test.js` and `tests/package-files.test.js` enforce this.
+Layers only import downward: `engine` stands alone, `brands` imports nothing else, `data` reads `brands`, `collect`, `share` and `cli` build on those, `viewer` adds `engine` and three.js. `app`, `site`, `project` and `tools` are entry points and may import anything. The CLI side (`brands`, `data`, `collect`, `share`, `cli`) uses only Node built-ins, and the npm package ships only what `package.json` `files` lists. `tests/contracts.test.js` and `tests/package-files.test.js` enforce this.
 
 ## Extending agent-badges
 
@@ -75,7 +76,7 @@ The [`add-badge` skill](.agents/skills/add-badge/SKILL.md) walks through this st
 src/brands/
 ├─ shared/        layout.js (round medal, text ring, medallion), parts.js (terminal, fireworks,
 │                 lantern, calendar…), top-tier.js (the three top-tier designs), pixel-art.js, text.js,
-│                 showcase.js (display states for the landing page and studio)
+│                 display-states.js (display states for the landing page and studio)
 ├─ claude-code/   brand.js (palette), mascot.js (the pixel mascot), app-icon.js (feature family),
 │                 medal.js, milestones/ habits/ features/ limited/
 └─ codex/         brand.js, mark.js (the Codex mark), feature-frame.js, medal.js, the same four series
@@ -101,7 +102,7 @@ Pass `3.14159` as the angle for the back; `hold:0.6` pins the badge at an angle 
 
 ### Adding a tool
 
-`src/brands/index.js` is the only tool list. Everything else either derives from it (the CLI `--brand` check and help, `BRAND_INFO` in `src/collect/summary.js`, the dev server's data injection, `scripts/assets.mjs`) or keeps its own table keyed by tool id, which `tests/contracts.test.js` checks against the registry. A new tool `<id>` needs:
+`src/brands/index.js` is the only tool list. Everything else either derives from it (the CLI `--brand` check and help, `BRAND_INFO` in `src/cli/summary.js`, the dev server's data injection, `scripts/assets.mjs`) or keeps its own table keyed by tool id, which `tests/contracts.test.js` checks against the registry. A new tool `<id>` needs:
 
 1. `src/brands/<id>/`: `brand.js` (`id`, `name`, `launchDate` for the tool-birthday badge, `palette` with at least `background` and `graphite`, `ui`, `engraving`), `index.js` (default export: all badges; `SERIES`), `medal.js` and one folder per series with one file per badge.
 2. `src/brands/index.js`: add `{ brand, badges, series }` to `BRANDS`.

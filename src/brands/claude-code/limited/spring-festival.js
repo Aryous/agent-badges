@@ -7,7 +7,6 @@ import { medal } from '../medal.js';
 const springFestival = {
   id: 'spring-festival',
   title: '春节',
-  titleEn: 'SPRING FESTIVAL',
   description: '农历正月初一和 Claude Code 一起写代码。灯笼挂起来，新春第一行代码。',
   en: { title: 'Spring Festival', description: 'Coded with Claude Code on Lunar New Year. Lanterns up, the first line of code of the new spring.' },
   criteria: { target: 1 },

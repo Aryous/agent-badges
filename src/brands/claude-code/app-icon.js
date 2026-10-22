@@ -45,11 +45,10 @@ const PANEL_TOP = 0.03;
  * @param {string} o.metal 描边与文字的金属色
  * @param {string} o.name  下边条文字
  */
-export function appIcon({ id, title, titleEn, description, en, criteria, rim, face, panel, metal = 'silver', name, art }) {
+export function appIcon({ id, title, description, en, criteria, rim, face, panel, metal = 'silver', name, art }) {
   return {
     id,
     title,
-    titleEn,
     description,
     en,
     criteria,

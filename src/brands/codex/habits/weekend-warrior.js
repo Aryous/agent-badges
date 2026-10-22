@@ -15,7 +15,6 @@ const WK = { size: 0.26, center: [0, -0.02] };
 const weekendWarrior = {
   id: 'weekend-warrior',
   title: '周末战士',
-  titleEn: 'WEEKEND WARRIOR',
   description: '周六和周日都在用 Codex。墨镜戴上了，补丁也没停下。',
   en: { title: 'Weekend Warrior', description: 'Used Codex on both Saturday and Sunday. Sunglasses on, patches still flowing.' },
   criteria: { target: 1 },

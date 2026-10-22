@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatTokens, renderCard } from '../src/collect/card.js';
+import { formatTokens, renderCard } from '../src/share/card.js';
 import { parseArgs } from '../src/cli/args.js';
 
 const brands = [

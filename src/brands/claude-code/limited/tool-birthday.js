@@ -16,7 +16,6 @@ const HAND = [0.17, -0.17];
 const toolBirthday = {
   id: 'tool-birthday',
   title: '生日快乐',
-  titleEn: 'HAPPY BIRTHDAY',
   description: '2 月 24 日，Claude Code 的生日（2025 年这天发布）。这天和它一起写代码，小家伙牵着气球来道谢。',
   en: { title: "Happy Birthday", description: "February 24 is Claude Code's birthday (it launched on this day in 2025). Code with it today and the little guy brings balloons to say thanks." },
   criteria: { target: 1 },

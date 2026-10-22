@@ -19,7 +19,6 @@ const bashManiac = {
   id: 'bash-maniac',
   hidden: true,
   title: 'Bash 狂人',
-  titleEn: 'BASH MANIAC',
   description: '一天之内让 Claude Code 敲了 500 次 Bash。键盘冒烟了，终端还在滚。',
   en: { title: 'Bash Maniac', description: 'Had Claude Code run Bash 500 times in one day. The keyboard is smoking and the terminal is still scrolling.' },
   criteria: { target: 500 },

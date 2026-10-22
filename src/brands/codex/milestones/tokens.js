@@ -7,7 +7,6 @@ import { codexMark } from '../mark.js';
 const tokensBase = {
   id: 'tokens',
   title: 'Token 里程碑',
-  titleEn: '{label} TOKENS',
   description: '累计消耗的 Token。云里一直在下雨，下的全是字。',
   en: { title: '{label} Tokens', description: 'Tokens used. It never stops raining in the cloud, and every drop is a word.' },
   tiers: [

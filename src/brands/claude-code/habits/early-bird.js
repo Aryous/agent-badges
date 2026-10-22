@@ -24,7 +24,6 @@ const SUN_CENTER = [0, 0.18];
 const earlyBird = {
   id: 'early-bird',
   title: '早起鸟',
-  titleEn: 'EARLY BIRD',
   description: '早上 5–7 点就开工。太阳刚露头，咖啡还冒着热气，第一个提示已经发出去了。',
   en: { title: 'Early Bird', description: 'Started work between 5 and 7 a.m. The sun is barely up, the coffee is still steaming, and the first prompt is already sent.' },
   criteria: { target: 1 },

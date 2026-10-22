@@ -22,7 +22,6 @@ const STAR_DOTS = [
 const nightOwl = {
   id: 'night-owl',
   title: '夜猫子',
-  titleEn: 'NIGHT OWL',
   description: '凌晨零点到五点还在和 Codex 对话。月亮都挂到云上了。',
   en: { title: 'Night Owl', description: 'Still talking to Codex between midnight and 5 a.m. The moon is hanging on the cloud.' },
   criteria: { target: 1 },

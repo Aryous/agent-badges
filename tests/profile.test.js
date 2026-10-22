@@ -1,9 +1,9 @@
 // 公开版徽章墙（profile）：放到 GitHub Pages 的数据只能是页面上看得到的。
 import { describe, expect, it } from 'vitest';
 import { parseArgs } from '../src/cli/args.js';
-import { BRAND_INFO } from '../src/collect/summary.js';
-import { injectData } from '../src/collect/inject.js';
-import { pagesFromRemote, publicData } from '../src/collect/public.js';
+import { BRAND_INFO } from '../src/cli/summary.js';
+import { injectData } from '../src/share/inject.js';
+import { pagesFromRemote, publicData } from '../src/share/public.js';
 
 const badges = BRAND_INFO['claude-code'].badges;
 const hiddenIds = badges.filter((b) => b.hidden).map((b) => b.id);

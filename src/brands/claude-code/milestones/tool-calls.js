@@ -19,7 +19,6 @@ const WRENCH = [
 const toolCalls = {
   id: 'tool-calls',
   title: '工具调用里程碑',
-  titleEn: '{label} TOOL CALLS',
   description: '累计的工具调用次数。读文件、跑命令、改代码，小家伙从不嫌活多。',
   en: { title: '{label} Tool Calls', description: 'Tool calls made. Reading files, running commands, editing code: the little guy never minds more work.' },
   tiers: [

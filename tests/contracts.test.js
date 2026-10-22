@@ -5,7 +5,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BRANDS, BRAND_IDS, brandById } from '../src/brands/index.js';
 import { COLLECTORS } from '../src/collect/index.js';
-import { BRAND_INFO } from '../src/collect/summary.js';
+import { BRAND_INFO } from '../src/cli/summary.js';
 import { DATA_SOURCES } from '../src/data/progress.js';
 import * as ccMetrics from '../src/data/claude-code-metrics.js';
 import * as cxMetrics from '../src/data/codex-metrics.js';
@@ -58,11 +58,12 @@ describe('分层', () => {
     brands: ['brands'],
     data: ['data', 'brands'],
     collect: ['collect', 'data', 'brands'],
-    cli: ['cli', 'collect', 'data', 'brands'],
+    share: ['share', 'collect', 'data', 'brands'],
+    cli: ['cli', 'share', 'collect', 'data', 'brands'],
     viewer: ['viewer', 'engine', 'data', 'brands'],
   };
   // 这些层在命令行里运行：只能用 Node 自带模块
-  const NODE_ONLY = ['brands', 'data', 'collect', 'cli'];
+  const NODE_ONLY = ['brands', 'data', 'collect', 'share', 'cli'];
   const layerOf = (file) => {
     const parts = relative('src', file).split('/');
     return parts.length > 1 ? parts[0] : 'entry';
@@ -86,11 +87,23 @@ describe('分层', () => {
     }
     expect(bad).toEqual([]);
   });
+
+  it('页面（src/app/）不引用 src/share/：分享功能只在命令行里运行', () => {
+    const bad = [];
+    for (const file of filesUnder('src/app')) {
+      for (const spec of importsOf(file).filter((s) => s.startsWith('.'))) {
+        const target = relative(root, resolve(root, dirname(file), spec));
+        if (target.startsWith('src/share/')) bad.push(`${file} → ${target}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
 });
 
 describe('入口和采集层的边界', () => {
-  it('src/collect/ 是纯逻辑：不输出到控制台，不引用 i18n', () => {
-    const bad = filesUnder('src/collect').filter((f) => /\bconsole\./.test(withoutComments(read(f))) || importsOf(f).some((s) => /i18n/.test(s)));
+  it('src/collect/ 和 src/share/ 是纯逻辑：不输出到控制台，不引用 i18n', () => {
+    const files = [...filesUnder('src/collect'), ...filesUnder('src/share')];
+    const bad = files.filter((f) => /\bconsole\./.test(withoutComments(read(f))) || importsOf(f).some((s) => /i18n/.test(s)));
     expect(bad).toEqual([]);
   });
 

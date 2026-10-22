@@ -52,7 +52,7 @@ export function createEngraving({ lines, fontFamily, safeRadius = 0.7, brushed =
     }
   };
 
-  const [kicker, title, titleEn, footer] = lines;
+  const [kicker, title, subtitle, footer] = lines;
   const cx = size / 2;
   const unit = (size / 2) * safeRadius; // 安全区半径（像素）
 
@@ -70,10 +70,10 @@ export function createEngraving({ lines, fontFamily, safeRadius = 0.7, brushed =
     ctx.font = `600 ${unit * 0.27}px ${fontFamily}`;
     fitText(ctx, title, cx, cx - unit * 0.18, unit * 1.6);
 
-    if (titleEn) {
+    if (subtitle) {
       ctx.font = `500 ${unit * 0.08}px ${fontFamily}`;
       ctx.letterSpacing = `${unit * 0.035}px`;
-      ctx.fillText(titleEn, cx, cx + unit * 0.12);
+      ctx.fillText(subtitle, cx, cx + unit * 0.12);
     }
 
     // 分隔线

@@ -1,7 +1,7 @@
 // 公开版徽章墙（npx agent-badges profile）：放到 GitHub Pages 上给别人看。
 // 网页是公开仓库里的文件，内嵌数据谁都能拿到，所以只放页面上本来就看得到的东西。
 import { execFileSync } from 'node:child_process';
-import { BRAND_INFO } from './summary.js';
+import { brandById } from '../brands/index.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 /** 本地时区的日期 YYYY-MM-DD；页面只显示「更新于几月几日」，不需要时刻。 */
@@ -19,7 +19,7 @@ const localDay = (iso) => {
 export function publicData(data) {
   const out = {};
   for (const [id, d] of Object.entries(data)) {
-    const info = BRAND_INFO[id];
+    const info = brandById(id);
     if (!info || !d) continue;
     const hidden = new Set(info.badges.filter((b) => b.hidden).map((b) => b.id));
     const progress = Object.fromEntries(Object.entries(d.progress ?? {}).filter(([badgeId, p]) => !hidden.has(badgeId) || p?.unlocked));

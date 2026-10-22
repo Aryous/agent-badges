@@ -87,7 +87,7 @@ describe('年度日历', () => {
   });
 });
 
-import { summarize } from '../src/collect/summary.js';
+import { summarize } from '../src/cli/summary.js';
 
 describe('CLI 汇总', () => {
   it('即将解锁说的是下一级的名字', () => {
@@ -96,7 +96,7 @@ describe('CLI 汇总', () => {
   });
 });
 
-import { formatSummary, newUnlocks } from '../src/collect/summary.js';
+import { formatSummary, newUnlocks } from '../src/cli/summary.js';
 
 describe('CLI 汇总的数字', () => {
   it('十亿以上用 B', () => {

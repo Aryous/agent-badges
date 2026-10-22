@@ -75,7 +75,8 @@ export function validateBadge(config, brand) {
   };
 
   if (!id) fail('缺少 id');
-  for (const k of ['title', 'titleEn', 'description']) if (!config[k]) fail(`缺少 ${k}`);
+  for (const k of ['title', 'description']) if (!config[k]) fail(`缺少 ${k}`);
+  if (!config.en?.title) fail('缺少 en.title（英文标题，背面刻字的大写英文由它转换）');
   const extra = Object.keys(config.criteria ?? {}).filter((k) => !['target', 'unit', 'dynamic'].includes(k));
   if (extra.length) fail(`criteria 只能有 target、unit、dynamic，多了 ${extra.join('、')}`);
   if (!(config.criteria?.target > 0)) fail('criteria 需要大于 0 的 target');

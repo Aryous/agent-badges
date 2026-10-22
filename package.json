@@ -12,6 +12,7 @@
     "dist/index.html",
     "src/cli/",
     "src/collect/",
+    "src/share/",
     "src/data/hash.js",
     "src/data/normalize.js",
     "src/data/metrics-common.js",

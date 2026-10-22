@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { parseArgs } from '../src/cli/args.js';
 import { collectAll } from '../src/collect/index.js';
-import { injectData } from '../src/collect/inject.js';
+import { injectData } from '../src/share/inject.js';
 import { aggregateCodexDays, extractRolloutFacts, mergeDays } from '../src/data/codex-metrics.js';
 
 const SECRET = 'sk-ant-api03-TOP-SECRET-should-never-leak';

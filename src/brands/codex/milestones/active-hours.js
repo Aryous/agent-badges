@@ -8,7 +8,6 @@ import { medal } from '../medal.js';
 const activeHoursBase = {
   id: 'active-hours',
   title: '协作时长',
-  titleEn: '{label} TOGETHER',
   description: '和 Codex 一起专注干活的时长。挂着不动不算，几个会话同时开着也只算一次。',
   en: { title: '{label} Together', description: 'Hours of focused work with Codex. Idle time does not count, and parallel sessions count once.' },
   tiers: [

@@ -78,7 +78,7 @@ Add an entry to the default export of `src/data/mock-claude-code.js` or `src/dat
 ## 7. Write the copy
 
 - `title` (Chinese) and `description` (Chinese, one or two sentences: what you did, then a line of scene that matches the art).
-- `titleEn` (uppercase, engraved on the back) and `en: { title, description }`.
+- `en: { title, description }`. The uppercase English line on the back is made from `en.title`, so there is no separate field for it.
 - Both descriptions state the target number in digits ("20 sessions", "一天之内开启 20 个会话"). `tests/contracts.test.js` checks this for counted badges; a number inside another number (5 in 50) does not count.
 - The text ring's `bottom` and any `text` reliefs use only glyphs in the badge font; the validator names missing ones (add glyphs in `scripts/build-font.mjs`).
 - READMEs: update the badge counts in both `README.md` ("**N badges across two tools.** N for Claude Code, N for Codex") and `README.zh-CN.md` ("N 枚徽章", "Claude Code N 枚，Codex N 枚"). `tests/docs.test.js` fails until they match. If the counting rule isn't obvious, add a row to "How badges are counted" (README.md) and 「统计口径」 (README.zh-CN.md).
@@ -102,7 +102,7 @@ node scripts/peek.mjs "http://localhost:5199/?preview=unlocked&source=mock" back
 
 Add `&source=mock` to every preview URL. Without it, a machine that has local data for only one tool lists only that tool, and `brand=` for the other falls back to it; `source=mock` lists both tools with sample data. Add `&brand=codex` for Codex badges.
 
-For tiered badges add `&tier=N` for each tier. `N` is 0-based and clamped to the last tier (`src/app/preview.js`); without it the top tier is shown. The top tier has three variants, and the URL cannot pick one: the variant is chosen by a hash of the tier's `salt` plus the badge's `earnedAt` (`pickVariant` in `src/data/normalize.js`), and preview keeps the sample data's `earnedAt`. To see all three, change `earnedAt` in the badge's mock-data entry until each variant has come up (keep the final value varied), or check them in the design review through the studio (`src/project/studio.js`, `tools/studio.html`), which renders the sample state. `npm test` already runs `layoutIssues` on every variant. Do not ship a top tier you have only seen once.
+For tiered badges add `&tier=N` for each tier. `N` is 0-based and clamped to the last tier (`src/app/preview.js`); without it the top tier is shown. The top tier has three variants, and the URL cannot pick one: the variant is chosen by a hash of the tier's `salt` plus the badge's `earnedAt` (`pickVariant` in `src/data/normalize.js`), and preview keeps the sample data's `earnedAt`. To see all three, change `earnedAt` in the badge's mock-data entry until each variant has come up (keep the final value varied), or check them in the design review through the studio (`tools/studio/main.js`, `tools/studio.html`), which renders the sample state. `npm test` already runs `layoutIssues` on every variant. Do not ship a top tier you have only seen once.
 
 `hold:0.6` as the angle pins the badge at a slant to check the sides of holographic and metal parts. In a browser: `http://localhost:5199/?preview=unlocked&source=mock#<id>`.
 

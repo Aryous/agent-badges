@@ -16,7 +16,6 @@ const BALLOONS = [
 const toolBirthday = {
   id: 'tool-birthday',
   title: '生日快乐',
-  titleEn: 'HAPPY BIRTHDAY',
   description: '4 月 16 日，Codex CLI 的生日（2025 年这天发布）。这天和它一起写代码，云朵牵着气球来道谢。',
   en: { title: "Happy Birthday", description: "April 16 is Codex CLI's birthday (it launched on this day in 2025). Code with it today and the cloud brings balloons to say thanks." },
   criteria: { target: 1 },
