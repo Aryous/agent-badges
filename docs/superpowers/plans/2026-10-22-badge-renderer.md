@@ -100,7 +100,7 @@ async function capture() {
 
   // studio：每枚徽章正面 + 斜角；分级徽章再拍最高一级（含顶级彩蛋外形）
   const studio = await open('/tools/studio.html', () => window.__studio?.ready);
-  const jobs = [{ brand: 'logo', id: 'logo' }];
+  const jobs = [{ brand: 'logo' }]; // 项目标志：和 scripts/assets.mjs 一样不写 id
   for (const { brand, badges } of BRANDS) {
     for (const c of badges) {
       jobs.push({ brand: brand.id, id: c.id, showcase: true });
@@ -110,7 +110,7 @@ async function capture() {
   for (const { tag = 'showcase', ...job } of jobs) {
     for (const [view, angle, tilt] of [['front', 0, 0], ['angle', 0.52, 0.2]]) {
       const url = await studio.evaluate((o) => window.__studio.render(o), { ...job, angle, tilt, size: 1024, engraving: 1024 });
-      save(`studio--${job.brand}--${job.id}--${tag}--${view}`, url);
+      save(`studio--${job.brand}--${job.id ?? 'logo'}--${tag}--${view}`, url);
       n++;
     }
   }
