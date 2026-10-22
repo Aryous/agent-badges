@@ -89,13 +89,13 @@
 
 ### 2.3 删除 `titleEn`
 
-- 现状：62 枚徽章里，61 枚的 `titleEn` 恰好等于 `en.title` 转大写（含 `{label}` 占位符的分级徽章，转大写后也一致）。唯一不同的是程序员节：`titleEn` 是 `PROGRAMMERS DAY`，`en.title` 是 `Programmers' Day`。
+- 现状：62 枚徽章里，60 枚的 `titleEn` 恰好等于 `en.title` 转大写（含 `{label}` 占位符的分级徽章，替换等级数值后也一致，因为等级数值本来就是大写）。不同的只有两个工具各自的程序员节：`titleEn` 是 `PROGRAMMERS DAY`，`en.title` 是 `Programmers' Day`。
 - 做法：
   - 删除全部徽章配置、项目标志、`appIcon()`、`featureBadge()` 里的 `titleEn`；
   - 在 `src/brands/shared/text.js` 提供一个函数，由 `en.title` 转大写得到这段文字；
   - 背面刻字、单枚查看里中文标题下的英文副标题都改用它；占位符替换的规则不变；
   - `validate.js` 不再要求 `titleEn`。
-- 有意的变化：程序员节的背面刻字和英文副标题从 `PROGRAMMERS DAY` 变为 `PROGRAMMERS' DAY`。
+- 有意的变化：两枚程序员节徽章的背面刻字和英文副标题从 `PROGRAMMERS DAY` 变为 `PROGRAMMERS' DAY`。
 - 文档：`add-badge` 技能（`SKILL.md`、`references/parts.md`、模板）和 CONTRIBUTING.md 删除 `titleEn` 的说明。
 
 **验收**：视觉回归逐像素一致（背面刻字不在视觉回归范围内）；用 studio 渲染程序员节背面，确认只多了撇号；其余徽章的背面刻字文字与改动前逐字相同（比较 `engravingLines` 的输出）。
