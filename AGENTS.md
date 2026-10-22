@@ -76,6 +76,7 @@ Which checks to run:
 | CLI, collectors, `package.json` `files` | + `npm run build`, `npm run check:pack` |
 | `shelf`, `profile`, `publish` | + `npm run build`, `npm run check:shelf` |
 | Landing page (`src/site/`, `landing.html`) | + `npm run build:site`, `npm run check:site` |
+| Refactors that must not change how anything looks (engine, `src/viewer/`, rendering) | + `node scripts/visual.mjs capture <dir>` before and after (dev server on 5199, same day), then `node scripts/visual.mjs compare <before> <after>`: any differing pixel fails |
 
 ## Data boundary
 
