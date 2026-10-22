@@ -18,6 +18,76 @@ const check = (name, ok, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`);
 };
 
+// ---------- 按条件等待（不按墙钟固定等待） ----------
+// 渲染循环每帧最多推进 0.1 秒（src/app/loop.js），CSS 过渡也只在出帧时前进。软件渲染（CI）一帧要一两秒，
+// 固定等待里动画几乎没走：吸附没停稳、预览框还没淡入就读了状态。下面的等待都逐帧检查页面里可观察的状态，
+// 真实显卡上很快满足，和原来的固定等待差不多长。超时只记一笔不抛出：检查照常读状态，条件没满足就照常失败。
+const WAIT_TIMEOUT = 180000;
+
+async function waitUntil(page, label, fn, arg) {
+  await page
+    .waitForFunction(fn, arg, { polling: 'raf', timeout: WAIT_TIMEOUT })
+    .catch(() => console.log(`  （${WAIT_TIMEOUT / 1000} 秒内没等到：${label}）`));
+}
+
+/** 获得动画（飞入 + 高光）播完。播放期间「重播」按钮禁用；未解锁的徽章没有动画，按钮隐藏。播放中拖动会被忽略。 */
+async function waitAwardDone(page) {
+  await waitUntil(page, '获得动画播完', () => {
+    const b = document.querySelector('[data-replay]');
+    return b.hidden || !b.disabled;
+  });
+}
+
+/** 徽章停稳：没在拖动，角速度≈0，角度和倾斜连续 frames 帧不再变化。 */
+async function waitSpinRest(page, frames = 5) {
+  await page.evaluate(() => (window.__spinRest = { n: 0, angle: NaN, tilt: NaN }));
+  await waitUntil(page, '徽章停稳', (frames) => {
+    const s = window.__badgeApp.spin;
+    const r = window.__spinRest;
+    const still = !s.dragging && Math.abs(s.vel) < 1e-3 && Math.abs(s.tiltVel) < 1e-3
+      && Math.abs(s.angle - r.angle) < 1e-4 && Math.abs(s.tilt - r.tilt) < 1e-4;
+    r.n = still ? r.n + 1 : 0;
+    r.angle = s.angle;
+    r.tilt = s.tilt;
+    return r.n >= frames;
+  }, frames);
+}
+
+/** 导出预览框淡入完成（0.35 秒的 CSS 过渡，出帧才会前进）。 */
+async function waitFrameShown(page) {
+  await waitUntil(page, '预览框淡入', () => getComputedStyle(document.querySelector('#export-frame')).opacity === '1');
+}
+
+/**
+ * 快速甩动后松手：手以固定速度移动，位置按墙钟时间算，每步之间不睡眠。
+ * 应用用「两次 pointermove 的位移 / 两次处理的间隔」估算松手速度（src/viewer/inspector.js），
+ * 而指针移动按帧派发，每一步都要等一帧才被处理、才返回。原来每步固定 70 像素，软件渲染一帧一两秒时
+ * 只相当于每秒几十像素的慢拖（CI 上测出 0.8 rad/s）。位置按时间算后，每步位移和帧间隔成正比，
+ * 测出的速度只取决于手速。
+ * 松手：末步移动和松手直接用 CDP 连发、不等末步返回。松手是离散事件，会立刻冲出排队中的末步再处理自己，
+ * 两者紧挨着；否则松手要排在一整帧的渲染之后，和末步隔开上百毫秒，触发应用「松手前停顿超过 90ms 视为没甩」。
+ * 末步只走上一步被处理后这几毫秒的路，和它被处理的时刻一致。不经过 page.mouse，Playwright 的鼠标状态不受影响。
+ * 拖动时指针被画布捕获，位置跑出视口也照常收到。
+ */
+async function fling(page, x, y, pxPerSecond = 2000) {
+  const cdp = await page.context().newCDPSession(page);
+  const send = (type, px, buttons) =>
+    cdp.send('Input.dispatchMouseEvent', { type, x: px, y, button: type === 'mouseMoved' && !buttons ? 'none' : 'left', buttons, clickCount: type === 'mouseMoved' ? 0 : 1 });
+  await send('mouseMoved', x, 0);
+  await send('mousePressed', x, 1);
+  const t0 = Date.now();
+  let px = x;
+  let handled = t0;
+  for (let n = 1; n < 6 || Date.now() - t0 < 100; n++) {
+    px = x + ((Date.now() - t0) / 1000) * pxPerSecond;
+    await send('mouseMoved', px, 1);
+    handled = Date.now();
+  }
+  px += ((Date.now() - handled) / 1000) * pxPerSecond;
+  await Promise.all([send('mouseMoved', px, 1), send('mouseReleased', px, 0)]);
+  await cdp.detach();
+}
+
 async function session(viewport, tag) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: 2 });
   const errors = [];
@@ -95,9 +165,10 @@ async function session(viewport, tag) {
   const sample = ['first-session', 'seven-day-streak', 'subagent-commander'].filter((id) => ids.includes(id));
   for (const id of sample) {
     await page.evaluate((id) => window.__badgeApp.open(id), id);
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(400); // 只用于截图，不做检查
     await page.screenshot({ path: `${out}/desktop-${id}-award-mid.png` });
-    await page.waitForTimeout(2600);
+    // 获得动画要播完：播放期间拖动会被忽略，下面的吸附检查就成了空测
+    await waitAwardDone(page);
     await page.screenshot({ path: `${out}/desktop-${id}-front.png` });
 
     // 拖动半圈后应吸附到背面
@@ -110,32 +181,28 @@ async function session(viewport, tag) {
     }
     await page.waitForTimeout(150); // 停顿后松手，不甩动
     await page.mouse.up();
-    await page.waitForTimeout(1600);
+    await waitSpinRest(page);
     const face = await page.evaluate(() => window.__badgeApp.face);
     const spin = await page.evaluate(() => window.__badgeApp.spin);
     const snapped = Math.abs(Math.sin(spin.angle)) < 0.02 && Math.abs(spin.tilt) < 0.02;
     check(`${id} 拖动后吸附到正/背面并回正`, snapped, `angle=${spin.angle.toFixed(3)} tilt=${spin.tilt.toFixed(3)} face=${face}`);
 
     await page.evaluate(() => window.__badgeApp.setAngle(Math.PI));
-    await page.waitForTimeout(800);
+    await waitSpinRest(page);
     await page.screenshot({ path: `${out}/desktop-${id}-back.png` });
 
     if (id === sample[0]) {
       // 快速甩动：松手后应继续惯性转动，最终仍吸附到正/背面
       await page.evaluate(() => window.__badgeApp.setAngle(0));
-      await page.waitForTimeout(300);
-      await page.mouse.move(500, 330);
-      await page.mouse.down();
-      for (let i = 1; i <= 6; i++) {
-        await page.mouse.move(500 + i * 70, 330);
-        await page.waitForTimeout(8);
-      }
-      await page.mouse.up();
-      await page.waitForTimeout(120);
-      const coasting = await page.evaluate(() => window.__badgeApp.spin);
-      await page.waitForTimeout(3500);
+      await waitSpinRest(page);
+      await fling(page, 500, 330);
+      const released = await page.evaluate(() => window.__badgeApp.spin);
+      await waitSpinRest(page);
       const settled = await page.evaluate(() => window.__badgeApp.spin);
-      check('甩动后惯性转动', Math.abs(coasting.vel) > 3, `松手后角速度 ${coasting.vel.toFixed(1)} rad/s`);
+      // 只看松手后有没有继续转，不看具体速度：慢机器上读数时刻会落后好几帧，速度读数不可靠。
+      // 没有惯性时松手后只会吸附到最近的正/背面，最多 0.5π；有惯性时实测约 2.3π
+      const coast = Math.abs(settled.angle - released.angle);
+      check('甩动后惯性转动', coast > Math.PI, `松手后又转了 ${(coast / Math.PI).toFixed(2)}π`);
       check('惯性结束后吸附', Math.abs(Math.sin(settled.angle)) < 0.02 && Math.abs(settled.vel) < 0.05,
         `转过 ${(settled.angle / Math.PI).toFixed(2)}π`);
 
@@ -150,18 +217,18 @@ async function session(viewport, tag) {
       const hiddenBefore = await page.evaluate(() => getComputedStyle(document.querySelector('#export-frame')).opacity === '0');
       check('导出面板关闭时不显示取景框、不显示背景选项', hiddenBefore && !(await page.locator('[data-bg="ink"]').isVisible()));
       await page.locator('[data-export-toggle]').click();
-      await page.waitForTimeout(400);
       await page.locator('[data-bg="ink"]').click();
-      await page.waitForTimeout(500);
+      await waitFrameShown(page);
       const inkFrame = await frameState();
       await page.screenshot({ path: `${out}/desktop-export-frame-ink.png` });
       await page.locator('[data-bg="transparent"]').click();
-      await page.waitForTimeout(500);
+      await waitFrameShown(page);
       const tFrame = await frameState();
       await page.screenshot({ path: `${out}/desktop-export-frame-transparent.png` });
       // 面板打开时拖动旋转徽章，面板应保持打开，朝向跟着变
       await page.evaluate(() => window.__badgeApp.setAngle(Math.PI));
-      await page.waitForTimeout(500);
+      // 朝向文字在渲染循环里更新，要出帧才会变
+      await waitUntil(page, '朝向显示背面', () => document.querySelector('[data-export-face]').textContent === '背面');
       const faceText = await page.locator('[data-export-face]').textContent();
       check('面板打开时转到背面，朝向显示「背面」', faceText === '背面', faceText);
       await page.screenshot({ path: `${out}/desktop-export-panel.png` });

@@ -30,6 +30,8 @@ jobs:
   browser:
     # 页面层的冒烟检查：示例数据、软件渲染。像素级的视觉回归依赖真实显卡，只在本机运行（scripts/visual.mjs）
     runs-on: ubuntu-latest
+    # 软件渲染一帧一两秒，检查要跑十几分钟；卡死时不必等到默认的 6 小时
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -42,6 +44,7 @@ jobs:
         run: |
           npx vite --port 5199 --strictPort &
           for i in $(seq 1 60); do curl -sf http://localhost:5199/ > /dev/null && break; sleep 1; done
+          curl -sf http://localhost:5199/ > /dev/null || { echo "vite did not start"; exit 1; }
           npm run check:browser
       - run: npm run build:site
       - run: npm run check:site
