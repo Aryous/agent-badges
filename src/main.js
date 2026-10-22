@@ -46,13 +46,13 @@ async function main() {
   const loop = createLoop(ctx, inspector);
   const inspectPanel = inspect.mount(ctx, { inspector, exportPanel: exporter, loop });
 
-  startThumbs({ grid, profile, inspect: inspectPanel });
   const app = expose(ctx, { inspector, inspect: inspectPanel, exportPanel: exporter, poster: posterPanel, shelf: shelfPanel, wall: { setFilter }, heatmap });
 
-  // 支持通过 #徽章id 直接打开某一枚；命令行 ?task=shelf 打开时自动生成主页图
+  // 支持通过 #徽章id 直接打开某一枚（先打开它，缩略图等关上再画）；命令行 ?task=shelf 打开时自动生成主页图
   const fromHash = ctx.items.find((it) => `#${it.config.id}` === location.hash);
   if (fromHash) inspectPanel.open(fromHash);
   if (ctx.task) shelfPanel.open();
+  startThumbs({ grid, profile, inspect: inspectPanel });
 
   await thumbsDone;
   app.ready = true;

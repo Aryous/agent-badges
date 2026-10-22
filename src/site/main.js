@@ -4,13 +4,14 @@ import '../style.css';
 import './site.css';
 import { Group } from 'three';
 import { BRANDS } from '../brands/index.js';
-import { buildBadge } from '../engine/badge.js';
+import { buildBadge, disposeBadge } from '../engine/badge.js';
 import { badgeTitle } from '../brands/shared/text.js';
 import { loadAllProgress } from '../data/brand-progress.js';
 import { addStrings, applyStatic, lang, t } from '../viewer/i18n.js';
 import { createStage, supportsWebGL } from '../viewer/scene.js';
 import { renderBadgePNG } from '../viewer/snapshot.js';
 import { mountBadge } from '../viewer/mount-badge.js';
+import { idle, nextFrame } from '../viewer/frame.js';
 import { createHeatmap, markersFrom } from '../viewer/heatmap.js';
 import { LOGO_STATE, logoBadge, logoBrand } from '../project/logo.js';
 import STRINGS from './strings.js';
@@ -18,7 +19,6 @@ import STRINGS from './strings.js';
 addStrings(STRINGS);
 const $ = (s) => document.querySelector(s);
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
 // 开发服务器里演示页就是首页；发布后在 ./demo/
 const DEMO = import.meta.env.DEV ? '/' : './demo/';
@@ -59,7 +59,7 @@ function setupText() {
   });
 }
 
-// ---------- 首屏：轮流展示几枚徽章，可拖动 ----------
+// ---------- 首屏：轮流展示几枚徽章，可拖动；滚出视口就停 ----------
 
 const HERO = [
   { brand: 'logo' },
@@ -103,16 +103,31 @@ function startHero() {
   const spin = { angle: 0, vel: 0.55, dragging: false, lastX: 0, lastT: 0 };
   const swap = { t: 1, from: null }; // t: 0 → 1，换下一枚时的缩放过渡
 
-  function show(i) {
+  /**
+   * 组装第 i 枚，并提前把贴图传上显卡、着色器交给显卡后台编译（KHR_parallel_shader_compile），
+   * 换上来时不用当场卡一下。
+   */
+  function prepare(i) {
     const entry = HERO[i % HERO.length];
     const key = `${entry.brand}/${entry.id ?? ''}`;
     if (!built.has(key)) {
       const { brand, config, state } = heroItem(entry);
       const badge = buildBadge(config, brand, state, { lang });
       stage.applyEnvironment(badge);
+      badge.traverse((o) => {
+        if (!o.isMesh) return;
+        for (const v of Object.values(o.material)) if (v?.isTexture) stage.renderer.initTexture(v);
+      });
+      stage.renderer.compileAsync(badge, stage.camera, stage.scene).catch(() => {});
       built.set(key, { badge, brand, config, state });
     }
-    const next = built.get(key);
+    return built.get(key);
+  }
+
+  function show(i) {
+    const entry = HERO[i % HERO.length];
+    const next = prepare(i);
+    idle().then(() => prepare(i + 1)); // 下一枚趁空闲先组装好
     if (current) pivot.remove(current.badge);
     pivot.add(next.badge);
     current = next;
@@ -150,7 +165,7 @@ function startHero() {
   let last = performance.now();
   let shownFor = 0;
   const HOLD = 6; // 每枚展示几秒
-  stage.renderer.setAnimationLoop((now) => {
+  function frame(now) {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     if (!spin.dragging) {
@@ -179,7 +194,12 @@ function startHero() {
     }
     pivot.rotation.set(Math.sin(now / 1700) * 0.08, spin.angle, 0);
     stage.renderer.render(stage.scene, stage.camera);
-  });
+  }
+  // 看不见就不画：省电，也不和下面的画廊抢主线程
+  new IntersectionObserver(([e]) => {
+    last = performance.now();
+    stage.renderer.setAnimationLoop(e.isIntersecting ? frame : null);
+  }).observe(canvas);
 }
 
 // ---------- 画廊：两个工具的全部徽章 ----------
@@ -213,6 +233,7 @@ function startGallery() {
         stage.scene.add(item.holder);
         cache.set(key, renderBadgePNG({ stage, items: [item], item, size: 360, fill: 0.92 }));
         stage.scene.remove(item.holder);
+        disposeBadge(item.badge); // 只留图片，显卡上的徽章用完就放掉
         await nextFrame();
         if (my !== token) return; // 中途切换了标签
       }
@@ -235,15 +256,12 @@ function startGallery() {
     });
     tabs.appendChild(btn);
   }
-  // 画廊滚到附近再开始渲染，不和首屏抢资源
-  const io = new IntersectionObserver(
-    (entries) => {
-      if (!entries.some((e) => e.isIntersecting)) return;
-      io.disconnect();
-      tabs.querySelector('button').click();
-    },
-    { rootMargin: '400px' },
-  );
+  // 画廊进入视口才开始渲染：页面刚打开时不和首屏动画抢主线程
+  const io = new IntersectionObserver((entries) => {
+    if (!entries.some((e) => e.isIntersecting)) return;
+    io.disconnect();
+    tabs.querySelector('button').click();
+  });
   io.observe(root);
 }
 

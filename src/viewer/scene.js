@@ -6,6 +6,7 @@ import {
   PointLight,
   SRGBColorSpace,
   Scene,
+  Vector2,
   WebGLRenderer,
 } from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -63,12 +64,15 @@ export function createStage(canvas) {
   scene.add(sweep);
 
   const view = { width: 1, height: 1, halfH: 1, halfW: 1, aspect: 1 };
+  const size = new Vector2();
 
   function resize() {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     if (!w || !h) return; // 画布隐藏时（陈列墙模式）不改尺寸
-    renderer.setSize(w, h, false);
+    // 给 canvas.width 赋值（哪怕值不变）会重新分配绘图缓冲，很慢；尺寸没变就不碰
+    const now = renderer.getSize(size);
+    if (now.x !== w || now.y !== h) renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     view.width = w;

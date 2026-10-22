@@ -17,6 +17,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
   let mode = 'wall';
   let awardRunning = false;
   let closeTimer = null;
+  let onClosed = []; // whenClosed 的等待者，完全关上（徽章移出场景）时放行
 
   async function runAward() {
     if (awardRunning || !inspector.current?.state.unlocked) return;
@@ -138,6 +139,8 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
         setEngravingSize(item.badge, 1024); // 离开近看，换回省显存的版本
       }
       loop.stop();
+      onClosed.forEach((resolve) => resolve());
+      onClosed = [];
     }, 320);
     item?.tile.focus({ preventScroll: true });
   }
@@ -170,6 +173,12 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     close,
     get isOpen() {
       return mode === 'inspect';
+    },
+    /** 单枚查看完全关上（关闭动画结束、徽章移出场景）时兑现；没打开就立即兑现。 */
+    whenClosed() {
+      return overlay.hidden
+        ? Promise.resolve()
+        : new Promise((resolve) => onClosed.push(resolve));
     },
     get current() {
       return inspector.current;

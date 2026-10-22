@@ -6,6 +6,7 @@ import { SHELF, pickShelf, shelfCount, shelfLabel, shelfLayout } from '../data/s
 import { createStage } from './scene.js';
 import { renderBadgePNG } from './snapshot.js';
 import { mountBadge } from './mount-badge.js';
+import { disposeBadge } from '../engine/badge.js';
 import { nextFrame } from './frame.js';
 
 const SERIF = `'Iowan Old Style', 'Palatino Linotype', 'Songti SC', Georgia, serif`;
@@ -37,7 +38,7 @@ function offscreenStage() {
   if (stage) return stage;
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
-  Object.assign(canvas.style, { position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
+  canvas.style.display = 'none'; // 不显示；绘图缓冲由截图按需放大（见 snapshot.js）
   document.body.appendChild(canvas);
   stage = createStage(canvas);
   return stage;
@@ -51,7 +52,7 @@ async function badgeImage(config, brand, state, lang) {
   s.scene.add(holder);
   const src = renderBadgePNG({ stage: s, items: [item], item, size: THUMB, fill: 0.92 });
   s.scene.remove(holder);
-  badge.traverse((o) => o.isMesh && o.geometry.dispose());
+  disposeBadge(badge);
   await nextFrame();
   return loadImage(src);
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Box3 } from 'three';
 import brand from '../src/brands/claude-code/brand.js';
 import badges from '../src/brands/claude-code/index.js';
-import { buildBadge } from '../src/engine/badge.js';
+import { buildBadge, disposeBadge } from '../src/engine/badge.js';
 import { resolveTier } from '../src/engine/tiers.js';
 
 const byId = (id) => badges.find((b) => b.id === id);
@@ -51,6 +51,33 @@ describe('buildBadge', () => {
       const arcs = cfg.relief.filter((r) => r.kind === 'text-arc').map((r) => r.arc);
       expect(arcs.sort()).toEqual(['bottom', 'top']);
     }
+  });
+});
+
+describe('显卡资源', () => {
+  const part = (g, name) => g.children.find((m) => m.name === name);
+  const disposed = (geometry) => {
+    let hit = false;
+    geometry.addEventListener('dispose', () => (hit = true));
+    return () => hit;
+  };
+
+  it('外形相同的徽章共用机身几何体，并标为共用', () => {
+    const a = buildBadge(byId('first-session'), brand, unlocked);
+    const b = buildBadge(byId('first-session'), brand, locked);
+    for (const name of ['rim', 'face', 'back']) {
+      expect(part(a, name).geometry).toBe(part(b, name).geometry);
+      expect(part(a, name).geometry.userData.shared).toBe(true);
+    }
+  });
+
+  it('disposeBadge 释放徽章自己的几何体，不动共用的机身', () => {
+    const g = buildBadge(byId('first-session'), brand, unlocked);
+    const rim = disposed(part(g, 'rim').geometry);
+    const relief = disposed(reliefOf(g)[0].geometry);
+    disposeBadge(g);
+    expect(rim()).toBe(false);
+    expect(relief()).toBe(true);
   });
 });
 

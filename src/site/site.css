@@ -499,15 +499,9 @@ body.site {
   color: var(--muted);
 }
 
-/* 画廊用的离屏画布 */
+/* 画廊用的离屏画布：不显示，绘图缓冲由截图按需放大（见 viewer/snapshot.js） */
 #thumb-stage {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
+  display: none;
 }
 
 .no-webgl .hero-art {

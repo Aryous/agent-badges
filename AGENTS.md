@@ -58,6 +58,7 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 14. Plugin manifests match `package.json` (name, version); the skill's commands are pre-approved and its CLI flags exist — `tests/plugin.test.js`
 15. `src/collect/` has no `console.` and no i18n import; `bin/` imports only `src/cli/` — `tests/contracts.test.js`
 16. Docs match the code: this Map lists every `src/` dir, cited tests exist, README badge counts (the exact count sentence), tool birthdays and `tier` values match the registry, and README anchors linked from the READMEs, landing page and skill exist — `tests/docs.test.js`
+17. Badges with the same outline share body geometry. Shared geometry and textures carry `userData.shared`; free a badge only with `disposeBadge` (`src/engine/badge.js`), which keeps shared resources — `tests/badge.test.js`
 
 ## Workflows
 

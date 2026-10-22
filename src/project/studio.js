@@ -6,6 +6,7 @@ import { DATA_SOURCES } from '../data/progress.js';
 import { createStage } from '../viewer/scene.js';
 import { renderBadgePNG } from '../viewer/snapshot.js';
 import { mountBadge } from '../viewer/mount-badge.js';
+import { disposeBadge } from '../engine/badge.js';
 import { LOGO_STATE, logoBadge, logoBrand } from './logo.js';
 
 const stage = createStage(document.querySelector('#stage'));
@@ -53,14 +54,7 @@ async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, la
   } finally {
     stage.scene.remove(holder);
     // 每次都新建一枚徽章，用完就释放；素材脚本会连续渲染几百帧
-    badge.traverse((o) => {
-      if (!o.isMesh) return;
-      o.geometry.dispose();
-      for (const m of [o.material].flat()) {
-        for (const [k, v] of Object.entries(m)) if (v?.isTexture && k !== 'envMap' && !v.userData?.shared) v.dispose(); // 环境贴图属于整个场景
-        m.dispose();
-      }
-    });
+    disposeBadge(badge);
   }
 }
 

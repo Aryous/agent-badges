@@ -64,6 +64,44 @@ function extrude(shape, depth, { bevel = 0, segments = 12 } = {}) {
   return geo;
 }
 
+/**
+ * 机身（外圈、滚花、正面板、背面板）只由外形和内缩决定。同样外形的徽章共用一份几何体：
+ * 省掉重复的挤出和三角剖分（有些细长外圈剖分要几十毫秒），显卡上也只存一份。
+ * 共用的几何体标上 userData.shared，disposeBadge 不会释放它们。
+ */
+const bodies = new Map();
+
+function bodyGeometry(shape, inset) {
+  const key = JSON.stringify([shape, inset]);
+  if (bodies.has(key)) return bodies.get(key);
+  const depth = shape.depth ?? 0.2;
+  const bevel = shape.bevel ?? 0.04;
+  const recess = shape.recess ?? 0.028;
+  const segments = outlineSegments(shape);
+  const plate = depth / 2 - recess;
+
+  // 外圈：ExtrudeGeometry 的法线是逐面的，倒角会一格一格地反光；平滑 30° 以内的折角
+  const ringShape = withHole(makeOutline(shape, 0), makeOutline(shape, inset), segments);
+  const rim = smoothBevels(extrude(ringShape, depth, { bevel, segments }), SMOOTH_ANGLE).translate(0, 0, -depth / 2);
+
+  // 钱币边缘滚花：一圈细齿套在外圈侧壁中段
+  let reeding = null;
+  if (shape.reeded && shape.type === 'circle') {
+    const band = withHole(reededOutline(shape.radius ?? 1, shape.reeded), makeOutline(shape, 0.06), 64);
+    const bandDepth = depth - 2 * bevel - 0.012;
+    reeding = extrude(band, bandDepth, { segments: 64 }).translate(0, 0, -bandDepth / 2);
+  }
+
+  const coreShape = makeOutline(shape, inset);
+  const face = extrude(coreShape, plate, { segments });
+  const back = extrude(coreShape, plate, { segments }).translate(0, 0, -plate);
+
+  const body = { rim, reeding, face, back, plate };
+  for (const g of [rim, reeding, face, back]) if (g) g.userData.shared = true;
+  bodies.set(key, body);
+  return body;
+}
+
 /** 背面文字的安全区半径（相对外接半径）。 */
 function safeRadius(shape, inset) {
   switch (shape.type) {
@@ -111,10 +149,6 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
     };
   }
   const shape = config.shape;
-  const depth = shape.depth ?? 0.2;
-  const bevel = shape.bevel ?? 0.04;
-  const recess = shape.recess ?? 0.028;
-  const segments = outlineSegments(shape);
 
   const rimLayer = config.layers.find((l) => l.kind === 'rim');
   const faceLayer = config.layers.find((l) => l.kind === 'face');
@@ -128,30 +162,21 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
   const group = new Group();
   group.name = config.id;
 
-  // 外圈
-  const ringShape = withHole(makeOutline(shape, 0), makeOutline(shape, inset), segments);
-  // ExtrudeGeometry 的法线是逐面的，倒角会一格一格地反光；平滑 30° 以内的折角
-  const ringGeo = smoothBevels(extrude(ringShape, depth, { bevel, segments }), SMOOTH_ANGLE);
-  const ring = new Mesh(ringGeo, mat(rimLayer.material, rimLayer.color));
-  ring.geometry.translate(0, 0, -depth / 2);
+  const body = bodyGeometry(shape, inset);
+  const { plate } = body;
+
+  // 外圈（钱币款带一圈滚花）
+  const ring = new Mesh(body.rim, mat(rimLayer.material, rimLayer.color));
   ring.name = 'rim';
   group.add(ring);
-
-  // 钱币边缘滚花：一圈细齿套在外圈侧壁中段
-  if (shape.reeded && shape.type === 'circle') {
-    const R = shape.radius ?? 1;
-    const band = withHole(reededOutline(R, shape.reeded), makeOutline(shape, 0.06), 64);
-    const bandDepth = depth - 2 * bevel - 0.012;
-    const reed = new Mesh(extrude(band, bandDepth, { segments: 64 }), ring.material);
-    reed.geometry.translate(0, 0, -bandDepth / 2);
+  if (body.reeding) {
+    const reed = new Mesh(body.reeding, ring.material);
     reed.name = 'reeding';
     group.add(reed);
   }
 
   // 正面板
-  const plate = depth / 2 - recess;
-  const coreShape = makeOutline(shape, inset);
-  const front = new Mesh(extrude(coreShape, plate, { segments }), mat(faceLayer.material, faceLayer.color, patternOverrides(faceLayer.pattern)));
+  const front = new Mesh(body.face, mat(faceLayer.material, faceLayer.color, patternOverrides(faceLayer.pattern)));
   front.name = 'face';
   group.add(front);
 
@@ -178,11 +203,7 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
     base: locked ? 0.55 : 1,
   };
   const engraving = typeof document !== 'undefined' ? createEngraving(engravingOpts) : {};
-  const back = new Mesh(
-    extrude(coreShape, plate, { segments }),
-    mat(backType, config.back.color, { ...engraving, bumpScale: 1.2, roughness: locked ? 0.85 : 0.62 }),
-  );
-  back.geometry.translate(0, 0, -plate);
+  const back = new Mesh(body.back, mat(backType, config.back.color, { ...engraving, bumpScale: 1.2, roughness: locked ? 0.85 : 0.62 }));
   back.name = 'back';
   // 背面刻字默认 1024；近看时用 setEngravingSize 换成更清晰的版本
   back.userData.engraving = engravingOpts;
@@ -220,20 +241,23 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
     masked,
     tier: config.tier ?? null,
     pulses: locked ? [] : group.children.filter((c) => c.userData.pulse).map((c) => c.material),
-    dispose() {
-      group.traverse((o) => {
-        if (!o.isMesh) return;
-        o.geometry.dispose();
-        const m = o.material;
-        for (const key of ['map', 'bumpMap', 'roughnessMap']) {
-          // 只释放每枚徽章独有的刻字贴图；拉丝等共享贴图保留
-          if (o.name === 'back' && m[key]) m[key].dispose();
-        }
-        m.dispose();
-      });
-    },
   };
   return group;
+}
+
+/**
+ * 释放一枚徽章独占的显卡资源：几何体、材质、刻字贴图。
+ * 多枚徽章共用的（userData.shared：机身几何体、拉丝和底纹贴图）和场景的环境贴图不动。
+ */
+export function disposeBadge(badge) {
+  badge.traverse((o) => {
+    if (!o.isMesh) return;
+    if (!o.geometry.userData.shared) o.geometry.dispose();
+    for (const [key, v] of Object.entries(o.material)) {
+      if (v?.isTexture && key !== 'envMap' && !v.userData.shared) v.dispose();
+    }
+    o.material.dispose();
+  });
 }
 
 /**

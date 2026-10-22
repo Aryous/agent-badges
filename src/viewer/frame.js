@@ -30,3 +30,11 @@ export function nextFrame() {
     setTimeout(finish, 100);
   });
 }
+
+/** 等浏览器空闲（最多等 timeout 毫秒）。Safari 没有 requestIdleCallback，稍等一下再做。 */
+export function idle(timeout = 1000) {
+  return new Promise((resolve) => {
+    if ('requestIdleCallback' in window) requestIdleCallback(() => resolve(), { timeout });
+    else setTimeout(resolve, 50);
+  });
+}
