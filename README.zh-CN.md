@@ -15,13 +15,15 @@
   <a href="README.md">English</a> · <b>简体中文</b> · <a href="https://aryous.github.io/agent-badges/?lang=zh">官网</a> · <a href="https://aryous.github.io/agent-badges/demo/?lang=zh">在线演示</a>
 </p>
 
-把你的 Claude Code 和 Codex 使用记录变成可收藏的 3D 成就徽章，像 Apple Watch 健身徽章那样。全程在本机运行，不上传任何内容。
+把你在 Claude Code 和 Codex 里的使用记录，变成一枚枚可以收藏的 3D 成就徽章，就像 Apple Watch 的健身徽章。
 
 ```bash
 npx agent-badges
 ```
 
-**也可以直接问你的 Agent。** 在 Claude Code 或 Codex 里[装上技能](#安装)，然后说「看看我的徽章」。
+一条命令打开你的徽章墙。所有计算都在本机完成：只读记录里的时间和用量数字，不碰对话内容，也不上传任何东西（[详见隐私说明](#隐私)）。
+
+也可以直接问 Agent：在 Claude Code 或 Codex 里[装上技能](#在-claude-code-和-codex-里用)，说一句「看看我的徽章」就行。
 
 <p align="center">
   <img src="assets/spin.gif" alt="三枚旋转的徽章：Claude Code 初次相遇、Agent Badges 标志、Codex 初次启动" width="720" />
@@ -29,12 +31,12 @@ npx agent-badges
 
 ## 有什么
 
-- **两个工具，62 枚徽章。** Claude Code 32 枚，Codex 30 枚：里程碑、连续与习惯、功能探索、节日限定，还有几枚隐藏彩蛋。分级徽章按铜、银、金逐级升级（Token 徽章多一级白金），最高一级随机解锁三款特别设计之一。
-- **真 3D。** 每枚徽章都由 three.js 按一份配置程序化生成，材质有珐琅、抛光金属、拉丝金属、陶瓷、全息镭射、水晶。可以拖动旋转，翻到背面看刻字。
-- **成就档案。** 解锁进度环、累计 Token、活跃天数、最长连续，最近获得了什么、离哪几枚最近。
-- **年度热力图。** 每天的 Token 用量排成日历，两个工具叠在一起看：同一天都用了就一格两色；解锁徽章的日子有一个小圆点。
-- **可以分享。** 任意一枚导出 2048 像素 PNG（透明或墨色背景），一键生成整面墙的分享海报，或者把成就卡片放到 GitHub 个人主页。
-- **中英双语。** 页面跟随浏览器语言，顶栏可以切换。
+- **两个工具，62 枚徽章。** Claude Code 32 枚，Codex 30 枚，分为里程碑、连续与习惯、功能探索、节日限定几个系列，还藏着几枚彩蛋。分级徽章从铜、银到金逐级升级，Token 徽章再多一级白金；最高一级有三款设计，解锁时随机得到其中一款。
+- **真正的 3D。** 每枚徽章都由 three.js 按配置实时生成，材质有珐琅、抛光金属、拉丝金属、陶瓷、全息镭射和水晶。可以拖着转，也可以翻到背面看刻字。
+- **成就档案。** 解锁进度、累计 Token、活跃天数、最长连续天数一目了然，还能看到最近拿到了哪几枚、哪几枚快到手了。
+- **年度热力图。** 每天的 Token 用量排成一张日历。两个工具同一天都用过，那一格就是两种颜色；解锁徽章的日子会多一个小圆点。
+- **方便分享。** 单枚徽章可以导出 2048 像素的 PNG（透明或深色背景），整面墙可以一键生成分享海报，也可以把徽章挂到 GitHub 个人主页上。
+- **中英双语。** 页面语言跟随浏览器，顶栏可以随时切换。
 
 ![徽章墙：成就档案、年度热力图和第一排徽章](assets/screenshot-wall.png)
 
@@ -49,30 +51,47 @@ npx agent-badges
 
 ![全部 Codex 徽章](assets/gallery-codex.png)
 
-每排最后的两个 `???` 是隐藏成就，获得之后才会揭晓。
+显示为 `???` 的是隐藏成就，拿到之后才会揭晓。
 
 </details>
 
-## 隐私
+## 快速开始
 
-Agent Badges 只读取 Claude Code 和 Codex 在你本机留下的记录里的元数据：时间戳、Token 计数、工具名。你的对话、命令参数和文件路径在解析每一行记录时当场丢弃，从不保存；凭证文件从不打开。除非你让它[发布到 GitHub 个人主页](#放到-github-个人主页)，否则什么都不会上传。
+需要 **Node.js 22.15 或更高版本**（要用到 Node 自带的 zstd 解压和 SQLite）。日常在 macOS 上开发，CI 跑在 Linux 上；Windows 理论上能用，但还没实际测过。
 
-规则定得很死，并且有测试保证：
+```bash
+npx agent-badges                    # 采集本机数据，打开徽章墙
+npx agent-badges collect            # 只采集，在终端里打印汇总
+npx agent-badges collect --json     # 同上，输出 JSON
+npx agent-badges export ./my-wall   # 导出一个能离线打开的网页（包含你的统计数字）
+npx agent-badges publish            # 把徽章放到 GitHub 个人主页（动手前会先问你）
+npx agent-badges shelf              # 把已解锁的徽章画成一张 PNG
+npx agent-badges card               # 生成一张成就卡片 SVG
+```
 
-- **只在本机。** 读取 `~/.claude` 和 `~/.codex`，结果写到 `~/.agent-badges`。页面只监听 `127.0.0.1`，局域网里的其他设备也访问不到。没有网络请求，没有统计。
-- **只读元数据。** 每一行记录解析后立刻只保留白名单字段：时间戳、Token 计数、工具名、模式取值。对话内容、代码、工具参数和结果当场丢弃，从不保存。可能透露你在做什么的名字（MCP 服务名、Codex 的模型名）会哈希；Claude 的模型名只保留家族名（opus、sonnet、haiku、fable）。
-- **从不打开的文件。** Claude Code：`settings.json`、`.credentials.json`、MCP 配置、`history.jsonl`、`shell-snapshots`、`session-env`、`paste-cache`、`file-history`。Codex：`auth.json`、`config.toml`、`*.env`、`history.jsonl`、`transcription-history.jsonl`、`thread_history*.sqlite`、`logs*.sqlite`、`memories*`、`shell_snapshots`、`chatgpt-meetings`。
-- **Codex 会话索引库。** `state_*.sqlite` 以只读方式打开，只 SELECT 六列：创建时间、来源、会话类型、模型、推理强度、审批策略。标题、首条消息、预览、路径、git 信息、账号 id 一律不读。
-- **保存了什么。** `~/.agent-badges` 里是按天汇总的账本，只有数字、日期和哈希。工具清理旧记录之后，已经拿到的徽章也不会消失。
-- **有测试。** 测试会在伪造的 `~/.claude` 和 `~/.codex` 里塞入假密钥、对话、路径和会话标题，真跑一遍采集和导出，确认它们不会出现在任何输出里。
+| 选项 | |
+| --- | --- |
+| `--brand claude-code\|codex` | 只看其中一个工具 |
+| `--port <端口>` | 本地页面的端口（默认 4747，被占用时自动往后找） |
+| `--no-open` | 不自动打开浏览器 |
+| `--json` | `collect` 的汇总改为 JSON 输出 |
+| `--lang en\|zh` | 汇总、徽章图和卡片的语言（汇总默认跟随系统，徽章图和卡片默认英文） |
+| `--out <文件>` | `shelf` 或 `card` 的保存位置 |
+| `--yes` | `publish` 不再询问，直接执行（建议先看过一次计划再用） |
+| `--name <名字>` | 卡片和公开徽章墙上显示的名字（默认是你的 GitHub 用户名） |
+| `--theme dark\|light` | 卡片配色 |
 
-在线演示和 npm 包里都没有任何个人数据。只有 `export`、`card`、`shelf` 和 `profile` 会写出和你使用情况有关的文件，而且只写到你指定的位置。`publish` 和 `profile` 生成的网页就是用来公开的，[里面有什么](#放到-github-个人主页)写在下面。
+| 环境变量 | 默认值 |
+| --- | --- |
+| `AGENT_BADGES_HOME` | `~/.agent-badges`（账本和缓存放在这里） |
+| `CLAUDE_CONFIG_DIR` | `~/.claude` |
+| `CODEX_HOME` | `~/.codex` |
 
-## 安装
+第一次运行要把全部会话记录读一遍，Codex 记录有好几 GB 的话会花一些时间；之后每次只处理新增或改动过的文件。
 
-命令行本身不用安装，直接 `npx agent-badges` 就能运行（见[快速开始](#快速开始)）。想直接问 Agent 的话，再装上技能。
+## 在 Claude Code 和 Codex 里用
 
-Agent Badges 带有一个给 Claude Code 和 Codex 用的技能（Skill）。直接用平常的话问，比如「看看我的徽章」「我刚解锁了什么」或 "check my badges"。Agent 会在你的电脑上运行命令行，然后告诉你新解锁了什么、总共解锁了多少、离哪几枚最近。
+装上技能后，用平常说话的方式问就行，比如「看看我的徽章」「我刚解锁了什么」，或者英文的 "check my badges"。Agent 会在本机跑一遍命令，然后告诉你新解锁了哪些、一共解锁了多少、离哪几枚最近。
 
 ```text
 > 看看我的徽章
@@ -84,7 +103,7 @@ Claude Code：已解锁 27 / 32。
 要我打开 3D 徽章墙，或者生成一张 GitHub 个人主页的成就卡片吗？
 ```
 
-<sub>回复示例，用示例数据生成。</sub>
+<sub>以上回复用示例数据生成。</sub>
 
 ### Claude Code
 
@@ -92,7 +111,7 @@ Claude Code：已解锁 27 / 32。
 /plugin install agent-badges --marketplace Aryous/agent-badges
 ```
 
-较旧的版本需要先添加市场：`/plugin marketplace add Aryous/agent-badges`，再运行 `/plugin install agent-badges@agent-badges`。
+如果 Claude Code 版本较旧，要先添加插件市场：`/plugin marketplace add Aryous/agent-badges`，再运行 `/plugin install agent-badges@agent-badges`。
 
 ### Codex
 
@@ -101,33 +120,28 @@ codex plugin marketplace add Aryous/agent-badges
 codex plugin add agent-badges@agent-badges
 ```
 
-只想装技能、不装插件的话，在 Codex 里说：
+只想装技能、不装整个插件，可以在 Codex 里说：
 
 ```text
 $skill-installer install https://github.com/Aryous/agent-badges/tree/main/skills/badges
 ```
 
-装好后新开一个 Codex 会话，它才会加载这个技能。
+装好后新开一个 Codex 会话，技能才会生效。
 
 ### 其他 Agent
 
-这个技能就是一个标准的 [Agent Skills](https://agentskills.io) 目录：[`skills/badges`](skills/badges)。可以把它复制到任何支持 `SKILL.md` 的 Agent 里，也可以让 Agent 直接调用命令行、读取 [JSON 输出](#json-输出)。
+技能本身是一个标准的 [Agent Skills](https://agentskills.io) 目录：[`skills/badges`](skills/badges)，可以复制到任何支持 `SKILL.md` 的 Agent 里。也可以不装技能，让 Agent 直接调用命令、读取 [JSON 输出](#json-输出)。
 
-### 怎么运作
+### 技能会做什么
 
-| | Claude Code | Codex |
-| --- | --- | --- |
-| 怎么用 | 问起你的徽章，或者输入 `/agent-badges:badges` | 问起你的徽章，或者输入 `$` 选择 `agent-badges:badges`（只装了技能的话是 `$badges`） |
-| 运行什么 | `npx -y agent-badges@latest collect --json` | 同左 |
-| 权限 | 技能只预先放行只读的命令（`collect`，以及不带 `--yes` 的 `publish`）。发布到主页这类会改动东西的命令照常先问你 | 命令在 Codex 的沙箱里运行。npx 要联网下载，命令行要写入 `~/.agent-badges`，所以 Codex 通常会请你批准这条命令 |
-
-- Agent 只汇报命令行输出的内容，不会编造徽章、日期或数字。
-- 打开徽章墙、生成主页图片、导出网页，Agent 只会提议，不会擅自执行。提交或推送你的主页仓库之前也会先问你。
-- 技能总是运行 npm 上的最新版本，新徽章上线后不用重装任何东西。
+- **怎么叫它。** 问起你的徽章就行。也可以手动调用：Claude Code 里输入 `/agent-badges:badges`；Codex 里输入 `$` 后选 `agent-badges:badges`（只装了技能的话是 `$badges`）。
+- **实际运行的命令。** `npx -y agent-badges@latest collect --json`。每次都用 npm 上的最新版，出了新徽章也不用重装。
+- **权限。** 在 Claude Code 里，技能只预先放行只读的命令（`collect`，以及不带 `--yes` 的 `publish`），会改动东西的操作照样先问你。在 Codex 里，命令跑在沙箱中；因为 npx 要联网下载，还要写入 `~/.agent-badges`，Codex 一般会先请你确认。
+- **不越界。** Agent 只转述命令的输出，不会编造徽章、日期或数字。打开徽章墙、生成主页图片、导出网页这类操作，它只提议、不擅自执行；提交或推送你的主页仓库之前也会先问你。
 
 ### JSON 输出
 
-给脚本或者没装技能的 Agent 用：
+写脚本，或者 Agent 没装技能的时候，可以直接读 JSON：
 
 ```bash
 npx agent-badges collect --json --lang zh
@@ -150,71 +164,37 @@ npx agent-badges collect --json --lang zh
 }
 ```
 
-- `newUnlocks`：上次运行之后新获得的徽章，第一次运行时为空。分级徽章还带有 `tier`（`bronze`、`silver`、`gold`、`platinum`；到了最高一级是抽到的那一款：`ivory-gold`、`onyx-gold`、`sapphire`），升级时 `upgrade` 为 `true`。
-- `recent`：最近获得的三枚。
-- `nearMiss`：最接近解锁的最多三枚。
-- 没装的工具不会出现在结果里。`--brand codex` 只看一个工具，`--lang en` 输出英文名称。
-
-## 快速开始
-
-需要 **Node.js 22.15 或更高版本**（用到了 Node 内置的 zstd 解压和 SQLite）。在 macOS 上开发，CI 在 Linux 上测试；Windows 理论上可用，但还没实际试过。
-
-```bash
-npx agent-badges                    # 采集本机数据，打开徽章墙
-npx agent-badges collect            # 只采集，在终端打印汇总
-npx agent-badges collect --json     # 同样的汇总，JSON 格式
-npx agent-badges export ./my-wall   # 导出可离线打开的静态网页（含你的统计数字）
-npx agent-badges publish            # 把徽章放到 GitHub 个人主页（会先问你）
-npx agent-badges shelf              # 把已解锁的徽章保存成 PNG，放进 GitHub 个人主页
-npx agent-badges card               # 生成成就卡片 SVG，放进 GitHub 个人主页
-```
-
-| 选项 | |
-| --- | --- |
-| `--brand claude-code\|codex` | 只看某个工具 |
-| `--port <端口>` | 本地页面端口（默认 4747，被占用时自动往后找） |
-| `--no-open` | 不自动打开浏览器 |
-| `--json` | 以 JSON 输出汇总（`collect`） |
-| `--lang en\|zh` | 汇总、陈列图和卡片的语言（汇总默认跟随系统，陈列图和卡片默认英文） |
-| `--out <文件>` | `shelf` 或 `card` 的保存位置 |
-| `--yes` | `publish`：不再询问，直接执行（看过计划之后再用） |
-| `--name <名字>` | 卡片和公开版徽章墙上的名字（默认用你的 GitHub 用户名） |
-| `--theme dark\|light` | 卡片配色 |
-
-| 环境变量 | 默认值 |
-| --- | --- |
-| `AGENT_BADGES_HOME` | `~/.agent-badges`（账本和缓存的位置） |
-| `CLAUDE_CONFIG_DIR` | `~/.claude` |
-| `CODEX_HOME` | `~/.codex` |
-
-第一次运行要读完全部会话记录，Codex 记录有几 GB 的话需要一些时间；之后只处理新增或变化的文件。
+- `newUnlocks`：上次运行以来新拿到的徽章，第一次运行时为空。分级徽章会带上 `tier`：`bronze`、`silver`、`gold`、`platinum`，到了最高一级则是抽到的那一款（`ivory-gold`、`onyx-gold`、`sapphire`）；升级时 `upgrade` 为 `true`。
+- `recent`：最近拿到的三枚。
+- `nearMiss`：离解锁最近的几枚，最多三枚。
+- 本机没装的工具不会出现在结果里。加 `--brand codex` 只看一个工具，加 `--lang en` 输出英文名称。
 
 ## 放到 GitHub 个人主页
 
-跟 Agent 说「把我的徽章放到 GitHub 主页」，或者运行：
+跟 Agent 说「把我的徽章放到 GitHub 主页」，或者自己运行：
 
 ```bash
 npx agent-badges publish --lang zh
 ```
 
-主页上会出现一张徽章图，点它打开你在 GitHub Pages 上的 3D 徽章墙。实际效果：[github.com/Aryous](https://github.com/Aryous) → [aryous.github.io/Aryous](https://aryous.github.io/Aryous/)。
+你的主页上会多出一张徽章图，点开就是你在 GitHub Pages 上的 3D 徽章墙。实际效果可以看 [github.com/Aryous](https://github.com/Aryous) → [aryous.github.io/Aryous](https://aryous.github.io/Aryous/)。
 
-它会先检查一遍、列出计划，问过你再动手。你同意后它会：
+运行后会先做检查、列出计划，等你确认了才开始：
 
-1. 如果你还没有主页仓库（`<用户名>/<用户名>`），新建一个公开仓库；
-2. 在浏览器标签页里渲染你已解锁的徽章；
-3. 写入公开版徽章墙和徽章图，并把图片加进 README 里 `<!-- agent-badges:start -->` 和 `<!-- agent-badges:end -->` 之间。已经有主页 README 的话，徽章加在最后，其他内容一个字不动；
-4. 提交、推送、开启 GitHub Pages，等网页能打开。
+1. 如果还没有主页仓库（`<用户名>/<用户名>`），新建一个公开仓库；
+2. 在浏览器标签页里画出你已解锁的徽章；
+3. 写入公开徽章墙和徽章图，把图片加到 README 中 `<!-- agent-badges:start -->` 和 `<!-- agent-badges:end -->` 之间。已有的主页 README 只会在末尾追加这一段，其他内容原样保留；
+4. 提交、推送、开启 GitHub Pages，等网页能访问为止。
 
-想更新徽章时再运行一次就行。它在 `~/.agent-badges/profile/` 里自己管理一份仓库副本，你不需要克隆任何东西。
+以后想更新，再运行一次就行。仓库副本放在 `~/.agent-badges/profile/`，由工具自己维护，你不用手动克隆。
 
-**需要** [GitHub 命令行工具 gh](https://cli.github.com)，并用 `gh auth login` 登录。它只在自己的 git 命令里临时使用 gh 的凭证，不改你的 git 设置。
+**前提：** 装好 [GitHub CLI（gh）](https://cli.github.com)，并用 `gh auth login` 登录。推送时只借用 gh 的登录状态，不会改你的 git 配置。
 
-**会公开什么：** 已解锁的徽章和等级、徽章进度和解锁日期、每天的 Token 用量和对话轮数（热力图）。网页里只放页面上看得到的东西：未解锁的隐藏徽章不放，更新时间只到日期，详细账本（一天中几点在用、工具调用、模型名字）不会离开你的电脑。旧版本会留在仓库的 git 历史里。
+**会公开哪些内容：** 已解锁的徽章和等级、解锁进度和日期，以及每天的 Token 用量和对话轮数（用来画热力图）。页面上看不到的东西不会放进去：没解锁的隐藏徽章不放，更新时间只精确到日期，详细账本（几点在用、调用了哪些工具、用了哪些模型）不会离开你的电脑。注意，旧版本会一直留在仓库的 git 历史里。
 
-如果主页仓库是私有的、GitHub Pages 已经设置成从别处发布，或者根目录已有不是它生成的 `index.html`，它会停下来告诉你，不做改动。
+遇到这几种情况，它会停下来提醒你，不做任何改动：主页仓库是私有的；GitHub Pages 已经设成从别处发布；仓库根目录里已经有一个不是由它生成的 `index.html`。
 
-想自己管理仓库的话，`npx agent-badges profile 路径/<用户名>` 只往那个目录写入徽章图和网页，并打印 README 里要写的一行，不会替你提交。
+想自己管理仓库的话，用 `npx agent-badges profile 路径/<用户名>`：只把徽章图和网页写进这个目录，再打印出要加到 README 里的那一行，不会替你提交。
 
 ### 只要徽章图
 
@@ -222,7 +202,9 @@ npx agent-badges publish --lang zh
 npx agent-badges shelf --out 路径/<用户名>/agent-badges-shelf.png --lang zh
 ```
 
-3D 徽章要用 WebGL 渲染，所以这条命令会在你的浏览器里打开一个标签页，画出你已解锁的全部徽章，把 PNG 交回终端保存后退出。会交回两张 PNG：一张给 GitHub 深色主题，一张给浅色主题（`agent-badges-shelf-light.png`），背景都是透明的，只有字色不同。图里只有已解锁的徽章、名字和等级，没有日期，也没有用量数字。在徽章墙上点「GitHub 主页图」按钮也能生成。
+3D 徽章要靠 WebGL 渲染，所以这条命令会在浏览器里打开一个标签页，画好已解锁的徽章后自动保存成 PNG。一共两张：一张配 GitHub 深色主题，一张配浅色主题（`agent-badges-shelf-light.png`）。两张都是透明背景，只有文字颜色不同。图里只有已解锁的徽章、名称和等级，没有日期和用量数字。在徽章墙上点「GitHub 主页图」按钮也能生成。
+
+在 README 里这样引用，访客会看到和自己主题匹配的那一张：
 
 ```html
 <picture>
@@ -241,7 +223,7 @@ npx agent-badges shelf --out 路径/<用户名>/agent-badges-shelf.png --lang zh
 npx agent-badges card --name "你的名字" --lang zh
 ```
 
-会生成 `agent-badges-card.svg`：解锁数、累计数字、最长连续和最近的活动格子。不需要浏览器，在远程服务器上也能用。
+生成 `agent-badges-card.svg`，上面是解锁数、累计数字、最长连续天数和最近的活动格子。卡片里只有数字；不需要浏览器，在远程服务器上也能生成。
 
 ```markdown
 ![Agent Badges](./agent-badges-card.svg)
@@ -254,42 +236,53 @@ npx agent-badges card --name "你的名字" --lang zh
   </picture>
 </p>
 
-卡片里只有数字。
+## 隐私
+
+Agent Badges 读的是 Claude Code 和 Codex 在你电脑上留下的记录，所以规则定得很严，而且每一条都有测试保证。
+
+- **只在本机运行。** 读取 `~/.claude` 和 `~/.codex`，结果写进 `~/.agent-badges`。本地页面只监听 `127.0.0.1`，同一局域网里的其他设备也打不开。不发任何网络请求，也没有任何统计。
+- **只读元数据。** 每读一行记录，只留下白名单里的字段：时间戳、Token 数、工具名和几个模式取值。对话内容、代码、工具参数和返回结果当场丢弃，从不保存。可能透露你在做什么的名字（MCP 服务名、Codex 的模型名）会做哈希；Claude 的模型名只保留系列名（opus、sonnet、haiku、fable）。
+- **从不打开的文件。** Claude Code：`settings.json`、`.credentials.json`、MCP 配置、`history.jsonl`、`shell-snapshots`、`session-env`、`paste-cache`、`file-history`。Codex：`auth.json`、`config.toml`、`*.env`、`history.jsonl`、`transcription-history.jsonl`、`thread_history*.sqlite`、`logs*.sqlite`、`memories*`、`shell_snapshots`、`chatgpt-meetings`。
+- **Codex 会话索引库。** `state_*.sqlite` 以只读方式打开，只查六列：创建时间、来源、会话类型、模型、推理强度和审批策略。标题、首条消息、预览、路径、git 信息和账号 id 一概不读。
+- **保存了什么。** `~/.agent-badges` 里只有按天汇总的账本，内容是数字、日期和哈希。就算工具清理了旧记录，已经拿到的徽章也不会消失。
+- **有测试兜底。** 测试会在伪造的 `~/.claude` 和 `~/.codex` 里放进假密钥、对话、路径和会话标题，完整跑一遍采集和导出，确认这些内容不会出现在任何输出里。
+
+在线演示和 npm 包里都没有任何个人数据。只有 `export`、`card`、`shelf` 和 `profile` 会生成带你个人数据的文件，而且只写到你指定的位置。`publish` 和 `profile` 生成的网页本来就是要公开的，具体公开哪些内容见[放到 GitHub 个人主页](#放到-github-个人主页)。
 
 ## 统计口径
 
 | | Claude Code | Codex |
 | --- | --- | --- |
-| 会话 / 线程 | Claude Code 记录里的会话（子代理记录不计） | 你自己发起的线程（VS Code、CLI、`exec`），子代理和自动审查不计 |
-| Token | 输入 + 输出 + 缓存写入 + 缓存命中（与 ccusage 一致），含子代理记录；同一条消息只计一次，取最完整的数字 | 输入（含缓存命中）+ 输出，同一次响应只计一次；分叉或子代理线程从父线程复制来的记录只计一次 |
-| 工具调用 | 只算主会话（子代理的调用不计） | — |
-| 夜猫子 / 早起鸟 | 你发消息时的本地时间（0–5 点 / 5–7 点） | 你发起一轮对话的本地时间 |
-| 马拉松 | 单个会话的活跃时长，两条记录间隔超过 30 分钟不计 | 同左 |
+| 会话 / 线程 | Claude Code 记录里的会话（子代理记录不算） | 你自己发起的线程（VS Code、CLI、`exec`），子代理和自动审查不算 |
+| Token | 输入 + 输出 + 缓存写入 + 缓存命中（和 ccusage 一致），含子代理记录；同一条消息只算一次，取最完整的数字 | 输入（含缓存命中）+ 输出，同一次响应只算一次；分叉或子代理线程从父线程复制来的记录只算一次 |
+| 工具调用 | 只算主会话（子代理的调用不算） | — |
+| 夜猫子 / 早起鸟 | 你发消息时的本地时间（0–5 点 / 5–7 点） | 你发起一轮对话时的本地时间 |
+| 马拉松 | 单个会话的活跃时长，两条记录间隔超过 30 分钟的部分不算 | 同左 |
 | 连续天数 | 有任何活动的连续天数 | 同左 |
-| 协作时长 | 各会话活动时间的并集（几个会话同时开着只算一次），间隔超过 30 分钟不计 | 同左，只算你自己发起的线程 |
-| 跨日夜战 | 同一个会话 23 点前在活动，次日 2 点后还在活动，中间间隔都不超过 60 分钟 | 同左 |
-| 高产日 / 多线并行 | 一天开启 20 个会话 / 同一时刻 3 个会话都在活动（子代理不计） | 同左，只算你自己发起的线程 |
+| 协作时长 | 所有会话活动时间的并集（几个会话同时开着只算一次），间隔超过 30 分钟的部分不算 | 同左，只算你自己发起的线程 |
+| 跨日夜战 | 同一个会话 23 点前在活动，次日 2 点后还在活动，中间每次间隔都不超过 60 分钟 | 同左 |
+| 高产日 / 多线并行 | 一天开启 20 个会话 / 同一时刻 3 个会话都在活动（子代理不算） | 同左，只算你自己发起的线程 |
 | 全勤月 | 某个自然月的每个工作日（周一到周五）都有活动 | 同左 |
-| 子代理派遣 | 主会话派出的子代理次数 | 你自己发起的线程里的 `spawn_agent` 调用 |
+| 子代理派遣 | 主会话派出子代理的次数 | 你自己发起的线程里调用 `spawn_agent` 的次数 |
 | 联网检索 / 文件编辑 | `WebSearch` + `WebFetch` / `Edit` + `MultiEdit` + `Write` + `NotebookEdit` 的调用次数，含子代理 | — |
 | 节日 | 1 月 1 日、农历正月初一、12 月 25 日、Claude Code 发布日（2 月 24 日）当天有活动 | 同左，生日换成 Codex CLI 发布日（4 月 16 日） |
 
-徽章定义在 [`src/brands`](src/brands)，各工具的统计逻辑在 `src/data/<工具>-metrics.js`。
+徽章定义在 [`src/brands`](src/brands)，各工具的统计规则在 `src/data/<工具>-metrics.js`。
 
 ## 参与贡献
 
-见 [CONTRIBUTING.md](CONTRIBUTING.md)（英文）。
+欢迎提 Issue 和 PR。开发环境、目录结构，以及新增徽章、新增工具的步骤，见 [CONTRIBUTING.md](CONTRIBUTING.md)（英文）。
 
 ## 致谢
 
-- 文字环字形来自 [Outfit](https://fonts.google.com/specimen/Outfit) Bold（SIL Open Font License 1.1），由 `node scripts/build-font.mjs` 提取。
-- Codex 标志路径来自 [LobeHub Icons](https://github.com/lobehub/lobe-icons)（MIT）。
-- Claude Code 像素小怪物按 [Simple Icons](https://simpleicons.org/) 中的 Claude Code 图标逐格还原。
-- 渲染使用 [three.js](https://threejs.org/)。
+- 文字环的字形取自 [Outfit](https://fonts.google.com/specimen/Outfit) Bold（SIL Open Font License 1.1），用 `node scripts/build-font.mjs` 提取。
+- Codex 标志的路径来自 [LobeHub Icons](https://github.com/lobehub/lobe-icons)（MIT）。
+- Claude Code 像素小怪物照着 [Simple Icons](https://simpleicons.org/) 里的 Claude Code 图标逐格还原。
+- 渲染用的是 [three.js](https://threejs.org/)。
 
 ## 免责声明
 
-Agent Badges 是一个非官方、非商业的兴趣项目，与 Anthropic、OpenAI 没有关联，也未获得其认可或赞助。Claude、Claude Code、Codex 及相关标志是各自所有者的商标，这里仅用于标明每枚徽章对应的工具。MIT 许可只覆盖本项目的代码，不授予这些商标的任何权利。
+Agent Badges 是一个非官方、非商业的兴趣项目，与 Anthropic、OpenAI 没有关联，也没有得到它们的认可或赞助。Claude、Claude Code、Codex 及相关标志是各自所有者的商标，这里只用来标明每枚徽章对应的是哪个工具。MIT 许可只覆盖本项目的代码，不授予这些商标的任何权利。
 
 ## 许可
 

@@ -40,7 +40,7 @@ export default {
     'agent.chat.a': '上次之后新解锁：<b>Bash 狂人</b>。<br />Claude Code：已解锁 27 / 32。<br />快解锁了：连接者 2 / 3 · 子代理指挥官 3 / 5 · Token 里程碑 4.8B / 10B。<br /><br /><span class="chat-offer">要我打开 3D 徽章墙，或者生成一张 GitHub 个人主页的成就卡片吗？</span>',
     'agent.claude.note': '装好后直接问，或者输入 <code>/agent-badges:badges</code>。技能只预先放行只读的命令，发布到主页这类操作会先问你。',
     'agent.codex.note': '装好后新开一个会话，直接问，或者输入 <code>$</code> 选择 <code>agent-badges:badges</code>。命令在 Codex 的沙箱里运行，它通常会请你批准。',
-    'agent.more': '其他 Agent：技能是一个标准的 <a href="https://agentskills.io">Agent Skills</a> 目录 <a href="https://github.com/Aryous/agent-badges/tree/main/skills/badges"><code>skills/badges</code></a>，也可以直接调用 <code>npx agent-badges collect --json</code>。<a href="https://github.com/Aryous/agent-badges/blob/main/README.zh-CN.md#安装">完整说明 →</a>',
+    'agent.more': '其他 Agent：技能是一个标准的 <a href="https://agentskills.io">Agent Skills</a> 目录 <a href="https://github.com/Aryous/agent-badges/tree/main/skills/badges"><code>skills/badges</code></a>，也可以直接调用 <code>npx agent-badges collect --json</code>。<a href="https://github.com/Aryous/agent-badges/blob/main/README.zh-CN.md#在-claude-code-和-codex-里用">完整说明 →</a>',
     'foot.disclaimer': 'Agent Badges 是一个开源兴趣项目，与 Anthropic、OpenAI 没有关联，也未获得其认可。Claude、Claude Code、Codex 及相关标志归各自所有者所有，这里仅用于标明徽章对应的工具。',
     'foot.license': 'MIT 许可',
   },
