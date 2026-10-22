@@ -2,12 +2,14 @@
 // 用法：
 //   node scripts/visual.mjs capture <目录>           需要开发服务器：npx vite --port 5199
 //   node scripts/visual.mjs compare <基线目录> <新目录>  有任何一个像素不同就以退出码 1 结束
-// 拍什么：studio 渲染的每枚徽章（正面、斜角；分级徽章另拍最高一级）、陈列墙缩略图、主页图、落地页画廊。
+// 拍什么：studio 渲染的每枚徽章（正面、斜角；分级徽章另拍最高一级）、陈列墙缩略图、主页图、落地页画廊、单枚查看翻到背面的导出图。
 // 示例数据的日期跟着当天走：基线和改动后要在同一天拍。
 import { chromium } from 'playwright-core';
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BRANDS } from '../src/brands/index.js';
+import { normalizeProgress } from '../src/data/normalize.js';
+import { DATA_SOURCES } from '../src/data/progress.js';
 
 const BASE = 'http://localhost:5199';
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -17,7 +19,10 @@ if (!['capture', 'compare'].includes(cmd) || !dirA || (cmd === 'compare' && !dir
   process.exit(2);
 }
 
-const browser = await chromium.launch({ executablePath: CHROME, headless: true, args: ['--use-angle=metal', '--enable-gpu'] });
+// 2D 画布一律用 CPU 光栅：刻字贴图是 2D 画布画的字，Chrome 对新画布走 GPU 还是 CPU 光栅
+// 取决于当时页面上已有多少加速画布（随垃圾回收时机变化），两条路径的字形抗锯齿差 1 个色阶，
+// 会让同一份代码拍出的背面截图偶尔不同
+const browser = await chromium.launch({ executablePath: CHROME, headless: true, args: ['--use-angle=metal', '--enable-gpu', '--disable-accelerated-2d-canvas'] });
 const save = (name, dataURL) => writeFileSync(join(dirA, `${name}.png`), Buffer.from(dataURL.split(',')[1], 'base64'));
 
 async function open(path, ready) {
@@ -80,6 +85,33 @@ async function capture() {
     n += items.length;
   }
   await site.close();
+
+  // 单枚查看翻到背面：每个工具挑几种状态（分级、顶级彩蛋、隐藏、未解锁、普通已解锁），中英文各一遍。
+  // 钉在背面角度，等刻字换成 2048 的清晰版本后，用导出 PNG 的同一条路径画（单次渲染，不受超采样进度影响）
+  for (const { brand, badges } of BRANDS) {
+    const st = normalizeProgress(await DATA_SOURCES[brand.id].mock(), badges);
+    const picks = [
+      badges.find((b) => b.tiers && st[b.id].unlocked && !b.tiers[st[b.id].tier]?.variants),
+      badges.find((b) => b.tiers && st[b.id].unlocked && b.tiers[st[b.id].tier]?.variants),
+      badges.find((b) => b.hidden && !st[b.id].unlocked),
+      badges.find((b) => !b.hidden && !b.tiers && !st[b.id].unlocked),
+      badges.find((b) => !b.hidden && !b.tiers && st[b.id].unlocked),
+    ].filter(Boolean);
+    for (const lang of ['zh', 'en']) {
+      const wall = await open(`/?source=mock&lang=${lang}&brand=${brand.id}`, () => window.__badgeApp?.ready);
+      for (const { id } of new Set(picks)) {
+        await wall.evaluate((id) => window.__badgeApp.open(id, { award: false }), id);
+        await wall.evaluate(() => window.__badgeApp.hold(Math.PI));
+        await wall.waitForTimeout(2500);
+        const { dataURL } = await wall.evaluate(() => window.__badgeApp.exportPNG());
+        save(`back--${brand.id}--${id}--${lang}`, dataURL);
+        n++;
+        await wall.evaluate(() => window.__badgeApp.close());
+        await wall.waitForTimeout(500);
+      }
+      await wall.close();
+    }
+  }
 
   console.log(`${n} 张 → ${dirA}`);
 }
