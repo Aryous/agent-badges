@@ -1,6 +1,6 @@
 // 浏览器实测：截图陈列墙、每枚徽章正反面，检查拖动吸附和 PNG 导出。
 // 用法：node scripts/shoot.mjs [url] [outDir]
-import { chromium } from 'playwright-core';
+import { launchChrome } from './browser.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { SHELF } from '../src/data/shelf.js';
 
@@ -10,8 +10,7 @@ const url = withMock(process.argv[2] ?? 'http://localhost:5199/');
 const out = process.argv[3] ?? 'screenshots';
 mkdirSync(out, { recursive: true });
 
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const browser = await chromium.launch({ executablePath: CHROME, headless: true, args: ['--use-angle=metal', '--enable-gpu'] });
+const browser = await launchChrome();
 
 const results = [];
 const check = (name, ok, detail = '') => {
@@ -25,7 +24,7 @@ async function session(viewport, tag) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(url);
-  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 60000 });
+  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${out}/${tag}-wall.png`, fullPage: true });
   return { page, errors };
@@ -64,6 +63,8 @@ async function session(viewport, tag) {
     const moving = await page.evaluate(() => getComputedStyle(document.querySelector('#stage-accum')).visibility);
     await page.screenshot({ path: `${out}/desktop-inspect-moving.png` });
     await page.waitForTimeout(1800);
+    // 开场动画按帧推进：软件渲染（CI）每秒只有几帧，要多等几秒才停稳。等不到就照常读出 hidden，检查失败
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('#stage-accum')).visibility === 'visible', null, { timeout: 60000 }).catch(() => {});
     const settled = await page.evaluate(() => getComputedStyle(document.querySelector('#stage-accum')).visibility);
     await page.screenshot({ path: `${out}/desktop-inspect-settled.png` });
     const box = await page.locator('#stage').boundingBox();
@@ -208,7 +209,7 @@ async function session(viewport, tag) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(url);
-  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 60000 });
+  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
 
   const ringCount = Number(await page.locator('.profile-count b').textContent());
   const unlockedTiles = await page.locator('.tile:not(.is-locked)').count();
@@ -271,7 +272,8 @@ async function session(viewport, tag) {
 
   // GitHub 主页徽章图：只有已解锁的徽章，透明背景，1680 像素宽
   await page.locator('[data-shelf]').click();
-  await page.waitForFunction(() => window.__badgeApp.shelfURL, null, { timeout: 60000 });
+  // 逐枚渲染几十枚徽章：真实显卡约 5 秒，软件渲染（CI）要几分钟
+  await page.waitForFunction(() => window.__badgeApp.shelfURL, null, { timeout: 600000 });
   await page.waitForTimeout(300);
   await page.screenshot({ path: `${out}/desktop-shelf.png` });
   const shelfURL = await page.evaluate(() => window.__badgeApp.shelfURL);
@@ -322,7 +324,7 @@ async function session(viewport, tag) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(codexUrl);
-  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 60000 });
+  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
   await page.screenshot({ path: `${out}/codex-wall.png`, fullPage: true });
   const ids = await page.evaluate(() => window.__badgeApp.ids);
   const loaded = await page.locator('.tile:not(.is-loading) img[src^="data:image/png"]').count();

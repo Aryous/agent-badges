@@ -4,7 +4,7 @@
 //   node scripts/visual.mjs compare <基线目录> <新目录>  有任何一个像素不同就以退出码 1 结束
 // 拍什么：studio 渲染的每枚徽章（正面、斜角；分级徽章另拍最高一级）、陈列墙缩略图、主页图、落地页画廊、单枚查看翻到背面的导出图。
 // 示例数据的日期跟着当天走：基线和改动后要在同一天拍。
-import { chromium } from 'playwright-core';
+import { chromeArgs, launchChrome } from './browser.mjs';
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BRANDS } from '../src/brands/index.js';
@@ -12,7 +12,6 @@ import { normalizeProgress } from '../src/data/normalize.js';
 import { DATA_SOURCES } from '../src/data/progress.js';
 
 const BASE = 'http://localhost:5199';
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const [cmd, dirA, dirB] = process.argv.slice(2);
 if (!['capture', 'compare'].includes(cmd) || !dirA || (cmd === 'compare' && !dirB)) {
   console.error('用法：node scripts/visual.mjs capture <目录> | compare <基线目录> <新目录>');
@@ -22,7 +21,7 @@ if (!['capture', 'compare'].includes(cmd) || !dirA || (cmd === 'compare' && !dir
 // 2D 画布一律用 CPU 光栅：刻字贴图是 2D 画布画的字，Chrome 对新画布走 GPU 还是 CPU 光栅
 // 取决于当时页面上已有多少加速画布（随垃圾回收时机变化），两条路径的字形抗锯齿差 1 个色阶，
 // 会让同一份代码拍出的背面截图偶尔不同
-const browser = await chromium.launch({ executablePath: CHROME, headless: true, args: ['--use-angle=metal', '--enable-gpu', '--disable-accelerated-2d-canvas'] });
+const browser = await launchChrome({ args: [...chromeArgs(), '--disable-accelerated-2d-canvas'] });
 const save = (name, dataURL) => writeFileSync(join(dirA, `${name}.png`), Buffer.from(dataURL.split(',')[1], 'base64'));
 
 async function open(path, ready) {

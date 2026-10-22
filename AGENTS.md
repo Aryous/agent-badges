@@ -12,11 +12,13 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 | `npm run build` | `dist/index.html`, the single-file wall the CLI serves (no personal data) |
 | `npm run check:pack` | `npm pack`, install into a temp dir, run the CLI (catches files missing from `files`) |
 | `npm run check:shelf` | `shelf` / `profile` end to end with fake logs and a real browser (run `build` first) |
-| `npm run check:browser` | Real-browser run on sample data (`source=mock`): every badge on both walls gets a thumbnail, open/close, drag snapping and PNG export on a few badges, profile heatmap, filters, share poster, phone overflow, no console errors; saves screenshots of the walls. Does not screenshot every badge front and back (use `peek.mjs`). Needs `npx vite --port 5199` running and Google Chrome |
+| `npm run check:browser` | Real-browser run on sample data (`source=mock`): every badge on both walls gets a thumbnail, open/close, drag snapping and PNG export on a few badges, profile heatmap, filters, share poster, phone overflow, no console errors; saves screenshots of the walls. Does not screenshot every badge front and back (use `peek.mjs`). Needs `npx vite --port 5199` running and Google Chrome (found automatically; `CHROME_PATH` overrides, `CHROME_GL=software` reproduces CI) |
 | `npm run build:site` then `npm run check:site` | GitHub Pages site (landing + demo): renders, no horizontal overflow on phones, demo has sample data only |
 | `node scripts/peek.mjs <url> <out.png> [badge-id] [angle\|hold:angle]` | One-off screenshot of a badge while designing |
 
 `npm run dev` serves the wall on :5173 with data from `~/.agent-badges` (`npm run collect` fills it). Wall URL params: `?source=mock`, `?lang=en|zh`, `?brand=<tool>`, `#<badge-id>`, `?preview=unlocked&tier=N`.
+
+CI runs `check:browser` and `check:site` on Linux with software rendering; `scripts/visual.mjs` compares pixels, needs a real GPU and runs only locally.
 
 ## Map
 

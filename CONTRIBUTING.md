@@ -6,7 +6,7 @@ The project has one rule above the others: the docs and the code are one thing. 
 
 ## Setup and commands
 
-Requires Node.js 22.15 or later. Browser checks also need Google Chrome.
+Requires Node.js 22.15 or later. Browser checks also need Google Chrome, found automatically (set `CHROME_PATH` if it lives elsewhere). Browser scripts launch it through `scripts/browser.mjs`.
 
 ```bash
 npm install
@@ -26,7 +26,7 @@ Browser checks:
 - `npm run check:browser` drives the app in a real browser on sample data: every badge on both walls gets a thumbnail, plus drag snapping, PNG export, the profile view and phone layout, with no console errors. It saves screenshots of the walls, not of every badge (use `peek.mjs` for those). Start the dev server on port 5199 first: `npx vite --port 5199`.
 - `npm run check:site` checks the built site (run `npm run build:site` first; it serves `dist-site/` itself).
 - `node scripts/assets.mjs` regenerates the README and landing-page images from sample data (dev server on 5199).
-- `node scripts/visual.mjs capture <dir>` saves every badge image the app renders (studio, wall thumbnails, shelf, landing gallery, badge backs from the inspector). Capture before and after a refactor, then `node scripts/visual.mjs compare <before> <after>`: any differing pixel fails. Needs the dev server on 5199; sample data follows today's date, so capture both on the same day.
+- `node scripts/visual.mjs capture <dir>` saves every badge image the app renders (studio, wall thumbnails, shelf, landing gallery, badge backs from the inspector). Capture before and after a refactor, then `node scripts/visual.mjs compare <before> <after>`: any differing pixel fails. Needs the dev server on 5199; sample data follows today's date, so capture both on the same day. It needs a real GPU, so it runs only locally; CI runs `check:browser` and `check:site` with software rendering (`CHROME_GL=software` reproduces that locally).
 
 Useful URL parameters on the wall: `?source=mock` (sample data), `?lang=en|zh`, `?brand=codex`, `#<badge-id>` (open a badge), `?preview=unlocked&tier=2` (preview every badge unlocked at a given tier). Dev-only page: `/tools/studio.html` (asset studio).
 

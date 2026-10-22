@@ -1,9 +1,9 @@
 // 快速截图：node scripts/peek.mjs <url> <out.png> [badgeId] [angle | hold:angle] [w] [h]
 // angle 会吸附到正/背面；hold:0.5 把徽章钉在 0.5 弧度的斜角。
 // 不给 badgeId 时截陈列墙（整页）。
-import { chromium } from 'playwright-core';
+import { launchChrome } from './browser.mjs';
 const [url, out, id, angle, w = 1440, h = 900] = process.argv.slice(2);
-const browser = await chromium.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, args: ['--use-angle=metal'] });
+const browser = await launchChrome();
 const page = await browser.newPage({ viewport: { width: +w, height: +h }, deviceScaleFactor: 2 });
 page.on('pageerror', (e) => console.log('pageerror', e.message));
 page.on('console', (m) => m.type() === 'error' && console.log('console', m.text()));

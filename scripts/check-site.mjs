@@ -1,6 +1,6 @@
 // 检查构建好的 GitHub Pages 站点（先运行 npm run build:site）：
 // 落地页、画廊、热力图、演示页都能正常显示，手机上不横向溢出，演示页只有示例数据。
-import { chromium } from 'playwright-core';
+import { launchChrome } from './browser.mjs';
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
@@ -24,11 +24,7 @@ const server = createServer((req, res) => {
 await new Promise((r) => server.once('listening', r));
 const base = `http://127.0.0.1:${server.address().port}/`;
 
-const browser = await chromium.launch({
-  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  headless: true,
-  args: ['--use-angle=metal', '--enable-gpu'],
-});
+const browser = await launchChrome();
 const results = [];
 const check = (name, ok, detail = '') => {
   results.push(ok);
@@ -43,7 +39,7 @@ async function visit(path, viewport, ready) {
   page.on('requestfailed', (r) => errors.push(`请求失败 ${r.url()}`));
   page.on('response', (r) => r.status() >= 400 && errors.push(`${r.status()} ${r.url()}`));
   await page.goto(base + path);
-  await page.waitForFunction(ready, null, { timeout: 60000 });
+  await page.waitForFunction(ready, null, { timeout: 180000 });
   return { page, errors };
 }
 
@@ -56,10 +52,11 @@ for (const [tag, viewport] of [['desktop', { width: 1440, height: 900 }], ['mobi
   });
   check(`[${tag}] 落地页首屏 3D 画布已渲染`, heroPixels);
   await page.locator('[data-gallery]').scrollIntoViewIfNeeded();
-  await page.waitForFunction((n) => document.querySelectorAll('.gallery-item.is-ready').length >= n, CLAUDE_COUNT, { timeout: 60000 });
+  // 画廊逐帧画徽章：真实显卡几秒，软件渲染（CI）每枚要一两秒
+  await page.waitForFunction((n) => document.querySelectorAll('.gallery-item.is-ready').length >= n, CLAUDE_COUNT, { timeout: 600000 });
   check(`[${tag}] 画廊渲染出全部 ${CLAUDE_COUNT} 枚 Claude Code 徽章`, (await page.locator('.gallery-item.is-ready').count()) === CLAUDE_COUNT);
   await page.locator('[data-gallery-tabs] button').nth(1).click();
-  await page.waitForFunction((n) => document.querySelectorAll('.gallery-item.is-ready').length >= n, CODEX_COUNT, { timeout: 60000 });
+  await page.waitForFunction((n) => document.querySelectorAll('.gallery-item.is-ready').length >= n, CODEX_COUNT, { timeout: 600000 });
   check(`[${tag}] 切到 Codex 标签，渲染出 ${CODEX_COUNT} 枚`, (await page.locator('.gallery-item').count()) === CODEX_COUNT);
   check(`[${tag}] 热力图有 365 格`, (await page.locator('.heat-cell[data-date]').count()) >= 365);
   const demoHref = await page.locator('.hero-actions [data-demo-link]').getAttribute('href');

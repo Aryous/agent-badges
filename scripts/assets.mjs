@@ -1,7 +1,7 @@
 // 生成 README 和落地页用的图片素材（需要先启动开发服务器：npx vite --port 5199）。
 // 全部用示例数据，不含任何个人数据。
 // 用法：node scripts/assets.mjs [logo|banner|gallery|gif|shots|card|shelf|all] [url]
-import { chromium } from 'playwright-core';
+import { launchChrome } from './browser.mjs';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -13,11 +13,7 @@ const OUT = 'assets';
 mkdirSync(OUT, { recursive: true });
 const want = (k) => what === 'all' || what === k;
 
-const browser = await chromium.launch({
-  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  headless: true,
-  args: ['--use-angle=metal', '--enable-gpu'],
-});
+const browser = await launchChrome();
 const studio = await browser.newPage({ viewport: { width: 640, height: 640 } });
 studio.on('pageerror', (e) => console.error(e.message));
 await studio.goto(new URL('tools/studio.html', base).href);

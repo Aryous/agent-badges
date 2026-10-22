@@ -2,7 +2,7 @@
 // 伪造一份 Claude Code 记录 → 命令启动本地页面 → 浏览器渲染 → PNG 交回 → 命令写文件并退出；
 // profile 还要写出公开版网页，用访客的眼光打开检查。
 // 用临时目录，不读本机真实记录。
-import { chromium } from 'playwright-core';
+import { launchChrome } from './browser.mjs';
 import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -32,11 +32,7 @@ const check = (name, ok, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`);
 };
 
-const browser = await chromium.launch({
-  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  headless: true,
-  args: ['--use-angle=metal', '--enable-gpu'],
-});
+const browser = await launchChrome();
 
 /** 运行一条命令，等它打印本地网址，用浏览器打开（代替用户的浏览器），等命令退出。 */
 async function runWithBrowser(args, { hidden = false } = {}) {
