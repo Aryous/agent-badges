@@ -101,7 +101,7 @@ import { formatSummary, newUnlocks } from '../src/cli/summary.js';
 describe('CLI 汇总的数字', () => {
   it('十亿以上用 B', () => {
     const s = summarize('codex', { tokens: { value: 9_723_800_000, earnedAt: '2026-08-15' } }, { lang: 'en' });
-    expect(formatSummary(s)).toContain('10B Tokens 9.72B/10B');
+    expect(formatSummary(s)).toContain('10B Tokens 9.7B/10B');
   });
 
   it('升到有款式的顶级：报告抽到的款式', () => {

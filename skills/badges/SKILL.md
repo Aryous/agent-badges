@@ -34,7 +34,7 @@ Keep it short: a few lines per tool, in the user's language.
 
 1. If anything is in `newUnlocks`, lead with it and congratulate briefly. Name the tier for upgrades.
 2. Then `unlocked / total` for each tool.
-3. Then `nearMiss` with progress, for example "10K Tool Calls — 8,667 / 10,000". Round large numbers (59.8M).
+3. Then `nearMiss` with progress, for example "10K Tool Calls — 8.7K / 10K". Round large numbers (59.8M).
 4. If there are no new unlocks, mention `recent` in one line instead.
 
 Only report what the JSON contains. Do not invent badges, dates or numbers. Hidden badges are never listed until earned; don't speculate about them.

@@ -3,6 +3,7 @@
 import { addDays, localDate, weekday } from '../data/metrics-common.js';
 import { dailyStats } from '../data/daily.js';
 import { levelOf, levelThresholds } from '../data/calendar.js';
+import { formatCount } from '../data/format.js';
 
 const THEMES = {
   dark: { bg: '#141413', border: '#2B2926', text: '#F0EEE6', muted: '#8F8B82', faint: '#5D5A54', empty: '#24221F', track: '#2B2926' },
@@ -12,13 +13,6 @@ const ALPHA = [0, 0.3, 0.5, 0.74, 1];
 const WEEKS = 34; // 正好铺满卡片宽度
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-
-export function formatTokens(n) {
-  if (n >= 1e9) return `${+(n / 1e9).toFixed(1)}B`;
-  if (n >= 1e6) return `${+(n / 1e6).toFixed(1)}M`;
-  if (n >= 1e3) return `${+(n / 1e3).toFixed(1)}K`;
-  return String(n);
-}
 
 const LABELS = {
   en: { badges: 'badges', tokens: 'tokens', days: 'active days', streak: 'day streak', weeks: 'Recent activity', title: 'Agent Badges' },
@@ -65,7 +59,7 @@ export function renderCard({ brands, name = '', theme = 'dark', lang = 'en', tod
     out.push(`<rect x="150" y="${y + 6}" width="110" height="6" rx="3" fill="${c.track}"/>`);
     out.push(`<rect x="150" y="${y + 6}" width="${Math.max(6, 110 * ratio).toFixed(1)}" height="6" rx="3" fill="${b.accent}"/>`);
     const facts = [
-      [formatTokens(s.tokens), L.tokens],
+      [formatCount(s.tokens), L.tokens],
       [String(s.activeDays), L.days],
       [String(s.longestStreak), L.streak],
     ];

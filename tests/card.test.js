@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatTokens, renderCard } from '../src/share/card.js';
+import { renderCard } from '../src/share/card.js';
 import { parseArgs } from '../src/cli/args.js';
 
 const brands = [
@@ -29,12 +29,6 @@ describe('成就卡片', () => {
     const svg = renderCard({ brands, theme: 'light', lang: 'zh', today: '2026-10-19' });
     expect(svg).toContain('#FFFFFF');
     expect(svg).toContain('枚徽章');
-  });
-
-  it('Token 缩写', () => {
-    expect(formatTokens(950)).toBe('950');
-    expect(formatTokens(59_700_000)).toBe('59.7M');
-    expect(formatTokens(2_300_000_000)).toBe('2.3B');
   });
 
   it('命令行参数', () => {

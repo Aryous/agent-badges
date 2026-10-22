@@ -1,7 +1,8 @@
 // 成就档案：解锁进度环 + 三个关键数字，旁边是「最近获得」和「即将解锁」。
 import { highlights } from '../data/highlights.js';
 import { dailyStats } from '../data/daily.js';
-import { formatBig, lang, t } from './i18n.js';
+import { lang, t } from './i18n.js';
+import { formatCount } from '../data/format.js';
 import { badgeTitle } from '../brands/shared/text.js';
 import { describeState, fmtDate } from './describe.js';
 
@@ -43,7 +44,7 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
       <div class="profile-facts">
         <p class="profile-caption">${t('profile.unlocked')}</p>
         <dl class="profile-stats">
-          <div><dt>${t('profile.tokens')}</dt><dd>${formatBig(stats.tokens)}</dd></div>
+          <div><dt>${t('profile.tokens')}</dt><dd>${formatCount(stats.tokens)}</dd></div>
           <div><dt>${t('profile.activeDays')}</dt><dd>${stats.activeDays}</dd></div>
           <div><dt>${t('profile.streak')}</dt><dd>${t('profile.days', { n: stats.longestStreak })}</dd></div>
         </dl>
@@ -75,7 +76,7 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
       kind === 'recent'
         ? `<span class="profile-item-meta">${d.tier ? `${d.meta} · ` : ''}${fmtDate(entry.state.earnedAt)}</span>`
         : `<span class="profile-item-meter"><span class="meter-track"><span class="meter-fill" style="width:${Math.round(entry.ratio * 100)}%"></span></span>
-           <span class="profile-item-meta">${formatBig(entry.state.progress.current)} / ${formatBig(entry.state.progress.target)}</span></span>`;
+           <span class="profile-item-meta">${formatCount(entry.state.progress.current)} / ${formatCount(entry.state.progress.target)}</span></span>`;
     btn.innerHTML = `<img alt="" draggable="false" /><span class="profile-item-text"><span class="profile-item-title"></span>${meta}</span>`;
     // 即将解锁说的是下一级：已是 10M、正在冲 100M，就写 100M Tokens
     const title = kind === 'next' && !d.masked && item.config.tiers ? badgeTitle(item.config, lang, (item.state.tier ?? -1) + 1) : d.title;

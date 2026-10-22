@@ -2,7 +2,8 @@ import { setEngravingSize } from '../engine/badge.js';
 import { badgeDescription, tierKey, tierLabel, upperTitle } from '../brands/shared/text.js';
 import { describeState, fmtDate } from '../viewer/describe.js';
 import { playAward } from '../viewer/award-animation.js';
-import { formatBig, t } from '../viewer/i18n.js';
+import { t } from '../viewer/i18n.js';
+import { formatCount } from '../data/format.js';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -74,7 +75,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     if (showMeter) {
       const { current, target } = state.progress;
       $('[data-meter-fill]').style.width = `${Math.min(100, (current / target) * 100)}%`;
-      $('[data-meter-text]').textContent = `${formatBig(current)} / ${formatBig(target)}${config.tiers && state.unlocked ? t('inspect.toNext') : ''}`;
+      $('[data-meter-text]').textContent = `${formatCount(current)} / ${formatCount(target)}${config.tiers && state.unlocked ? t('inspect.toNext') : ''}`;
     }
     $('[data-replay]').hidden = !state.unlocked;
   }

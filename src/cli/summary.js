@@ -2,6 +2,7 @@
 import { BRANDS } from '../brands/index.js';
 import { normalizeProgress } from '../data/normalize.js';
 import { highlights } from '../data/highlights.js';
+import { formatCount } from '../data/format.js';
 import { badgeTitle, tierKey, tierLabel } from '../brands/shared/text.js';
 
 export const BRAND_INFO = Object.fromEntries(BRANDS.map(({ brand, badges }) => [brand.id, { brand, badges }]));
@@ -45,14 +46,12 @@ export function newUnlocks(brandId, prevRaw, nextRaw, { lang = 'en' } = {}) {
     });
 }
 
-const fmt = (n) => (n >= 1e9 ? `${+(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : n >= 1e4 ? `${+(n / 1e3).toFixed(1)}K` : String(n));
-
 /** 终端里打印的几行文字。 */
 export function formatSummary(s, { lang = 'en' } = {}) {
   const zh = lang === 'zh';
   const lines = [`${s.brand}  ${s.unlocked}/${s.total} ${zh ? '已解锁' : 'unlocked'}`];
   if (s.newUnlocks?.length) lines.push(`  ${zh ? '新解锁' : 'New'}: ${s.newUnlocks.map((r) => r.title).join(', ')}`);
   if (s.recent.length) lines.push(`  ${zh ? '最近获得' : 'Recent'}: ${s.recent.map((r) => `${r.title} (${r.earnedAt})`).join(', ')}`);
-  if (s.nearMiss.length) lines.push(`  ${zh ? '即将解锁' : 'Almost there'}: ${s.nearMiss.map((r) => `${r.title} ${fmt(r.current)}/${fmt(r.target)}`).join(', ')}`);
+  if (s.nearMiss.length) lines.push(`  ${zh ? '即将解锁' : 'Almost there'}: ${s.nearMiss.map((r) => `${r.title} ${formatCount(r.current)}/${formatCount(r.target)}`).join(', ')}`);
   return lines.join('\n');
 }

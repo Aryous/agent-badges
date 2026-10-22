@@ -15,6 +15,7 @@
     "src/share/",
     "src/data/hash.js",
     "src/data/normalize.js",
+    "src/data/format.js",
     "src/data/metrics-common.js",
     "src/data/claude-code-metrics.js",
     "src/data/codex-metrics.js",

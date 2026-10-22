@@ -179,19 +179,6 @@ export function t(key, vars = {}, l = lang) {
   return typeof s === 'string' ? s.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '') : s;
 }
 
-/** 大数字：中文用万 / 亿，英文用 K / M / B。 */
-export function formatBig(n, l = lang) {
-  if (l === 'zh') {
-    if (n >= 1e8) return `${+(n / 1e8).toFixed(n >= 1e9 ? 0 : 1)} 亿`;
-    if (n >= 1e4) return `${+(n / 1e4).toFixed(n >= 1e5 ? 0 : 1)} 万`;
-    return n.toLocaleString('zh-CN');
-  }
-  if (n >= 1e9) return `${+(n / 1e9).toFixed(1)}B`;
-  if (n >= 1e6) return `${+(n / 1e6).toFixed(1)}M`;
-  if (n >= 1e4) return `${+(n / 1e3).toFixed(1)}K`;
-  return n.toLocaleString('en-US');
-}
-
 /** 2026-05-02 → 「2026 年 5 月 2 日 周六」/「Sat, May 2, 2026」 */
 export function formatDay(date, l = lang) {
   const d = new Date(`${date}T00:00:00`);

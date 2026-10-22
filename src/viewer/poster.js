@@ -1,7 +1,8 @@
 // 分享海报：一张竖版 PNG，徽章墙 + 三个关键数字 + 当年热力图。
 // 全部用 2D Canvas 画：徽章直接用陈列墙已经渲染好的缩略图，不再走 3D。
 import { levelOf, levelThresholds, today, yearWeeks } from '../data/calendar.js';
-import { formatBig, t } from './i18n.js';
+import { t } from './i18n.js';
+import { formatCount } from '../data/format.js';
 
 const W = 1080;
 const PAD = 72;
@@ -115,7 +116,7 @@ export async function renderPoster({ brand, items, stats, heat }) {
 
   // 三个数字
   const facts = [
-    [formatBig(stats.tokens), t('profile.tokens')],
+    [formatCount(stats.tokens), t('profile.tokens')],
     [String(stats.activeDays), t('profile.activeDays')],
     [t('profile.days', { n: stats.longestStreak }), t('profile.streak')],
   ];

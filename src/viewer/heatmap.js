@@ -3,7 +3,8 @@
 // 那天解锁了徽章，格子中间加一个小圆点；悬停看详情，点圆点打开对应徽章。
 import { dailyStats, dailyYears } from '../data/daily.js';
 import { levelOf, levelThresholds, today, yearWeeks } from '../data/calendar.js';
-import { formatBig, formatDay, lang, t } from './i18n.js';
+import { formatDay, lang, t } from './i18n.js';
+import { formatCount } from '../data/format.js';
 import { describeState } from './describe.js';
 
 const ALPHA = [0, 0.3, 0.5, 0.74, 1];
@@ -193,13 +194,13 @@ export function createHeatmap({ root, series, markers = {}, onMarker }) {
     const to = `${year}-12-31`;
     const on = series.filter((s) => enabled.has(s.id));
     const all = dailyStats(combineDaily(on.map((s) => s.daily)), { from, to });
-    const summary = t('heat.summary', { tokens: formatBig(all.tokens), days: all.activeDays, streak: all.longestStreak });
+    const summary = t('heat.summary', { tokens: formatCount(all.tokens), days: all.activeDays, streak: all.longestStreak });
     $('[data-summary]').textContent = summary;
     grid.setAttribute('aria-label', t('heat.label', { year, summary }));
     for (const b of brandsEl.children) {
       const s = series.find((x) => x.id === b.dataset.id);
       b.setAttribute('aria-pressed', String(enabled.has(s.id)));
-      b.querySelector('.heat-brand-total').textContent = formatBig(dailyStats(s.daily, { from, to }).tokens);
+      b.querySelector('.heat-brand-total').textContent = formatCount(dailyStats(s.daily, { from, to }).tokens);
     }
     hideTip();
     // 看今年时滚到最右边（手机上一屏放不下一整年）
@@ -214,7 +215,7 @@ export function createHeatmap({ root, series, markers = {}, onMarker }) {
       .filter((s) => enabled.has(s.id) && s.daily?.[date])
       .map((s) => {
         const [tokens, turns] = s.daily[date];
-        return `<li><i style="background:${s.color}"></i><b>${escape(s.name)}</b><span>${formatBig(tokens)} Token${turns ? ` · ${t('heat.turns', { n: turns })}` : ''}</span></li>`;
+        return `<li><i style="background:${s.color}"></i><b>${escape(s.name)}</b><span>${formatCount(tokens)} Token${turns ? ` · ${t('heat.turns', { n: turns })}` : ''}</span></li>`;
       });
     const ms = markersOn(date);
     tip.innerHTML = `

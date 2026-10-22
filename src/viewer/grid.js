@@ -1,5 +1,6 @@
 import { seriesSubtitle, seriesTitle } from '../brands/shared/text.js';
-import { formatBig, lang, t } from './i18n.js';
+import { lang, t } from './i18n.js';
+import { formatCount } from '../data/format.js';
 import { describeState } from './describe.js';
 
 // 陈列墙：按系列分组的网格。徽章是预先渲染好的静态图，
@@ -43,7 +44,7 @@ export function createGrid({ root, series, items, onSelect }) {
     const meta = d.meta
       ? `<span class="tile-meta"></span>`
       : `<span class="mini-meter"><span class="meter-track"><span class="meter-fill" style="width:${pct}%"></span></span>
-         <span class="tile-meta">${formatBig(current)} / ${formatBig(target)}</span></span>`;
+         <span class="tile-meta">${formatCount(current)} / ${formatCount(target)}</span></span>`;
     el.innerHTML = `
       <span class="tile-art"><img alt="" draggable="false" /><span class="tile-glare"></span></span>
       <span class="tile-title"></span>
