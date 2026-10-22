@@ -86,30 +86,42 @@ async function capture() {
   }
   await site.close();
 
-  // 单枚查看翻到背面：每个工具挑几种状态（分级、顶级彩蛋、隐藏、未解锁、普通已解锁），中英文各一遍。
+  // 单枚查看翻到背面：每个工具挑几种状态（分级、隐藏、未解锁、普通已解锁），中英文各一遍。
+  // 示例数据里没有哪枚分级徽章到了带款式的顶级，所以顶级彩蛋另开一页：?preview=unlocked&tier= 把分级徽章都设成最高级再拍。
   // 钉在背面角度，等刻字换成 2048 的清晰版本后，用导出 PNG 的同一条路径画（单次渲染，不受超采样进度影响）
+  async function shootBacks(page, ids, name) {
+    for (const id of ids) {
+      await page.evaluate((id) => window.__badgeApp.open(id, { award: false }), id);
+      await page.evaluate(() => window.__badgeApp.hold(Math.PI));
+      await page.waitForTimeout(2500);
+      const { dataURL } = await page.evaluate(() => window.__badgeApp.exportPNG());
+      save(name(id), dataURL);
+      n++;
+      await page.evaluate(() => window.__badgeApp.close());
+      await page.waitForTimeout(500);
+    }
+  }
+  const missing = (brandId, label) => {
+    console.error(`${brandId} 找不到「${label}」状态的徽章，背面截图会少一种；改示例数据或这里的挑选条件`);
+    process.exit(2);
+  };
   for (const { brand, badges } of BRANDS) {
     const st = normalizeProgress(await DATA_SOURCES[brand.id].mock(), badges);
-    const picks = [
-      badges.find((b) => b.tiers && st[b.id].unlocked && !b.tiers[st[b.id].tier]?.variants),
-      badges.find((b) => b.tiers && st[b.id].unlocked && b.tiers[st[b.id].tier]?.variants),
-      badges.find((b) => b.hidden && !st[b.id].unlocked),
-      badges.find((b) => !b.hidden && !b.tiers && !st[b.id].unlocked),
-      badges.find((b) => !b.hidden && !b.tiers && st[b.id].unlocked),
-    ].filter(Boolean);
+    const wants = {
+      '分级（非顶级彩蛋）': (b) => b.tiers && st[b.id].unlocked && !b.tiers[st[b.id].tier]?.variants,
+      '隐藏未解锁': (b) => b.hidden && !st[b.id].unlocked,
+      '普通未解锁': (b) => !b.hidden && !b.tiers && !st[b.id].unlocked,
+      '普通已解锁': (b) => !b.hidden && !b.tiers && st[b.id].unlocked,
+    };
+    const picks = Object.entries(wants).map(([label, test]) => badges.find(test)?.id ?? missing(brand.id, label));
+    const top = badges.find((b) => b.tiers?.at(-1).variants) ?? missing(brand.id, '顶级彩蛋');
     for (const lang of ['zh', 'en']) {
       const wall = await open(`/?source=mock&lang=${lang}&brand=${brand.id}`, () => window.__badgeApp?.ready);
-      for (const { id } of new Set(picks)) {
-        await wall.evaluate((id) => window.__badgeApp.open(id, { award: false }), id);
-        await wall.evaluate(() => window.__badgeApp.hold(Math.PI));
-        await wall.waitForTimeout(2500);
-        const { dataURL } = await wall.evaluate(() => window.__badgeApp.exportPNG());
-        save(`back--${brand.id}--${id}--${lang}`, dataURL);
-        n++;
-        await wall.evaluate(() => window.__badgeApp.close());
-        await wall.waitForTimeout(500);
-      }
+      await shootBacks(wall, new Set(picks), (id) => `back--${brand.id}--${id}--${lang}`);
       await wall.close();
+      const preview = await open(`/?source=mock&lang=${lang}&brand=${brand.id}&preview=unlocked&tier=${top.tiers.length - 1}`, () => window.__badgeApp?.ready);
+      await shootBacks(preview, [top.id], (id) => `back--${brand.id}--${id}--top--${lang}`);
+      await preview.close();
     }
   }
 

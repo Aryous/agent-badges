@@ -95,7 +95,8 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
       setEngravingSize(inspector.current.badge, 0);
     }
     ensureBuilt(item);
-    setEngravingSize(item.badge, 1024); // 打开时才生成刻字，停稳后渲染循环再换成 2048
+    // 打开时才生成刻字，停稳后渲染循环再换成 2048；关闭动画里又打开同一枚时它还留着刻字，不用重做
+    if (!item.badge.getObjectByName('back').userData.engravingSize) setEngravingSize(item.badge, 1024);
     mode = 'inspect';
     document.body.classList.add('is-inspecting');
     overlay.hidden = false;
