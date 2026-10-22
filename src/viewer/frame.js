@@ -32,7 +32,7 @@ export function nextFrame() {
 }
 
 /**
- * 逐个处理 list，每个之间让出一帧，页面不会卡住。
+ * 逐个处理 list，每处理完一个就让出一帧，页面不会卡住。
  * pause：每个开始前先等它（比如等单枚查看关上）；cancelled：返回 true 就停下（比如中途切换了标签）。
  * @returns {Promise<boolean>} 是否全部做完
  */

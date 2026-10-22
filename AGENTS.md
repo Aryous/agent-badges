@@ -59,7 +59,7 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 15. `src/collect/` has no `console.` and no i18n import; `bin/` imports only `src/cli/` — `tests/contracts.test.js`
 16. Docs match the code: this Map lists every `src/` dir, cited tests exist, README badge counts (the exact count sentence), tool birthdays and `tier` values match the registry, and README anchors linked from the READMEs, landing page and skill exist — `tests/docs.test.js`
 17. Badges with the same outline share body geometry. Shared geometry and textures carry `userData.shared`; free a badge only with `disposeBadge` (`src/engine/badge.js`), which keeps shared resources — `tests/badge.test.js`
-18. Badges become images only through `createBadgeRenderer` (`src/viewer/badge-renderer.js`); only it and the export panel call `renderBadgePNG`. Showcase states (landing page, studio, promo) come from `src/brands/shared/showcase.js` — `tests/contracts.test.js`, `tests/showcase.test.js`
+18. Badge images are made through `createBadgeRenderer` (`src/viewer/badge-renderer.js`); the only other `renderBadgePNG` caller is the export panel, which captures the badge being inspected — `tests/contracts.test.js`. The display states for the landing page, studio and promo are `peakState` / `surpriseKeptState` / `filledState` in `src/brands/shared/showcase.js` (unrelated to the `// showcase` file marker in contract 2) — `tests/showcase.test.js`
 
 ## Workflows
 

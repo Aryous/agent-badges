@@ -47,6 +47,10 @@ describe('filledState（宣传片）', () => {
     const value = surprise.tiers[1].threshold;
     expect(filledState(surprise, 1)).toEqual({ unlocked: true, earnedAt: '2026-05-02', tier: 1, value, progress: { current: value, target: value } });
   });
+  it('可以指定第 0 级', () => {
+    const value = surprise.tiers[0].threshold;
+    expect(filledState(surprise, 0)).toEqual({ unlocked: true, earnedAt: '2026-05-02', tier: 0, value, progress: { current: value, target: value } });
+  });
   it('普通徽章进度是 1 / 1', () => {
     expect(filledState(plain)).toEqual({ unlocked: true, earnedAt: '2026-05-02', tier: null, value: 1, progress: { current: 1, target: 1 } });
   });

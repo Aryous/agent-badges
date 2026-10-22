@@ -30,6 +30,10 @@ async function open(path, ready) {
 
 async function capture() {
   mkdirSync(dirA, { recursive: true });
+  if (readdirSync(dirA).some((f) => f.endsWith('.png'))) {
+    console.error(`目录 ${dirA} 里已有图片，先删掉或换一个空目录`);
+    process.exit(2);
+  }
   let n = 0;
 
   // studio：每枚徽章正面 + 斜角；分级徽章再拍最高一级（含顶级彩蛋外形）
@@ -90,6 +94,10 @@ async function capture() {
 async function compare() {
   const page = await browser.newPage();
   const names = readdirSync(dirA).filter((f) => f.endsWith('.png')).sort();
+  if (names.length === 0) {
+    console.log(`基线目录 ${dirA} 里没有图片`);
+    return 1;
+  }
   const extra = readdirSync(dirB).filter((f) => f.endsWith('.png') && !names.includes(f));
   let bad = extra.length;
   for (const f of extra) console.log(`多出 ${f}`);
