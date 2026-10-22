@@ -14,10 +14,10 @@ export function createItems(ctx, valid, progress) {
     tweens: new Tweens(),
     items,
     progress,
-    /** 按需组装 3D 徽章；缩略图和单枚查看共用同一份。 */
+    /** 按需组装 3D 徽章；缩略图和单枚查看共用同一份。背面刻字先挂占位贴图，打开时才生成（缩略图只拍正面）。 */
     ensureBuilt(item) {
       if (item.holder) return item;
-      return Object.assign(item, mountBadge(item.config, brand, item.state, { stage, lang }));
+      return Object.assign(item, mountBadge(item.config, brand, item.state, { stage, lang, engraving: 0 }));
     },
   });
   return items;

@@ -106,3 +106,21 @@ function fitText(ctx, text, x, y, maxWidth) {
   }
   ctx.fillText(text, x, y);
 }
+
+let placeholder = null;
+
+/**
+ * 还没生成刻字时挂的 1×1 占位贴图，所有徽章共用（userData.shared，disposeBadge 不释放）。
+ * 和真刻字一样是三张、色彩空间相同，所以换成真刻字时着色器不用重新编译。
+ */
+export function placeholderEngraving() {
+  if (!placeholder) {
+    const make = (srgb) => {
+      const tex = canvasTexture(makeCanvas(1), { srgb });
+      tex.userData.shared = true;
+      return tex;
+    };
+    placeholder = { map: make(true), bumpMap: make(false), roughnessMap: make(false) };
+  }
+  return placeholder;
+}

@@ -5,7 +5,7 @@ import { resolveTier } from './tiers.js';
 import { BadgeUV } from './uv.js';
 import { createMaterial } from './materials.js';
 import { buildRelief } from './relief.js';
-import { createEngraving } from './engraving.js';
+import { createEngraving, placeholderEngraving } from './engraving.js';
 import { patternTexture } from './textures.js';
 
 /** 珐琅底纹：只改底层的凹凸，清漆层仍是光滑的，像透明珐琅盖在雕花底纹上。 */
@@ -132,9 +132,10 @@ function formatDate(iso) {
  * @param {object} state   { unlocked, earnedAt, tier?, progress: { current, target } }
  * @param {object} [options]
  * @param {'zh'|'en'} [options.lang]  背面刻字的语言
+ * @param {number} [options.engraving]  背面刻字贴图边长；0 表示先挂共用的占位贴图，打开时再生成（陈列墙用）
  * @returns {Group}
  */
-export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
+export function buildBadge(rawConfig, brand, state, { lang = 'zh', engraving = 1024 } = {}) {
   const { palette } = brand;
   const locked = !state.unlocked;
   let config = resolveTier(rawConfig, state.tier ?? 0, state.variant ?? 0);
@@ -200,12 +201,12 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
     ink: locked ? 1 : backType === 'ceramic' ? 0.62 : 0.5,
     base: locked ? 0.55 : 1,
   };
-  const engraving = typeof document !== 'undefined' ? createEngraving(engravingOpts) : {};
-  const back = new Mesh(body.back, mat(backType, config.back.color, { ...engraving, bumpScale: 1.2, roughness: locked ? 0.85 : 0.62 }));
+  const engravingTex = typeof document === 'undefined' ? {} : engraving ? createEngraving({ ...engravingOpts, size: engraving }) : placeholderEngraving();
+  const back = new Mesh(body.back, mat(backType, config.back.color, { ...engravingTex, bumpScale: 1.2, roughness: locked ? 0.85 : 0.62 }));
   back.name = 'back';
-  // 背面刻字默认 1024；近看时用 setEngravingSize 换成更清晰的版本
+  // 近看时用 setEngravingSize 换成更清晰的版本；陈列墙先挂占位贴图，打开时才生成
   back.userData.engraving = engravingOpts;
-  back.userData.engravingSize = 1024;
+  back.userData.engravingSize = engraving;
   group.add(back);
 
   // 浮雕：同材质同颜色的基元共用一份材质；带动效的单独一份
@@ -245,7 +246,7 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh' } = {}) {
 
 /**
  * 释放一枚徽章独占的显卡资源：几何体、材质、刻字贴图。
- * 多枚徽章共用的（userData.shared：机身几何体、拉丝和底纹贴图）和场景的环境贴图不动。
+ * 多枚徽章共用的（userData.shared：机身几何体、拉丝和底纹贴图、占位刻字贴图）和场景的环境贴图不动。
  */
 export function disposeBadge(badge) {
   badge.traverse((o) => {
@@ -259,18 +260,18 @@ export function disposeBadge(badge) {
 }
 
 /**
- * 换一套指定分辨率的背面刻字贴图。陈列墙同时建着十几枚徽章，全用 2048 显存吃不消，
- * 所以平时用 1024，只给正在近看的那一枚换成 2048，离开时再换回来。
+ * 换一套指定分辨率的背面刻字贴图；size 为 0 时释放刻字，换回共用的占位贴图。
+ * 陈列墙的徽章平时只挂占位贴图，打开时生成 1024，停稳后换 2048，关闭时换回占位贴图。
  * @returns {boolean} 是否真的换了
  */
 export function setEngravingSize(badge, size) {
   const back = badge?.getObjectByName('back');
   const opts = back?.userData.engraving;
   if (!opts || back.userData.engravingSize === size || typeof document === 'undefined') return false;
-  const next = createEngraving({ ...opts, size });
+  const next = size ? createEngraving({ ...opts, size }) : placeholderEngraving();
   const m = back.material;
   for (const key of ['map', 'bumpMap', 'roughnessMap']) {
-    m[key]?.dispose();
+    if (!m[key]?.userData.shared) m[key]?.dispose();
     m[key] = next[key];
   }
   m.needsUpdate = true;

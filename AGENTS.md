@@ -59,7 +59,7 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 14. Plugin manifests match `package.json` (name, version); the skill's commands are pre-approved and its CLI flags exist — `tests/plugin.test.js`
 15. `src/collect/` and `src/share/` have no `console.` and no i18n import; `src/app/` does not import `src/share/`; `bin/` imports only `src/cli/` — `tests/contracts.test.js`
 16. Docs match the code: this Map lists every `src/` dir, cited tests exist, README badge counts (the exact count sentence), tool birthdays and `tier` values match the registry, and README anchors linked from the READMEs, landing page and skill exist — `tests/docs.test.js`
-17. Badges with the same outline share body geometry. Shared geometry and textures carry `userData.shared`; free a badge only with `disposeBadge` (`src/engine/badge.js`), which keeps shared resources — `tests/badge.test.js`
+17. Badges with the same outline share body geometry. Shared geometry and textures carry `userData.shared`; free a badge only with `disposeBadge` (`src/engine/badge.js`), which keeps shared resources; the wall builds badges with a shared placeholder engraving and generates the real one only while a badge is open — `tests/badge.test.js`
 18. Badge images are made through `createBadgeRenderer` (`src/viewer/badge-renderer.js`); the only other `renderBadgePNG` caller is the export panel, which captures the badge being inspected — `tests/contracts.test.js`. The display states for the landing page and studio are `peakState` / `surpriseKeptState` in `src/brands/shared/display-states.js` — `tests/display-states.test.js`
 
 ## Workflows

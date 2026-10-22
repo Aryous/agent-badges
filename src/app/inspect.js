@@ -92,9 +92,10 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     clearTimeout(closeTimer);
     if (inspector.current && inspector.current !== item) {
       stage.scene.remove(inspector.current.holder);
-      setEngravingSize(inspector.current.badge, 1024);
+      setEngravingSize(inspector.current.badge, 0);
     }
     ensureBuilt(item);
+    setEngravingSize(item.badge, 1024); // 打开时才生成刻字，停稳后渲染循环再换成 2048
     mode = 'inspect';
     document.body.classList.add('is-inspecting');
     overlay.hidden = false;
@@ -137,7 +138,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
       overlay.hidden = true;
       if (item) {
         stage.scene.remove(item.holder);
-        setEngravingSize(item.badge, 1024); // 离开近看，换回省显存的版本
+        setEngravingSize(item.badge, 0); // 关上后释放刻字，换回共用的占位贴图
       }
       loop.stop();
       onClosed.forEach((resolve) => resolve());

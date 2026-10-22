@@ -100,3 +100,12 @@ describe('扩展性：换品牌不改徽章配置', () => {
     }
   });
 });
+
+describe('背面刻字的尺寸', () => {
+  it('默认 1024；传 engraving: 0 表示先挂占位贴图', () => {
+    const cfg = byId('first-session');
+    expect(buildBadge(cfg, brand, unlocked).getObjectByName('back').userData.engravingSize).toBe(1024);
+    expect(buildBadge(cfg, brand, unlocked, { engraving: 0 }).getObjectByName('back').userData.engravingSize).toBe(0);
+    expect(buildBadge(cfg, brand, unlocked, { engraving: 2048 }).getObjectByName('back').userData.engravingSize).toBe(2048);
+  });
+});
