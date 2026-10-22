@@ -93,17 +93,17 @@ async function threadRows(dir) {
 }
 
 /**
- * 增量处理会话记录：会话结束后文件不再变化，每个文件只解析一次，
- * 把它按天汇总的数字缓存起来（键是路径的哈希，不存路径本身）。
- * 大小或修改时间变了才重新解析。
- */
-/**
  * 统计口径变了就加一，旧缓存作废、所有会话记录重新解析。
  * 2：认出旧版 token_count 用量。3：行业通用口径（含缓存命中）；旧版用量跨文件去重。
  * 4：缓存会话活动段（协作时长、多线并行、跨日夜战）和子代理派遣次数。
  */
 const CACHE_VERSION = 4;
 
+/**
+ * 增量处理会话记录：会话结束后文件不再变化，每个文件只解析一次，
+ * 把它按天汇总的数字缓存起来（键是路径的哈希，不存路径本身）。
+ * 大小或修改时间变了才重新解析。
+ */
 function rolloutDays(files, cachePath, onProgress) {
   const cache = readJSON(cachePath);
   const old = cache?.version === CACHE_VERSION ? cache.files : {};

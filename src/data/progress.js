@@ -8,8 +8,6 @@
 //   [badgeId]: { unlocked, earnedAt, tier: 等级下标 | null, value,
 //                progress: { current, target } }   分级徽章的 target 是下一级门槛
 // }
-//
-// 以后接入真实数据（如读取 ~/.claude 下的会话记录）时，只需新增一个 source。
 
 import * as mockClaudeCode from './mock-claude-code.js';
 import * as mockCodex from './mock-codex.js';

@@ -11,6 +11,7 @@ import { parseArgs } from '../src/cli/args.js';
 import { collectAll } from '../src/collect/index.js';
 import { injectData } from '../src/share/inject.js';
 import { aggregateCodexDays, extractRolloutFacts, mergeDays } from '../src/data/codex-metrics.js';
+import { hash } from '../src/collect/common.js';
 
 const SECRET = 'sk-ant-api03-TOP-SECRET-should-never-leak';
 const TITLE = 'my confidential project roadmap';
@@ -142,7 +143,7 @@ describe('按文件缓存的合并', () => {
       { type: 'session_meta', timestamp: iso(d, h), payload: { source: 'cli' } },
       { type: 'event_msg', timestamp: iso(d, h, 1), payload: { type: 'task_started' } },
       { type: 'token_usage_record', timestamp: iso(d, h, 2), payload: { response_id: id, usage: { input_tokens: 10, output_tokens: 5 } } },
-    ].map((r) => extractRolloutFacts(r));
+    ].map((r) => extractRolloutFacts(r, { hash }));
     const a = f('2026-05-01', 9, 'a');
     const b = f('2026-05-01', 23, 'b');
     expect(mergeDays(aggregateCodexDays([a], []), aggregateCodexDays([b], []))).toEqual(aggregateCodexDays([a, b], []));

@@ -1,5 +1,5 @@
 // 徽章文字的中英文选择（纯函数，浏览器和 Node 都能用）。
-// 中文写在徽章配置里（title / description），英文在各品牌的 en.js，组装时挂到 config.en 上。
+// 中文写在徽章配置里（title / description），英文写在同一个配置的 en 字段里（en.title / en.description）。
 
 export const TIER_NAMES = {
   zh: { bronze: '铜', silver: '银', gold: '金', platinum: '白金' },

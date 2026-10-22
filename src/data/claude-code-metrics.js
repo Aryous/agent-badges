@@ -10,7 +10,6 @@
 // 这个模块是纯函数，不碰文件系统；读文件的部分在 src/collect/claude-code.js。
 
 import brand from '../brands/claude-code/brand.js';
-import { fnv1a } from './hash.js';
 import {
   applySessionSegments,
   birthdayRule,
@@ -34,7 +33,6 @@ export function modelFamily(model) {
   return MODEL_FAMILIES.find((f) => m.includes(f)) ?? null;
 }
 
-
 /**
  * Claude Code 自带的 MCP 服务：装好就有，不是用户自己接入的，不计入「连接者」。
  * Claude Code 以后新增自带服务时，要补到这里。
@@ -54,8 +52,9 @@ function mcpServer(name) {
 /**
  * 从一条会话记录里取出白名单字段。返回 null 表示这条记录对统计没用。
  * 注意：这里刻意不返回任何字符串内容，除了 id、类型值、模型家族和哈希。
+ * hash：调用方传入的哈希函数（采集时是 src/collect/common.js 的 hash）。
  */
-export function extractFacts(rec, { hash = fnv1a } = {}) {
+export function extractFacts(rec, { hash }) {
   if (!rec || typeof rec !== 'object') return null;
   const ts = typeof rec.timestamp === 'string' ? Date.parse(rec.timestamp) : NaN;
   const base = {
@@ -126,7 +125,6 @@ function num(v) {
 }
 
 // ---------- 2. 事实 → 按天汇总 ----------
-
 
 const emptyDay = () => ({
   sessions: 0,
@@ -258,10 +256,6 @@ export function aggregateDays(facts) {
 // ---------- 3. 账本合并 ----------
 
 /**
- * 会话记录会被定期清理，所以把每次算出的按天汇总并入本地账本：
- * 本次能看到的日期以本次为准（重新计算），看不到的日期保留账本里的旧值。
- */
-/**
  * 这一天是不是从 stats-cache 补进来的。旧账本没有 source 标记，靠特征认：
  * 会话记录算出的日子只要有对话就有小时分布，stats-cache 补的日子永远没有。
  */
@@ -270,6 +264,10 @@ function fromStats(d) {
   return !d.source && d.longestSessionMin === 0 && !d.models?.length && Array.isArray(d.hours) && d.hours.every((h) => h === 0);
 }
 
+/**
+ * 会话记录会被定期清理，所以把每次算出的按天汇总并入本地账本：
+ * 本次能看到的日期以本次为准（重新计算），看不到的日期保留账本里的旧值。
+ */
 export function mergeLedger(ledger, freshDays, extra = {}) {
   const days = { ...(ledger?.days ?? {}) };
   for (const [date, d] of Object.entries(freshDays)) days[date] = d;

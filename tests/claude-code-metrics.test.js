@@ -45,7 +45,7 @@ describe('隐私：白名单提取', () => {
       toolResult('s1', at('2026-05-01', 10, 2)),
       { type: 'attachment', timestamp: at('2026-05-01', 10, 3), sessionId: 's1', attachment: { type: 'hook_success', content: SECRET } },
     ];
-    const facts = records.map((r) => extractFacts(r));
+    const facts = records.map((r) => extractFacts(r, { hash }));
     const { ledger, progress } = run(records);
     const dump = JSON.stringify({ facts, ledger, progress });
     expect(dump).not.toContain(SECRET);
@@ -54,9 +54,9 @@ describe('隐私：白名单提取', () => {
   });
 
   it('只认得的记录类型才会产出事实', () => {
-    expect(extractFacts({ type: 'last-prompt', lastPrompt: SECRET })).toBeNull();
-    expect(extractFacts({ type: 'ai-title', aiTitle: SECRET })).toBeNull();
-    expect(extractFacts(null)).toBeNull();
+    expect(extractFacts({ type: 'last-prompt', lastPrompt: SECRET }, { hash })).toBeNull();
+    expect(extractFacts({ type: 'ai-title', aiTitle: SECRET }, { hash })).toBeNull();
+    expect(extractFacts(null, { hash })).toBeNull();
   });
 
   it('模型名只保留家族', () => {

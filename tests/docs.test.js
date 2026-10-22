@@ -210,3 +210,20 @@ describe('add-badge skill', () => {
     expect(existsSync(join(root, 'skills/add-badge'))).toBe(false);
   });
 });
+
+describe('落地页文字', () => {
+  const text = read('src/site/strings.js');
+  const total = BRANDS.reduce((n, e) => n + e.badges.length, 0);
+  const claude = BRANDS.find((e) => e.brand.id === 'claude-code');
+
+  it('徽章总数、工具数量和代码一致', () => {
+    expect(text).toContain(`'${total} 枚徽章，两个工具'`);
+    expect(text).toContain(`'${total} badges, two tools'`);
+    expect(BRANDS.length, 'strings.js 写的是「两个工具」，工具数量变了要改文字').toBe(2);
+  });
+
+  it('对话示例里 Claude Code 的徽章总数和代码一致', () => {
+    expect(text).toContain(`Claude Code：已解锁 27 / ${claude.badges.length}`);
+    expect(text).toContain(`Claude Code: 27 / ${claude.badges.length} unlocked`);
+  });
+});

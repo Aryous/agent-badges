@@ -51,8 +51,8 @@ describe('隐私：白名单提取', () => {
   });
 
   it('不在白名单里的工具名一律记为 other', () => {
-    expect(extractRolloutFacts(tool(at('2026-05-01', 1), 'my_private_tool'))).toMatchObject({ name: 'other' });
-    expect(extractRolloutFacts(tool(at('2026-05-01', 1), 'apply_patch'))).toMatchObject({ name: 'apply_patch' });
+    expect(extractRolloutFacts(tool(at('2026-05-01', 1), 'my_private_tool'), { hash })).toMatchObject({ name: 'other' });
+    expect(extractRolloutFacts(tool(at('2026-05-01', 1), 'apply_patch'), { hash })).toMatchObject({ name: 'apply_patch' });
   });
 
   it('来源分类：子代理的 JSON 来源只保留类别', () => {

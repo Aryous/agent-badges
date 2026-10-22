@@ -9,7 +9,6 @@
 //   - 输出（账本 + 进度）只包含数字、日期和哈希。
 
 import brand from '../brands/codex/brand.js';
-import { fnv1a } from './hash.js';
 import {
   applySessionSegments,
   birthdayRule,
@@ -51,8 +50,11 @@ const usageTokens = (u) => num(u.input_tokens) + num(u.output_tokens);
 
 const isReviewModel = (m) => typeof m === 'string' && m.includes('review');
 
-/** 会话记录的一行 → 白名单事实（null 表示对统计没用）。 */
-export function extractRolloutFacts(rec, { hash = fnv1a } = {}) {
+/**
+ * 会话记录的一行 → 白名单事实（null 表示对统计没用）。
+ * hash：调用方传入的哈希函数（采集时是 src/collect/common.js 的 hash）。
+ */
+export function extractRolloutFacts(rec, { hash }) {
   if (!rec || typeof rec !== 'object') return null;
   const t = typeof rec.timestamp === 'string' ? Date.parse(rec.timestamp) : NaN;
   const ts = Number.isFinite(t) ? t : null;
@@ -105,8 +107,11 @@ export function extractRolloutFacts(rec, { hash = fnv1a } = {}) {
   }
 }
 
-/** 会话索引库的一行（只含白名单列）→ 事实。 */
-export function threadFacts(row, { hash = fnv1a } = {}) {
+/**
+ * 会话索引库的一行（只含白名单列）→ 事实。
+ * hash：调用方传入的哈希函数（采集时是 src/collect/common.js 的 hash）。
+ */
+export function threadFacts(row, { hash }) {
   const ts = num(row.created_at_ms) || null;
   if (!ts) return null;
   const origin = originKind(row.source);
@@ -149,10 +154,9 @@ const emptyDay = () => ({
 const IDLE_GAP_MS = 30 * 60 * 1000;
 
 /**
+ * 按天汇总会话记录和会话索引库的事实。
  * @param {object[][]} sessions  每个会话记录文件的事实数组
  * @param {object[]}   threads   会话索引库的事实数组
- */
-/**
  * @param {object} [opts]
  * @param {Array}  [opts.streamsOut]  传入时，旧版 token_count 用量不直接计入，而是以 [指纹, 日期, Token] 放进这里，
  *   由调用方合并所有文件后用 applyStreams 统一去重（采集时按文件缓存，跨文件去重只能放到最后做）
@@ -238,10 +242,6 @@ export function aggregateCodexDays(sessions, threads, { streamsOut = null, segsO
   return days;
 }
 
-/**
- * 合并两份按天汇总（用于把各个会话文件的缓存结果加起来）：
- * 计数相加，标记取或，最长会话取最大，模型取并集。
- */
 /** 把各文件交出来的活动段统一计入（就地修改 days）。 */
 export function applyCodexSegments(days, segs) {
   return applySessionSegments(days, segs, emptyDay);
@@ -258,6 +258,10 @@ export function applyStreams(days, streams) {
   return days;
 }
 
+/**
+ * 合并两份按天汇总（用于把各个会话文件的缓存结果加起来）：
+ * 计数相加，标记取或，最长会话取最大，模型取并集。
+ */
 export function mergeDays(a, b) {
   const out = structuredClone(a);
   for (const [date, d] of Object.entries(b)) {
