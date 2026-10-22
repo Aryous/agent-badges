@@ -3,11 +3,8 @@
 import { partitionBadges } from '../engine/validate.js';
 import { loadAllProgress } from '../data/brand-progress.js';
 import { SHELF, pickShelf, shelfCount, shelfLabel, shelfLayout } from '../data/shelf.js';
-import { createStage } from './scene.js';
-import { renderBadgePNG } from './snapshot.js';
-import { mountBadge } from './mount-badge.js';
-import { disposeBadge } from '../engine/badge.js';
-import { nextFrame } from './frame.js';
+import { createBadgeRenderer } from './badge-renderer.js';
+import { forEachFrame } from './frame.js';
 
 const SERIF = `'Iowan Old Style', 'Palatino Linotype', 'Songti SC', Georgia, serif`;
 const SANS = `system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', sans-serif`;
@@ -32,30 +29,8 @@ export async function shelfGroups({ only = null, forceMock = false } = {}) {
   return pickShelf(entries);
 }
 
-// 离屏舞台只建一次：反复生成时不必每次新开 WebGL 上下文
-let stage = null;
-function offscreenStage() {
-  if (stage) return stage;
-  const canvas = document.createElement('canvas');
-  canvas.setAttribute('aria-hidden', 'true');
-  canvas.style.display = 'none'; // 不显示；绘图缓冲由截图按需放大（见 snapshot.js）
-  document.body.appendChild(canvas);
-  stage = createStage(canvas);
-  return stage;
-}
-
-async function badgeImage(config, brand, state, lang) {
-  const s = offscreenStage();
-  // renderBadgePNG 用 === 判断显示哪一枚，items 里必须是同一个对象
-  const item = mountBadge(config, brand, state, { stage: s, lang });
-  const { badge, holder } = item;
-  s.scene.add(holder);
-  const src = renderBadgePNG({ stage: s, items: [item], item, size: THUMB, fill: 0.92 });
-  s.scene.remove(holder);
-  disposeBadge(badge);
-  await nextFrame();
-  return loadImage(src);
-}
+// 离屏渲染只建一次：反复生成时不必每次新开 WebGL 上下文
+let renderer = null;
 
 /** 文字放不下时先缩小字号，还放不下就截断加省略号。 */
 function fitText(g, text, maxW, size, weight, minSize = 11) {
@@ -79,14 +54,15 @@ export async function renderShelves(groups, { lang = 'en', themes = ['dark', 'li
   const L = SHELF;
   const layout = shelfLayout(groups, L);
   const total = groups.reduce((n, gr) => n + gr.items.length, 0);
+  renderer ??= createBadgeRenderer();
   let done = 0;
   const images = new Map();
-  for (const group of layout.groups) {
-    for (const it of group.items) {
-      images.set(it, await badgeImage(it.config, group.brand, it.state, lang));
-      onProgress?.(++done, total);
-    }
-  }
+  const jobs = layout.groups.flatMap((group) => group.items.map((it) => ({ brand: group.brand, it })));
+  await forEachFrame(jobs, async ({ brand, it }) => {
+    const src = renderer.image(it.config, brand, it.state, { lang, size: THUMB, fill: 0.92 });
+    images.set(it, await loadImage(src));
+    onProgress?.(++done, total);
+  });
   const out = {};
   for (const theme of themes) out[theme] = drawShelf(layout, images, SHELF_THEMES[theme], lang);
   return out;

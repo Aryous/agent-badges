@@ -31,6 +31,21 @@ export function nextFrame() {
   });
 }
 
+/**
+ * 逐个处理 list，每个之间让出一帧，页面不会卡住。
+ * pause：每个开始前先等它（比如等单枚查看关上）；cancelled：返回 true 就停下（比如中途切换了标签）。
+ * @returns {Promise<boolean>} 是否全部做完
+ */
+export async function forEachFrame(list, fn, { pause, cancelled } = {}) {
+  for (const x of list) {
+    if (pause) await pause();
+    if (cancelled?.()) return false;
+    await fn(x);
+    await nextFrame();
+  }
+  return true;
+}
+
 /** 等浏览器空闲（最多等 timeout 毫秒）。Safari 没有 requestIdleCallback，稍等一下再做。 */
 export function idle(timeout = 1000) {
   return new Promise((resolve) => {
