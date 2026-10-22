@@ -38,7 +38,7 @@ src/
 ├─ data/      per-tool metrics and rules, shared rules, normalization, daily series, sample data
 ├─ collect/   local collectors, summary, achievement card, public page, publish (used by the CLI)
 ├─ cli/       argument parsing and help, terminal output, local server, commands/
-├─ viewer/    stage, wall, inspector, heatmap, poster, shelf, i18n, snapshot and export
+├─ viewer/    stage, wall, inspector, heatmap, poster, shelf, i18n, badge renderer, snapshot and export
 ├─ app/       the wall page, one module per panel; src/main.js composes them
 ├─ styles/    wall CSS by component; src/style.css imports them in order
 ├─ site/      landing page

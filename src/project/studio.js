@@ -5,12 +5,10 @@ import { surpriseKeptState } from '../brands/shared/showcase.js';
 import { normalizeProgress } from '../data/normalize.js';
 import { DATA_SOURCES } from '../data/progress.js';
 import { createStage } from '../viewer/scene.js';
-import { renderBadgePNG } from '../viewer/snapshot.js';
-import { mountBadge } from '../viewer/mount-badge.js';
-import { disposeBadge } from '../engine/badge.js';
+import { createBadgeRenderer } from '../viewer/badge-renderer.js';
 import { LOGO_STATE, logoBadge, logoBrand } from './logo.js';
 
-const stage = createStage(document.querySelector('#stage'));
+const renderer = createBadgeRenderer(createStage(document.querySelector('#stage')));
 
 /**
  * @param {object} o
@@ -39,17 +37,8 @@ async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, la
     if (unlocked !== undefined) state = { ...state, unlocked, earnedAt: state.earnedAt ?? '2026-05-02' };
     if (tier !== undefined) state = { ...state, unlocked: true, tier, earnedAt: state.earnedAt ?? '2026-05-02' };
   }
-  const item = mountBadge(config, brand, state, { stage, lang, engraving });
-  const { badge, pivot, holder } = item;
-  pivot.rotation.set(tilt, angle, 0);
-  stage.scene.add(holder);
-  try {
-    return renderBadgePNG({ stage, items: [item], item, size, fill, background });
-  } finally {
-    stage.scene.remove(holder);
-    // 每次都新建一枚徽章，用完就释放；素材脚本会连续渲染几百帧
-    disposeBadge(badge);
-  }
+  // 每次都新建一枚徽章，画完就释放；素材脚本会连续渲染几百帧
+  return renderer.image(config, brand, state, { lang, engraving, angle, tilt, size, fill, background });
 }
 
 window.__studio = { render, brands: BRANDS.map((b) => ({ id: b.brand.id, badges: b.badges.map((x) => x.id) })), ready: true };

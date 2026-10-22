@@ -256,3 +256,10 @@ describe('分级徽章的规则读的是配置里的 tiers', () => {
     }
   }
 });
+
+describe('徽章画成图片只有一个入口', () => {
+  it('只有 viewer/badge-renderer.js 和导出面板直接调 renderBadgePNG', () => {
+    const users = [...filesUnder('src'), ...filesUnder('tools')].filter((f) => f !== 'src/viewer/snapshot.js' && /\brenderBadgePNG\b/.test(withoutComments(read(f))));
+    expect(sorted(users)).toEqual(['src/app/export-panel.js', 'src/viewer/badge-renderer.js']);
+  });
+});

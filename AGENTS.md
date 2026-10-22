@@ -27,7 +27,7 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 | `src/data/` | Per-tool metrics (`<tool>-metrics.js`: `RULES`, `computeProgress`), shared rules (`metrics-common.js`), ledger normalization, daily series, tiers, sample data (`mock-<tool>.js`), `progress.js` (`DATA_SOURCES`, page data loading) | data, brands (Node built-ins only) |
 | `src/collect/` | Local collectors (`<tool>.js`: `BRAND_ID`, `TURNS_FIELD`, `collect()`), `COLLECTORS`, summary (`BRAND_INFO`), card SVG, public page data, publish. Pure logic: no `console.`, no i18n import (guarded) | collect, data, brands (Node built-ins only) |
 | `src/cli/` | Argument parsing and help (`args.js`, every flag literal), terminal output and i18n, local HTTP server, commands (`commands/*.js`) | cli, collect, data, brands (Node built-ins only) |
-| `src/viewer/` | Browser UI parts: stage, grid/wall, inspector, heatmap, poster, shelf, profile, i18n, describe, mount-badge, snapshot, export | viewer, engine, data, brands, three |
+| `src/viewer/` | Browser UI parts: stage, grid/wall, inspector, heatmap, poster, shelf, profile, i18n, describe, mount-badge, badge-renderer, snapshot, export | viewer, engine, data, brands, three |
 | `src/app/` | The wall page split into panels (context, load, topbar, overview, wall, inspect, export, poster, shelf, loop, `window.__badgeApp` automation). Panels talk via `ctx.emit`, not imports | anything (entry layer) |
 | `src/site/` | Landing page (`main.js`, `strings.js`, `site.css`) | anything (entry layer) |
 | `src/project/` | The Agent Badges logo and the asset studio script (`tools/studio.html`) | anything (entry layer) |
@@ -59,6 +59,7 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 15. `src/collect/` has no `console.` and no i18n import; `bin/` imports only `src/cli/` — `tests/contracts.test.js`
 16. Docs match the code: this Map lists every `src/` dir, cited tests exist, README badge counts (the exact count sentence), tool birthdays and `tier` values match the registry, and README anchors linked from the READMEs, landing page and skill exist — `tests/docs.test.js`
 17. Badges with the same outline share body geometry. Shared geometry and textures carry `userData.shared`; free a badge only with `disposeBadge` (`src/engine/badge.js`), which keeps shared resources — `tests/badge.test.js`
+18. Badges become images only through `createBadgeRenderer` (`src/viewer/badge-renderer.js`); only it and the export panel call `renderBadgePNG`. Showcase states (landing page, studio, promo) come from `src/brands/shared/showcase.js` — `tests/contracts.test.js`, `tests/showcase.test.js`
 
 ## Workflows
 

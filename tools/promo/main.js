@@ -7,7 +7,7 @@ import { BRANDS } from '../../src/brands/index.js';
 import { badgeTitle, tierName } from '../../src/brands/shared/text.js';
 import { filledState } from '../../src/brands/shared/showcase.js';
 import { createStage } from '../../src/viewer/scene.js';
-import { renderBadgePNG } from '../../src/viewer/snapshot.js';
+import { createBadgeRenderer } from '../../src/viewer/badge-renderer.js';
 import { mountBadge } from '../../src/viewer/mount-badge.js';
 import { LOGO_STATE, logoBadge, logoBrand } from '../../src/project/logo.js';
 import { renderShelf, shelfGroups } from '../../src/viewer/shelf.js';
@@ -86,6 +86,7 @@ const stage = createStage($('#stage'));
 // 视频每一帧按 2 倍像素渲染，截图时由浏览器缩小，相当于 2×2 超采样
 stage.renderer.setPixelRatio(2);
 stage.resize();
+const renderer = createBadgeRenderer(stage);
 
 const METAL_COLORS = { bronze: '#c0825a', silver: '#c9ced6', gold: '#d9b061', platinum: '#e4e7ec' };
 const claude = BRANDS.find((b) => b.brand.id === 'claude-code');
@@ -131,11 +132,8 @@ async function prepare() {
     group.innerHTML = `<h3>${b.brand.name}</h3><div class="wall-grid"></div>`;
     const grid = group.querySelector('.wall-grid');
     for (const config of b.badges.filter((c) => !c.hidden).slice(0, 12)) {
-      const item = holderFor(config, b.brand, filledState(config));
-      stage.scene.add(item.holder);
       const img = new Image();
-      img.src = renderBadgePNG({ stage, items: [item], item, size: 320, fill: 0.92 });
-      stage.scene.remove(item.holder);
+      img.src = renderer.image(config, b.brand, filledState(config), { lang: LANG, size: 320, fill: 0.92 });
       grid.appendChild(img);
       await img.decode();
     }

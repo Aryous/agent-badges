@@ -4,15 +4,14 @@ import '../style.css';
 import './site.css';
 import { Group } from 'three';
 import { BRANDS } from '../brands/index.js';
-import { buildBadge, disposeBadge } from '../engine/badge.js';
+import { buildBadge } from '../engine/badge.js';
 import { badgeTitle } from '../brands/shared/text.js';
 import { peakState } from '../brands/shared/showcase.js';
 import { loadAllProgress } from '../data/brand-progress.js';
 import { addStrings, applyStatic, lang, t } from '../viewer/i18n.js';
 import { createStage, supportsWebGL } from '../viewer/scene.js';
-import { renderBadgePNG } from '../viewer/snapshot.js';
-import { mountBadge } from '../viewer/mount-badge.js';
-import { idle, nextFrame } from '../viewer/frame.js';
+import { forEachFrame, idle } from '../viewer/frame.js';
+import { createBadgeRenderer } from '../viewer/badge-renderer.js';
 import { createHeatmap, markersFrom } from '../viewer/heatmap.js';
 import { LOGO_STATE, logoBadge, logoBrand } from '../project/logo.js';
 import STRINGS from './strings.js';
@@ -199,7 +198,7 @@ function startHero() {
 // ---------- 画廊：两个工具的全部徽章 ----------
 
 function startGallery() {
-  const stage = createStage($('#thumb-stage'));
+  const renderer = createBadgeRenderer(); // 自带离屏舞台，只用来截图
   const root = $('[data-gallery]');
   const tabs = $('[data-gallery-tabs]');
   const cache = new Map();
@@ -218,23 +217,23 @@ function startGallery() {
       a.innerHTML = `<span class="gallery-art"><img alt="" /></span><span class="gallery-name"></span>`;
       a.querySelector('.gallery-name').textContent = config.hidden ? '???' : badgeTitle(config, lang, state.tier);
       root.appendChild(a);
-      return { a, config, state };
+      return { a, config, state, key: `${b.brand.id}/${config.id}` };
     });
-    for (const { a, config, state } of cells) {
-      const key = `${b.brand.id}/${config.id}`;
-      if (!cache.has(key)) {
-        const item = mountBadge(config, b.brand, state, { stage, lang });
-        stage.scene.add(item.holder);
-        cache.set(key, renderBadgePNG({ stage, items: [item], item, size: 360, fill: 0.92 }));
-        stage.scene.remove(item.holder);
-        disposeBadge(item.badge); // 只留图片，显卡上的徽章用完就放掉
-        await nextFrame();
-        if (my !== token) return; // 中途切换了标签
-      }
+    const show = ({ a, key }) => {
       const img = a.querySelector('img');
       img.src = cache.get(key);
       img.decode?.().catch(() => {}).finally(() => a.classList.add('is-ready'));
-    }
+    };
+    // 画过的直接显示；没画过的逐张画，中途切换了标签就停下
+    cells.filter((c) => cache.has(c.key)).forEach(show);
+    await forEachFrame(
+      cells.filter((c) => !cache.has(c.key)),
+      (c) => {
+        cache.set(c.key, renderer.image(c.config, b.brand, c.state, { lang, size: 360, fill: 0.92 }));
+        show(c);
+      },
+      { cancelled: () => my !== token },
+    );
   }
 
   for (const b of BRANDS) {
