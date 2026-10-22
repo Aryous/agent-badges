@@ -86,11 +86,14 @@ export function createStage(canvas) {
   /**
    * 场景环境贴图会覆盖材质自己的 envMapIntensity，
    * 所以给徽章材质显式挂上环境贴图，让珐琅、陶瓷可以单独调低反射。
+   * 材质有了自己的环境贴图后，three.js 改用材质的 envMapRotation，
+   * 不再读 scene.environmentRotation，所以要把场景的旋转抄过来，灯箱才会在左上方。
    */
   function applyEnvironment(object) {
     object.traverse((o) => {
       if (!o.isMesh || o.material.envMap) return;
       o.material.envMap = envMap;
+      o.material.envMapRotation.copy(scene.environmentRotation);
       o.material.envMapIntensity *= ENV_INTENSITY;
       o.material.needsUpdate = true;
     });

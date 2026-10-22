@@ -5,29 +5,29 @@
 <text x="58" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#1F1E1C">Agent Badges</text>
 <rect x="24" y="70" width="8" height="8" rx="2" fill="#D97757"/>
 <text x="40" y="79" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1F1E1C">Claude Code</text>
-<text x="40" y="98" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#6E6A62"><tspan fill="#1F1E1C" font-weight="600">15</tspan>/19 badges</text>
+<text x="40" y="98" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#6E6A62"><tspan fill="#1F1E1C" font-weight="600">27</tspan>/32 badges</text>
 <rect x="150" y="70" width="110" height="6" rx="3" fill="#EFEDE8"/>
-<rect x="150" y="70" width="86.8" height="6" rx="3" fill="#D97757"/>
+<rect x="150" y="70" width="92.8" height="6" rx="3" fill="#D97757"/>
 <text x="290" y="79" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#1F1E1C">1.6B</text>
 <text x="290" y="96" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#6E6A62">tokens</text>
-<text x="374" y="79" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#1F1E1C">388</text>
+<text x="374" y="79" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#1F1E1C">393</text>
 <text x="374" y="96" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#6E6A62">active days</text>
 <text x="458" y="79" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#1F1E1C">15</text>
 <text x="458" y="96" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#6E6A62">day streak</text>
 <rect x="24" y="116" width="8" height="8" rx="2" fill="#7A9DFF"/>
 <text x="40" y="125" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1F1E1C">Codex</text>
-<text x="40" y="144" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#6E6A62"><tspan fill="#1F1E1C" font-weight="600">14</tspan>/20 badges</text>
+<text x="40" y="144" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#6E6A62"><tspan fill="#1F1E1C" font-weight="600">19</tspan>/30 badges</text>
 <rect x="150" y="116" width="110" height="6" rx="3" fill="#EFEDE8"/>
-<rect x="150" y="116" width="77.0" height="6" rx="3" fill="#7A9DFF"/>
-<text x="290" y="125" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#1F1E1C">10.2B</text>
+<rect x="150" y="116" width="69.7" height="6" rx="3" fill="#7A9DFF"/>
+<text x="290" y="125" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#1F1E1C">10.4B</text>
 <text x="290" y="142" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#6E6A62">tokens</text>
-<text x="374" y="125" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#1F1E1C">81</text>
+<text x="374" y="125" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#1F1E1C">84</text>
 <text x="374" y="142" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#6E6A62">active days</text>
 <text x="458" y="125" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#1F1E1C">4</text>
 <text x="458" y="142" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#6E6A62">day streak</text>
 <text x="24" y="178" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#A7A39A">Recent activity</text>
 <rect x="24" y="188" width="11.56" height="11.56" rx="2.5" fill="#EFEDE8"/>
-<rect x="24" y="202.56" width="11.56" height="11.56" rx="2.5" fill="#EFEDE8"/>
+<rect x="24" y="202.56" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.5"/>
 <rect x="24" y="217.12" width="11.56" height="11.56" rx="2.5" fill="#EFEDE8"/>
 <rect x="24" y="231.68" width="11.56" height="11.56" rx="2.5" fill="#EFEDE8"/>
 <rect x="24" y="246.24" width="11.56" height="11.56" rx="2.5" fill="#EFEDE8"/>
@@ -103,12 +103,13 @@
 <rect x="155.03" y="231.68" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.5"/>
 <rect x="155.03" y="246.24" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.3"/>
 <path d="M166.59 246.24V257.8H155.03Z" fill="#7A9DFF" fill-opacity="0.3"/>
-<rect x="155.03" y="260.79" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.74"/>
+<rect x="155.03" y="260.79" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="1"/>
 <rect x="155.03" y="275.35" width="11.56" height="11.56" rx="2.5" fill="#7A9DFF" fill-opacity="0.5"/>
 <rect x="169.59" y="188" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="1"/>
 <path d="M181.15 188V199.56H169.59Z" fill="#7A9DFF" fill-opacity="0.5"/>
 <rect x="169.59" y="202.56" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="1"/>
 <rect x="169.59" y="217.12" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.74"/>
+<path d="M181.15 217.12V228.68H169.59Z" fill="#7A9DFF" fill-opacity="0.5"/>
 <rect x="169.59" y="231.68" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.5"/>
 <rect x="169.59" y="246.24" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.3"/>
 <path d="M181.15 246.24V257.8H169.59Z" fill="#7A9DFF" fill-opacity="0.74"/>
@@ -119,7 +120,7 @@
 <path d="M195.71 202.56V214.12H184.15Z" fill="#7A9DFF" fill-opacity="1"/>
 <rect x="184.15" y="217.12" width="11.56" height="11.56" rx="2.5" fill="#EFEDE8"/>
 <rect x="184.15" y="231.68" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.74"/>
-<rect x="184.15" y="246.24" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.5"/>
+<rect x="184.15" y="246.24" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.74"/>
 <rect x="184.15" y="260.79" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.3"/>
 <rect x="184.15" y="275.35" width="11.56" height="11.56" rx="2.5" fill="#EFEDE8"/>
 <rect x="198.71" y="188" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.5"/>
@@ -203,6 +204,7 @@
 <rect x="315.18" y="260.79" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.74"/>
 <rect x="315.18" y="275.35" width="11.56" height="11.56" rx="2.5" fill="#EFEDE8"/>
 <rect x="329.74" y="188" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.5"/>
+<path d="M341.3 188V199.56H329.74Z" fill="#7A9DFF" fill-opacity="0.5"/>
 <rect x="329.74" y="202.56" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.74"/>
 <path d="M341.3 202.56V214.12H329.74Z" fill="#7A9DFF" fill-opacity="1"/>
 <rect x="329.74" y="217.12" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="1"/>
@@ -261,6 +263,7 @@
 <rect x="402.53" y="260.79" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.3"/>
 <rect x="402.53" y="275.35" width="11.56" height="11.56" rx="2.5" fill="#EFEDE8"/>
 <rect x="417.09" y="188" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="1"/>
+<path d="M428.65 188V199.56H417.09Z" fill="#7A9DFF" fill-opacity="0.5"/>
 <rect x="417.09" y="202.56" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="1"/>
 <path d="M428.65 202.56V214.12H417.09Z" fill="#7A9DFF" fill-opacity="1"/>
 <rect x="417.09" y="217.12" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.74"/>
@@ -282,7 +285,7 @@
 <rect x="446.21" y="188" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.5"/>
 <rect x="446.21" y="202.56" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.5"/>
 <rect x="446.21" y="217.12" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.5"/>
-<path d="M457.77 217.12V228.68H446.21Z" fill="#7A9DFF" fill-opacity="0.5"/>
+<path d="M457.77 217.12V228.68H446.21Z" fill="#7A9DFF" fill-opacity="0.74"/>
 <rect x="446.21" y="231.68" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.5"/>
 <path d="M457.77 231.68V243.24H446.21Z" fill="#7A9DFF" fill-opacity="1"/>
 <rect x="446.21" y="246.24" width="11.56" height="11.56" rx="2.5" fill="#D97757" fill-opacity="0.74"/>
