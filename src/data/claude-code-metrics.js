@@ -14,9 +14,10 @@ import {
   applySessionSegments,
   birthdayRule,
   COMMON_RULES,
+  createComputeProgress,
   distinctOver,
+  IDLE_GAP_MS,
   localDate,
-  metricsContext,
   once,
   segmentsOf,
   tierOf,
@@ -154,8 +155,6 @@ const WEB_TOOLS = new Set(['WebSearch', 'WebFetch']);
 const EDIT_TOOLS = new Set(['Edit', 'MultiEdit', 'Write', 'NotebookEdit']);
 /** /loop（ScheduleWakeup）、定时任务（CronCreate）、Workflow 编排 */
 const AUTOPILOT_TOOLS = new Set(['ScheduleWakeup', 'CronCreate', 'Workflow']);
-
-const IDLE_GAP_MS = 30 * 60 * 1000; // 两条记录间隔超过 30 分钟视为离开，不计入会话时长
 
 /**
  * @param {Iterable<object>} facts  extractFacts 的结果（可混合多个会话）
@@ -359,13 +358,4 @@ export const RULES = {
  * @param {string} today    YYYY-MM-DD
  * @returns {object} 原始进度（交给 normalizeProgress）
  */
-export function computeProgress(ledger, badges, today) {
-  const ctx = metricsContext(ledger, today, isActive);
-  return Object.fromEntries(
-    badges.map((b) => {
-      const rule = RULES[b.id];
-      if (!rule) throw new Error(`徽章「${b.id}」没有统计规则：在 src/data/claude-code-metrics.js 的 RULES 里加一条`);
-      return [b.id, rule(ctx, b)];
-    }),
-  );
-}
+export const computeProgress = createComputeProgress(RULES, isActive, 'src/data/claude-code-metrics.js');

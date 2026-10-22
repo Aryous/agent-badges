@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applySessionSegments, holidays, joinSegments, perfectMonth, segmentsOf } from '../src/data/metrics-common.js';
+import { applySessionSegments, createComputeProgress, holidays, joinSegments, perfectMonth, segmentsOf } from '../src/data/metrics-common.js';
 
 const at = (date, h, m = 0) => new Date(`${date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`).toISOString();
 const ms = (date, h, m = 0) => Date.parse(at(date, h, m));
@@ -37,5 +37,20 @@ describe('节日', () => {
     expect(holidays['spring-festival']('2036-01-28')).toBe(false);
     expect(holidays.birthday('2025-02-24')('2026-02-24')).toBe(true);
     expect(holidays.birthday('2025-02-24')('2024-02-24')).toBe(false);
+  });
+});
+
+describe('createComputeProgress：按规则表算每枚徽章的原始进度', () => {
+  const rules = { a: (c, b) => ({ id: b.id, dates: c.dates }), b: () => ({ unlocked: false }) };
+  const isActive = (d) => d.n > 0;
+  const compute = createComputeProgress(rules, isActive, 'src/data/x-metrics.js');
+  const ledger = { days: { '2026-03-01': { n: 1 }, '2026-03-02': { n: 0 } } };
+
+  it('每枚徽章调用自己的规则，规则拿到的上下文只含活跃日', () => {
+    expect(compute(ledger, [{ id: 'a' }, { id: 'b' }], '2026-03-05')).toEqual({ a: { id: 'a', dates: ['2026-03-01'] }, b: { unlocked: false } });
+  });
+
+  it('缺规则时报错，指出该去哪个文件加', () => {
+    expect(() => compute(ledger, [{ id: 'c' }], '2026-03-05')).toThrow('徽章「c」没有统计规则：在 src/data/x-metrics.js 的 RULES 里加一条');
   });
 });

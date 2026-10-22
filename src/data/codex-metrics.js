@@ -13,10 +13,11 @@ import {
   applySessionSegments,
   birthdayRule,
   COMMON_RULES,
+  createComputeProgress,
   cumulative,
   distinctOver,
+  IDLE_GAP_MS,
   localDate,
-  metricsContext,
   once,
   segmentsOf,
   tierOf,
@@ -51,7 +52,7 @@ const usageTokens = (u) => num(u.input_tokens) + num(u.output_tokens);
 const isReviewModel = (m) => typeof m === 'string' && m.includes('review');
 
 /**
- * 会话记录的一行 → 白名单事实（null 表示对统计没用）。
+ * 会话记录（rollout-*.jsonl）的一行 → 白名单事实（null 表示对统计没用）。
  * hash：调用方传入的哈希函数（采集时是 src/collect/common.js 的 hash）。
  */
 export function extractRolloutFacts(rec, { hash }) {
@@ -108,10 +109,10 @@ export function extractRolloutFacts(rec, { hash }) {
 }
 
 /**
- * 会话索引库的一行（只含白名单列）→ 事实。
+ * 会话索引库（state_*.sqlite 的 threads 表，只含白名单列）的一行 → 事实。
  * hash：调用方传入的哈希函数（采集时是 src/collect/common.js 的 hash）。
  */
-export function threadFacts(row, { hash }) {
+export function extractThreadFacts(row, { hash }) {
   const ts = num(row.created_at_ms) || null;
   if (!ts) return null;
   const origin = originKind(row.source);
@@ -151,8 +152,6 @@ const emptyDay = () => ({
   midnight: false,
 });
 
-const IDLE_GAP_MS = 30 * 60 * 1000;
-
 /**
  * 按天汇总会话记录和会话索引库的事实。
  * @param {object[][]} sessions  每个会话记录文件的事实数组
@@ -163,7 +162,7 @@ const IDLE_GAP_MS = 30 * 60 * 1000;
  * @param {Array}  [opts.segsOut]  传入时，自己发起的会话的活动段放进这里，由调用方合并所有文件后用
  *   applySessionSegments 统一计算协作时长、多线并行、跨日夜战（这三项要跨会话一起算）
  */
-export function aggregateCodexDays(sessions, threads, { streamsOut = null, segsOut = null } = {}) {
+export function aggregateDays(sessions, threads, { streamsOut = null, segsOut = null } = {}) {
   const days = {};
   const day = (ts) => (days[localDate(ts)] ??= emptyDay());
   const seenUsage = new Set();
@@ -247,7 +246,7 @@ export function applyCodexSegments(days, segs) {
   return applySessionSegments(days, segs, emptyDay);
 }
 
-/** 把 aggregateCodexDays 交出来的旧版用量按指纹去重后计入（就地修改 days）。 */
+/** 把 aggregateDays 交出来的旧版用量按指纹去重后计入（就地修改 days）。 */
 export function applyStreams(days, streams) {
   const seen = new Set();
   for (const [key, date, tokens] of streams) {
@@ -277,7 +276,7 @@ export function mergeDays(a, b) {
 }
 
 /** 账本合并：本次能看到的日期以本次为准，看不到的日期保留旧值。 */
-export function mergeCodexLedger(ledger, freshDays) {
+export function mergeLedger(ledger, freshDays) {
   const days = { ...(ledger?.days ?? {}) };
   for (const [date, d] of Object.entries(freshDays)) days[date] = d;
   const firstSeen = [ledger?.firstSeen, Object.keys(days).sort()[0]].filter(Boolean).sort()[0] ?? null;
@@ -327,18 +326,9 @@ export const RULES = {
 };
 
 /**
- * @param {object} ledger   mergeCodexLedger 的结果
+ * @param {object} ledger   mergeLedger 的结果
  * @param {object[]} badges 徽章配置（规则从这里读门槛）
  * @param {string} today    YYYY-MM-DD
- * @returns {object} 原始进度（交给 progress.js 的 normalizeProgress）
+ * @returns {object} 原始进度（交给 normalizeProgress）
  */
-export function computeProgress(ledger, badges, today) {
-  const ctx = metricsContext(ledger, today, isActive);
-  return Object.fromEntries(
-    badges.map((b) => {
-      const rule = RULES[b.id];
-      if (!rule) throw new Error(`徽章「${b.id}」没有统计规则：在 src/data/codex-metrics.js 的 RULES 里加一条`);
-      return [b.id, rule(ctx, b)];
-    }),
-  );
-}
+export const computeProgress = createComputeProgress(RULES, isActive, 'src/data/codex-metrics.js');

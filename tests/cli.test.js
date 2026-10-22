@@ -10,7 +10,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { parseArgs } from '../src/cli/args.js';
 import { collectAll } from '../src/collect/index.js';
 import { injectData } from '../src/share/inject.js';
-import { aggregateCodexDays, extractRolloutFacts, mergeDays } from '../src/data/codex-metrics.js';
+import { aggregateDays, extractRolloutFacts, mergeDays } from '../src/data/codex-metrics.js';
 import { hash } from '../src/collect/common.js';
 
 const SECRET = 'sk-ant-api03-TOP-SECRET-should-never-leak';
@@ -146,6 +146,6 @@ describe('按文件缓存的合并', () => {
     ].map((r) => extractRolloutFacts(r, { hash }));
     const a = f('2026-05-01', 9, 'a');
     const b = f('2026-05-01', 23, 'b');
-    expect(mergeDays(aggregateCodexDays([a], []), aggregateCodexDays([b], []))).toEqual(aggregateCodexDays([a, b], []));
+    expect(mergeDays(aggregateDays([a], []), aggregateDays([b], []))).toEqual(aggregateDays([a, b], []));
   });
 });

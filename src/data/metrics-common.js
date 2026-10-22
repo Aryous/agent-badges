@@ -81,8 +81,8 @@ export function dayPeak(dates, days, field, target) {
 const MIN = 60 * 1000;
 /** 活动段的最小粒度：同一会话相邻两次活动间隔 ≤ 10 分钟就算一直在活动（多线并行用这个粒度） */
 export const SEGMENT_GAP_MS = 10 * MIN;
-/** 协作时长：间隔 ≤ 30 分钟的部分计入，超过的视为离开 */
-const ACTIVE_GAP_MS = 30 * MIN;
+/** 两次活动间隔超过 30 分钟视为离开：会话时长、协作时长都不计这一段。 */
+export const IDLE_GAP_MS = 30 * MIN;
 /** 跨日夜战：23:00–02:00 之间相邻两次活动的间隔不超过 60 分钟 */
 const NIGHT_GAP_MS = 60 * MIN;
 
@@ -125,7 +125,7 @@ export function applySessionSegments(days, sessionSegs, emptyDay) {
   const day = (date) => (days[date] ??= reset(emptyDay()));
 
   // 协作时长：先按 30 分钟连段，再把所有会话的段求并集，按本地日期切开累加
-  const union = joinSegments(sessionSegs.flatMap((s) => joinSegments(s, ACTIVE_GAP_MS)), 0);
+  const union = joinSegments(sessionSegs.flatMap((s) => joinSegments(s, IDLE_GAP_MS)), 0);
   for (const [a, b] of union) {
     let t = a;
     while (t < b) {
@@ -242,6 +242,25 @@ export function metricsContext(ledger, today, isActive) {
     get streak() {
       return (streak ??= streaks(dates));
     },
+  };
+}
+
+/**
+ * 由规则表生成 computeProgress(ledger, badges, today)：每枚徽章按自己的规则算出原始进度（交给 normalizeProgress）。
+ * @param {Record<string, Function>} rules  徽章 id → 规则 (ctx, badge) => 原始进度
+ * @param {(day: object) => boolean} isActive  这一天算不算活跃
+ * @param {string} rulesFile  缺规则时报错里指出的文件
+ */
+export function createComputeProgress(rules, isActive, rulesFile) {
+  return (ledger, badges, today) => {
+    const ctx = metricsContext(ledger, today, isActive);
+    return Object.fromEntries(
+      badges.map((b) => {
+        const rule = rules[b.id];
+        if (!rule) throw new Error(`徽章「${b.id}」没有统计规则：在 ${rulesFile} 的 RULES 里加一条`);
+        return [b.id, rule(ctx, b)];
+      }),
+    );
   };
 }
 

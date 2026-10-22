@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import badges from '../src/brands/codex/index.js';
 import {
-  aggregateCodexDays,
+  aggregateDays,
   applyCodexSegments,
   applyStreams,
   computeProgress,
-  mergeDays,
   extractRolloutFacts,
-  mergeCodexLedger,
+  extractThreadFacts,
+  mergeDays,
+  mergeLedger,
   originKind,
-  threadFacts,
 } from '../src/data/codex-metrics.js';
 
 const SECRET = 'sk-proj-SECRET-should-never-leak-456';
@@ -31,7 +31,7 @@ const ctx = (ts, extra = {}) => ({ type: 'turn_context', timestamp: ts, payload:
 
 const session = (recs) => recs.map((r) => extractRolloutFacts(r, { hash })).filter(Boolean);
 const run = (sessions, threads = [], ledger = null, today = '2026-10-18') => {
-  const merged = mergeCodexLedger(ledger, aggregateCodexDays(sessions, threads.map((t) => threadFacts(t, { hash }))));
+  const merged = mergeLedger(ledger, aggregateDays(sessions, threads.map((t) => extractThreadFacts(t, { hash }))));
   return { ledger: merged, progress: computeProgress(merged, badges, today) };
 };
 
@@ -115,7 +115,7 @@ describe('统计口径', () => {
     expect(run([parent, child]).ledger.days['2026-05-20'].tokens).toBe(expected);
     // 按文件分别汇总（采集时的增量缓存）再合并，结果一样
     const streams = [];
-    const days = mergeDays(aggregateCodexDays([parent], [], { streamsOut: streams }), aggregateCodexDays([child], [], { streamsOut: streams }));
+    const days = mergeDays(aggregateDays([parent], [], { streamsOut: streams }), aggregateDays([child], [], { streamsOut: streams }));
     applyStreams(days, streams);
     expect(days['2026-05-20'].tokens).toBe(expected);
   });
@@ -196,7 +196,7 @@ describe('会话活动与新徽章', () => {
   const cxSession = (date, h, m, n, step = 5, source = 'cli') =>
     facts([meta(at(date, h, m), source), ...Array.from({ length: n }, (_, i) => task(new Date(ms(date, h, m) + i * step * MIN).toISOString()))]);
   const cxRun = (sessions, threads = [], today = '2026-10-21') => {
-    const ledger = mergeCodexLedger(null, aggregateCodexDays(sessions, threads.map((t) => threadFacts(t, { hash }))));
+    const ledger = mergeLedger(null, aggregateDays(sessions, threads.map((t) => extractThreadFacts(t, { hash }))));
     return { ledger, progress: computeProgress(ledger, BADGES, today) };
   };
 
@@ -209,7 +209,7 @@ describe('会话活动与新徽章', () => {
 
       const segs = [];
       let days = {};
-      for (const s of sessions) days = mergeDays(days, aggregateCodexDays([s], [], { segsOut: segs }));
+      for (const s of sessions) days = mergeDays(days, aggregateDays([s], [], { segsOut: segs }));
       applyCodexSegments(days, segs);
       for (const date of Object.keys(direct.ledger.days)) {
         expect(days[date]).toMatchObject({ activeMin: direct.ledger.days[date].activeMin, maxParallel: direct.ledger.days[date].maxParallel, midnight: direct.ledger.days[date].midnight });

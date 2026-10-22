@@ -12,7 +12,7 @@ import { zstdDecompressSync } from 'node:zlib';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import badges from '../brands/codex/index.js';
-import { aggregateCodexDays, applyCodexSegments, applyStreams, computeProgress, extractRolloutFacts, mergeCodexLedger, mergeDays, threadFacts } from '../data/codex-metrics.js';
+import { aggregateDays, applyCodexSegments, applyStreams, computeProgress, extractRolloutFacts, extractThreadFacts, mergeDays, mergeLedger } from '../data/codex-metrics.js';
 import { localDate } from '../data/metrics-common.js';
 import { hash, readJSON, saveBrand, writeJSON } from './common.js';
 
@@ -86,7 +86,7 @@ async function threadRows(dir) {
     const missing = THREAD_COLUMNS.filter((c) => !cols.has(c));
     if (missing.length) return { rows: [], note: `${dbs[0][0]} 的结构与预期不同（缺少 ${missing.join(', ')}），已只用会话记录统计` };
     const rows = db.prepare(`SELECT ${THREAD_COLUMNS.join(', ')} FROM threads`).all();
-    return { rows: rows.map((r) => threadFacts(r, { hash })), note: null };
+    return { rows: rows.map((r) => extractThreadFacts(r, { hash })), note: null };
   } finally {
     db.close();
   }
@@ -123,7 +123,7 @@ function rolloutDays(files, cachePath, onProgress) {
       parsed += 1;
       const streams = [];
       const segs = [];
-      entry = { size, mtimeMs, days: aggregateCodexDays([f], [], { streamsOut: streams, segsOut: segs }), streams, segs };
+      entry = { size, mtimeMs, days: aggregateDays([f], [], { streamsOut: streams, segsOut: segs }), streams, segs };
     }
     next[key] = entry;
     days = mergeDays(days, entry.days);
@@ -144,7 +144,7 @@ export async function collect({ env = process.env, home, now = Date.now(), onPro
   const { days, parsed, facts } = rolloutDays(files, joinPath(home, 'cache', `${BRAND_ID}-rollouts.json`), onProgress);
   const { rows, note } = await threadRows(dir);
   const ledgerPath = join(home, `${BRAND_ID}.ledger.json`);
-  const ledger = mergeCodexLedger(readJSON(ledgerPath), mergeDays(days, aggregateCodexDays([], rows)));
+  const ledger = mergeLedger(readJSON(ledgerPath), mergeDays(days, aggregateDays([], rows)));
   if (!files.length && !rows.length && !Object.keys(ledger.days).length) return null;
   const progress = computeProgress(ledger, badges, localDate(now));
   const data = saveBrand(home, BRAND_ID, ledger, progress, { turnsField: TURNS_FIELD });
