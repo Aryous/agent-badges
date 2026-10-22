@@ -23,7 +23,7 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 | Path | Owns | May import |
 | --- | --- | --- |
 | `src/engine/` | Badge rendering: shapes, materials, relief, text, tier resolution, config validation (`validate.js`), layout checks (`layout.js`). No brand knowledge | engine, three, json |
-| `src/brands/` | Tool registry (`index.js`: `BRANDS`, `BRAND_IDS`, `brandById`, `getBrand`, `DEFAULT_BRAND`); per tool: `brand.js` (palette, `launchDate`), one file per badge under `milestones/ habits/ features/ limited/`; `shared/` medal layout, parts, top-tier designs | brands (Node built-ins only) |
+| `src/brands/` | Tool registry (`index.js`: `BRANDS`, `BRAND_IDS`, `brandById`, `getBrand`, `DEFAULT_BRAND`); per tool: `brand.js` (palette, `launchDate`), one file per badge under `milestones/ habits/ features/ limited/`; `shared/` medal layout, parts, top-tier designs, showcase states | brands (Node built-ins only) |
 | `src/data/` | Per-tool metrics (`<tool>-metrics.js`: `RULES`, `computeProgress`), shared rules (`metrics-common.js`), ledger normalization, daily series, tiers, sample data (`mock-<tool>.js`), `progress.js` (`DATA_SOURCES`, page data loading) | data, brands (Node built-ins only) |
 | `src/collect/` | Local collectors (`<tool>.js`: `BRAND_ID`, `TURNS_FIELD`, `collect()`), `COLLECTORS`, summary (`BRAND_INFO`), card SVG, public page data, publish. Pure logic: no `console.`, no i18n import (guarded) | collect, data, brands (Node built-ins only) |
 | `src/cli/` | Argument parsing and help (`args.js`, every flag literal), terminal output and i18n, local HTTP server, commands (`commands/*.js`) | cli, collect, data, brands (Node built-ins only) |

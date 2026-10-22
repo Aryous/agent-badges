@@ -1,6 +1,7 @@
 // 徽章工作台（仅开发服务器）：window.__studio.render(...) 把一枚徽章渲染成 PNG data URL。
 // scripts/assets.mjs 用它生成 README 横幅、动图帧和项目标志。
 import { BRANDS, getBrand } from '../brands/index.js';
+import { surpriseKeptState } from '../brands/shared/showcase.js';
 import { normalizeProgress } from '../data/normalize.js';
 import { DATA_SOURCES } from '../data/progress.js';
 import { createStage } from '../viewer/scene.js';
@@ -10,9 +11,6 @@ import { disposeBadge } from '../engine/badge.js';
 import { LOGO_STATE, logoBadge, logoBrand } from './logo.js';
 
 const stage = createStage(document.querySelector('#stage'));
-
-/** 展示用的等级：最高一级；最高一级是随机款式的彩蛋时，展示它下面一级，留住惊喜。 */
-const showcaseTier = (tiers) => (tiers.at(-1).variants ? tiers.length - 2 : tiers.length - 1);
 
 /**
  * @param {object} o
@@ -36,12 +34,8 @@ async function render({ brand: brandId, id, angle = 0, tilt = 0, size = 1024, la
     brand = b.brand;
     config = b.badges.find((x) => x.id === id);
     state = normalizeProgress(await DATA_SOURCES[brandId].mock(), b.badges)[id];
-    // 展示用：分级徽章看最高级，隐藏徽章保持神秘，其余都已解锁
-    if (showcase) {
-      state = config.hidden
-        ? { ...state, unlocked: false, earnedAt: null, tier: null }
-        : { ...state, unlocked: true, earnedAt: state.earnedAt ?? '2026-10-24', tier: config.tiers ? showcaseTier(config.tiers) : null };
-    }
+    // 展示用：其余都已解锁，分级徽章留住顶级彩蛋的惊喜（见 brands/shared/showcase.js）
+    if (showcase) state = surpriseKeptState(config, state);
     if (unlocked !== undefined) state = { ...state, unlocked, earnedAt: state.earnedAt ?? '2026-05-02' };
     if (tier !== undefined) state = { ...state, unlocked: true, tier, earnedAt: state.earnedAt ?? '2026-05-02' };
   }

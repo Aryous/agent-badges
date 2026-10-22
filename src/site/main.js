@@ -6,6 +6,7 @@ import { Group } from 'three';
 import { BRANDS } from '../brands/index.js';
 import { buildBadge, disposeBadge } from '../engine/badge.js';
 import { badgeTitle } from '../brands/shared/text.js';
+import { peakState } from '../brands/shared/showcase.js';
 import { loadAllProgress } from '../data/brand-progress.js';
 import { addStrings, applyStatic, lang, t } from '../viewer/i18n.js';
 import { createStage, supportsWebGL } from '../viewer/scene.js';
@@ -27,13 +28,6 @@ const demoURL = (brand, id) => {
   if (brand) q.set('brand', brand);
   return `${DEMO}?${q}${id ? `#${id}` : ''}`;
 };
-
-/** 展示用的状态：分级徽章看最高级，隐藏徽章保持神秘。 */
-function showcaseState(config) {
-  if (config.hidden) return { unlocked: false, earnedAt: null, tier: null, value: 0, progress: { current: 0, target: 1 } };
-  const tier = config.tiers ? config.tiers.length - 1 : null;
-  return { unlocked: true, earnedAt: '2026-10-24', tier, value: 0, progress: { current: 1, target: 1 } };
-}
 
 function setupText() {
   applyStatic();
@@ -80,7 +74,7 @@ function heroItem(entry) {
     const b = BRANDS.find((x) => x.brand.id === entry.brand);
     brand = b.brand;
     config = b.badges.find((x) => x.id === entry.id);
-    state = showcaseState(config);
+    state = peakState(config);
   }
   return { brand, config, state };
 }
@@ -216,7 +210,7 @@ function startGallery() {
     root.style.setProperty('--accent-tab', b.brand.ui.accent);
     root.innerHTML = '';
     const cells = b.badges.map((config) => {
-      const state = showcaseState(config);
+      const state = peakState(config);
       const a = document.createElement('a');
       a.className = 'gallery-item' + (state.unlocked ? '' : ' is-locked');
       a.href = demoURL(b.brand.id, config.id);

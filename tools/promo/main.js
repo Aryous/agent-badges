@@ -5,6 +5,7 @@
 import './promo.css';
 import { BRANDS } from '../../src/brands/index.js';
 import { badgeTitle, tierName } from '../../src/brands/shared/text.js';
+import { filledState } from '../../src/brands/shared/showcase.js';
 import { createStage } from '../../src/viewer/scene.js';
 import { renderBadgePNG } from '../../src/viewer/snapshot.js';
 import { mountBadge } from '../../src/viewer/mount-badge.js';
@@ -90,13 +91,6 @@ const METAL_COLORS = { bronze: '#c0825a', silver: '#c9ced6', gold: '#d9b061', pl
 const claude = BRANDS.find((b) => b.brand.id === 'claude-code');
 const tokens = claude.badges.find((b) => b.id === 'tokens');
 
-/** 展示用状态：分级徽章用最高级（或指定级），其余都已解锁。 */
-function showcase(config, tier = null) {
-  const t = config.tiers ? (tier ?? config.tiers.length - 1) : null;
-  const value = config.tiers ? config.tiers[t].threshold : 1;
-  return { unlocked: true, earnedAt: '2026-05-02', tier: t, value, progress: { current: value, target: value } };
-}
-
 function holderFor(config, brand, state, { sharpBack = false } = {}) {
   // sharpBack：旋转和翻面时会看到背面，刻字贴图用大尺寸
   return mountBadge(config, brand, state, { stage, lang: LANG, engraving: sharpBack ? 2048 : undefined });
@@ -137,7 +131,7 @@ async function prepare() {
     group.innerHTML = `<h3>${b.brand.name}</h3><div class="wall-grid"></div>`;
     const grid = group.querySelector('.wall-grid');
     for (const config of b.badges.filter((c) => !c.hidden).slice(0, 12)) {
-      const item = holderFor(config, b.brand, showcase(config));
+      const item = holderFor(config, b.brand, filledState(config));
       stage.scene.add(item.holder);
       const img = new Image();
       img.src = renderBadgePNG({ stage, items: [item], item, size: 320, fill: 0.92 });
@@ -154,7 +148,7 @@ async function prepare() {
   await shelf.decode();
 
   const logo = holderFor(logoBadge, logoBrand, LOGO_STATE, { sharpBack: true });
-  const tiers = tokens.tiers.map((_, i) => holderFor(tokens, claude.brand, showcase(tokens, i), { sharpBack: true }));
+  const tiers = tokens.tiers.map((_, i) => holderFor(tokens, claude.brand, filledState(tokens, i), { sharpBack: true }));
   for (const it of [logo, ...tiers]) {
     it.holder.visible = false;
     stage.scene.add(it.holder);

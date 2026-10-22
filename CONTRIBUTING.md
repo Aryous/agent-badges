@@ -72,7 +72,8 @@ The [`add-badge` skill](.agents/skills/add-badge/SKILL.md) walks through this st
 ```
 src/brands/
 ├─ shared/        layout.js (round medal, text ring, medallion), parts.js (terminal, fireworks,
-│                 lantern, calendar…), top-tier.js (the three top-tier designs), pixel-art.js, text.js
+│                 lantern, calendar…), top-tier.js (the three top-tier designs), pixel-art.js, text.js,
+│                 showcase.js (display states for the landing page, studio and promo)
 ├─ claude-code/   brand.js (palette), mascot.js (the pixel mascot), app-icon.js (feature family),
 │                 medal.js, milestones/ habits/ features/ limited/
 └─ codex/         brand.js, mark.js (the Codex mark), feature-frame.js, medal.js, the same four series
