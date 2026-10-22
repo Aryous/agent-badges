@@ -244,7 +244,7 @@ Agent Badges 读的是 Claude Code 和 Codex 在你电脑上留下的记录，�
 - **只读元数据。** 每读一行记录，只留下白名单里的字段：时间戳、Token 数、工具名和几个模式取值。对话内容、代码、工具参数和返回结果当场丢弃，从不保存。可能透露你在做什么的名字（MCP 服务名、Codex 的模型名）会做哈希；Claude 的模型名只保留系列名（opus、sonnet、haiku、fable）。
 - **从不打开的文件。** Claude Code：`settings.json`、`.credentials.json`、MCP 配置、`history.jsonl`、`shell-snapshots`、`session-env`、`paste-cache`、`file-history`。Codex：`auth.json`、`config.toml`、`*.env`、`history.jsonl`、`transcription-history.jsonl`、`thread_history*.sqlite`、`logs*.sqlite`、`memories*`、`shell_snapshots`、`chatgpt-meetings`。
 - **Codex 会话索引库。** `state_*.sqlite` 以只读方式打开，只查六列：创建时间、来源、会话类型、模型、推理强度和审批策略。标题、首条消息、预览、路径、git 信息和账号 id 一概不读。
-- **保存了什么。** `~/.agent-badges` 里只有按天汇总的账本，内容是数字、日期和哈希。就算工具清理了旧记录，已经拿到的徽章也不会消失。
+- **保存了什么。** `~/.agent-badges` 里只有按天汇总的账本，内容是数字、日期和哈希。就算工具清理了旧记录，已经拿到的徽章也不会消失。写入时先写临时文件再替换，中途中断也不会留下写了一半的账本；每次更新前，上一版账本会留作 `<工具>.ledger.json.bak`。万一账本损坏，命令会告诉你是哪个文件、怎样用备份恢复，并且不会覆盖它。
 - **有测试兜底。** 测试会在伪造的 `~/.claude` 和 `~/.codex` 里放进假密钥、对话、路径和会话标题，完整跑一遍采集和导出，确认这些内容不会出现在任何输出里。
 
 在线演示和 npm 包里都没有任何个人数据。只有 `export`、`card`、`shelf` 和 `profile` 会生成带你个人数据的文件，而且只写到你指定的位置。`publish` 和 `profile` 生成的网页本来就是要公开的，具体公开哪些内容见[放到 GitHub 个人主页](#放到-github-个人主页)。

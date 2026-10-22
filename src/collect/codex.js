@@ -14,7 +14,7 @@ import { join } from 'node:path';
 import badges from '../brands/codex/index.js';
 import { aggregateDays, applyCodexSegments, applyStreams, computeProgress, extractRolloutFacts, extractThreadFacts, mergeDays, mergeLedger } from '../data/codex-metrics.js';
 import { localDate } from '../data/metrics-common.js';
-import { hash, readJSON, saveBrand, writeJSON } from './common.js';
+import { hash, readCache, readLedger, saveBrand, writeJSON } from './common.js';
 
 export const BRAND_ID = 'codex';
 /** 账本里「对话轮数」的字段名。 */
@@ -105,7 +105,7 @@ const CACHE_VERSION = 4;
  * 大小或修改时间变了才重新解析。
  */
 function rolloutDays(files, cachePath, onProgress) {
-  const cache = readJSON(cachePath);
+  const cache = readCache(cachePath);
   const old = cache?.version === CACHE_VERSION ? cache.files : {};
   const next = {};
   let days = {};
@@ -144,7 +144,7 @@ export async function collect({ env = process.env, home, now = Date.now(), onPro
   const { days, parsed, facts } = rolloutDays(files, joinPath(home, 'cache', `${BRAND_ID}-rollouts.json`), onProgress);
   const { rows, note } = await threadRows(dir);
   const ledgerPath = join(home, `${BRAND_ID}.ledger.json`);
-  const ledger = mergeLedger(readJSON(ledgerPath), mergeDays(days, aggregateDays([], rows)));
+  const ledger = mergeLedger(readLedger(ledgerPath), mergeDays(days, aggregateDays([], rows)));
   if (!files.length && !rows.length && !Object.keys(ledger.days).length) return null;
   const progress = computeProgress(ledger, badges, localDate(now));
   const data = saveBrand(home, BRAND_ID, ledger, progress, { turnsField: TURNS_FIELD });

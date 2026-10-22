@@ -20,7 +20,7 @@ import {
   modelFamily,
 } from '../data/claude-code-metrics.js';
 import { localDate } from '../data/metrics-common.js';
-import { hash, readJSON, saveBrand } from './common.js';
+import { hash, readJSON, readLedger, saveBrand } from './common.js';
 
 export const BRAND_ID = 'claude-code';
 /** 账本里「对话轮数」的字段名。 */
@@ -87,7 +87,7 @@ export async function collect({ env = process.env, home, now = Date.now() } = {}
   const stats = readJSON(join(dir, 'stats-cache.json'));
   const statsFirst = typeof stats?.firstSessionDate === 'string' ? localDate(Date.parse(stats.firstSessionDate)) : null;
   const ledgerPath = join(home, `${BRAND_ID}.ledger.json`);
-  const ledger = mergeLedger(readJSON(ledgerPath), aggregateDays(facts), {
+  const ledger = mergeLedger(readLedger(ledgerPath), aggregateDays(facts), {
     statsDays: daysFromStatsCache(stats),
     firstSeen: statsFirst,
     undatedModels: Object.keys(stats?.modelUsage ?? {}).map(modelFamily).filter(Boolean),

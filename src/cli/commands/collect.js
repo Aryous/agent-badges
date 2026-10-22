@@ -15,13 +15,34 @@ export async function collectAndReport(opts) {
         if (done === total) process.stderr.write('\r\x1b[K');
       }
     : null;
-  // 先记下上次的进度，采集完对比出「新解锁」
-  const { dataHome, readJSON } = await import('../../collect/common.js');
-  const before = Object.fromEntries(BRAND_IDS.map((id) => [id, readJSON(join(dataHome(), `${id}.json`))?.progress ?? null]));
+  // 先记下上次的进度，采集完对比出「新解锁」。进度文件只用于这个对比：坏了就当没有，采集后会重写
+  const { CorruptLedgerError, dataHome, readJSON } = await import('../../collect/common.js');
+  const before = {};
+  for (const id of BRAND_IDS) {
+    const p = join(dataHome(), `${id}.json`);
+    try {
+      before[id] = readJSON(p)?.progress ?? null;
+    } catch (e) {
+      if (!(e instanceof SyntaxError)) throw e;
+      console.error(t(`! ${p} 已损坏：这次不报告新解锁，采集后会重新生成`, `! ${p} is corrupt: new unlocks are not reported this time; it will be rewritten`));
+      before[id] = null;
+    }
+  }
   const { home, results } = await collectAll({ only: opts.brand, onProgress });
   const data = {};
   const summaries = [];
   for (const r of results) {
+    if (r.error instanceof CorruptLedgerError) {
+      const { path, backup } = r.error;
+      console.error(t(`× ${r.brandId} 的账本已损坏，这次没有采集，文件也没有改动：${path}`, `× ${r.brandId}: the ledger is corrupt, so this tool was skipped and the file was left untouched: ${path}`));
+      console.error(
+        backup
+          ? t(`  用上一版恢复：cp "${backup}" "${path}"`, `  Restore the previous version: cp "${backup}" "${path}"`)
+          : t('  没有备份。删掉这个文件会从现有记录重新统计，但工具已经清理掉的旧日子会丢失。', '  No backup exists. Deleting the file rebuilds it from the current logs, but days the tool has already cleaned up are lost.'),
+      );
+      process.exitCode = 1;
+      continue;
+    }
     if (r.error) {
       console.error(t(`× ${r.brandId} 采集失败：${r.error.message}`, `× ${r.brandId} failed: ${r.error.message}`));
       continue;
