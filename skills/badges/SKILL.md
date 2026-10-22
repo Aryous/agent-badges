@@ -23,10 +23,11 @@ Add `--brand claude-code` or `--brand codex` if the user only asks about one too
 - Requires Node.js 22.15 or later. If it fails with a Node version error, tell the user to upgrade Node and stop.
 - The first run reads all session logs and can take a minute on large Codex histories. Later runs are fast.
 - **Sandboxed agents (such as Codex):** the command needs network access (npx downloads the package) and writes its ledger to `~/.agent-badges`, outside the workspace. If the sandbox blocks it, request escalated permissions for this exact command and say why in one line; don't try workarounds.
-- Output is JSON: `{ home, brands: [{ id, brand, unlocked, total, newUnlocks, recent, nearMiss }] }`. A tool that isn't installed is simply absent.
+- Output is JSON: `{ home, brands: [{ id, brand, unlocked, total, newUnlocks, recent, nearMiss }], failed }`. A tool that isn't installed is simply absent.
   - `newUnlocks`: earned since the last run, `[{ id, title, earnedAt, tier?, upgrade? }]`. `upgrade: true` means a tiered badge moved up (for example bronze → silver). It is empty on the very first run.
   - `recent`: the three most recently earned badges, `[{ id, title, earnedAt }]`.
   - `nearMiss`: up to three badges closest to unlocking, `[{ id, title, current, target }]`.
+  - `failed`: ids of tools that couldn't be collected this run (for example a damaged ledger). Tell the user which tool and relay the message the command printed on stderr, including any restore command; don't run it for them.
 
 ## Report
 
@@ -69,6 +70,7 @@ If it stops:
 
 - **gh missing or not signed in:** tell the user to install the GitHub CLI (https://cli.github.com) and run `gh auth login` themselves (in Claude Code they can type `! gh auth login`). Don't try to work around it.
 - **Private repository, GitHub Pages publishing from elsewhere, or an existing `index.html`:** explain the message. Don't change their settings. Offer the image only instead (below).
+- **A tool couldn't be collected:** `card`, `shelf`, `profile` and `publish` refuse to run so a result missing that tool never replaces a complete one. Relay the message printed above it (it names the file and how to restore it) and let the user fix it first.
 - **Sandbox (Codex):** it needs the network, `gh`, git and a browser tab on 127.0.0.1. Request escalation for this exact command.
 
 Image only, no public page: `npx -y agent-badges@latest shelf --out <path>/agent-badges-shelf.png`. With no desktop browser (a remote machine), offer the numbers-only card: `npx -y agent-badges@latest card --out <path>/agent-badges-card.svg`. Ask the user where to save, and ask before committing or pushing anything.

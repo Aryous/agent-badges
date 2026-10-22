@@ -1,4 +1,4 @@
-// collect 命令：采集并在终端打印汇总，返回各工具的数据。
+// collect 命令：采集并在终端打印汇总，返回各工具的数据和这次采集失败的工具。
 import { join } from 'node:path';
 import { BRAND_IDS } from '../../brands/index.js';
 import { lang, t } from '../i18n.js';
@@ -31,6 +31,7 @@ export async function collectAndReport(opts) {
   const { home, results } = await collectAll({ only: opts.brand, onProgress });
   const data = {};
   const summaries = [];
+  const failed = [];
   for (const r of results) {
     if (r.error instanceof CorruptLedgerError) {
       const { path, backup } = r.error;
@@ -41,10 +42,12 @@ export async function collectAndReport(opts) {
           : t('  没有备份。删掉这个文件会从现有记录重新统计，但工具已经清理掉的旧日子会丢失。', '  No backup exists. Deleting the file rebuilds it from the current logs, but days the tool has already cleaned up are lost.'),
       );
       process.exitCode = 1;
+      failed.push(r.brandId);
       continue;
     }
     if (r.error) {
       console.error(t(`× ${r.brandId} 采集失败：${r.error.message}`, `× ${r.brandId} failed: ${r.error.message}`));
+      failed.push(r.brandId);
       continue;
     }
     if (r.skipped) {
@@ -60,7 +63,7 @@ export async function collectAndReport(opts) {
       if (r.note) console.log(`  ${r.note}`);
     }
   }
-  if (opts.json) console.log(JSON.stringify({ home, brands: summaries }, null, 2));
+  if (opts.json) console.log(JSON.stringify({ home, brands: summaries, failed }, null, 2));
   else console.log(t(`\n数据保存在 ${home}（只含数字、日期和哈希）`, `\nSaved to ${home} (numbers, dates and hashes only)`));
-  return data;
+  return { data, failed };
 }

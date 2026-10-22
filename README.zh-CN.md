@@ -160,13 +160,15 @@ npx agent-badges collect --json --lang zh
       "recent": [{ "id": "anniversary", "title": "一周年", "earnedAt": "2026-03-02" }],
       "nearMiss": [{ "id": "tokens", "title": "Token 里程碑", "current": 48000000, "target": 100000000 }]
     }
-  ]
+  ],
+  "failed": []
 }
 ```
 
 - `newUnlocks`：上次运行以来新拿到的徽章，第一次运行时为空。分级徽章会带上 `tier`：`bronze`、`silver`、`gold`、`platinum`，到了最高一级则是抽到的那一款（`ivory-gold`、`onyx-gold`、`sapphire`）；升级时 `upgrade` 为 `true`。
 - `recent`：最近拿到的三枚。
 - `nearMiss`：离解锁最近的几枚，最多三枚。
+- `failed`：这次没有采集成功的工具 id（比如账本损坏），一切正常时为空。原因会打印在 stderr。
 - 本机没装的工具不会出现在结果里。加 `--brand codex` 只看一个工具，加 `--lang en` 输出英文名称。
 
 ## 放到 GitHub 个人主页
@@ -192,7 +194,7 @@ npx agent-badges publish --lang zh
 
 **会公开哪些内容：** 已解锁的徽章和等级、解锁进度和日期，以及每天的 Token 用量和对话轮数（用来画热力图）。页面上看不到的东西不会放进去：没解锁的隐藏徽章不放，更新时间只精确到日期，详细账本（几点在用、调用了哪些工具、用了哪些模型）不会离开你的电脑。注意，旧版本会一直留在仓库的 git 历史里。
 
-遇到这几种情况，它会停下来提醒你，不做任何改动：主页仓库是私有的；GitHub Pages 已经设成从别处发布；仓库根目录里已经有一个不是由它生成的 `index.html`。
+遇到这几种情况，它会停下来提醒你，不做任何改动：主页仓库是私有的；GitHub Pages 已经设成从别处发布；仓库根目录里已经有一个不是由它生成的 `index.html`；这次有工具的数据没有采集成功（会说明原因。`card`、`shelf`、`profile` 也一样会停下，缺了一个工具的徽章图不会替换掉完整的）。
 
 想自己管理仓库的话，用 `npx agent-badges profile 路径/<用户名>`：只把徽章图和网页写进这个目录，再打印出要加到 README 里的那一行，不会替你提交。
 

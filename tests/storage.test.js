@@ -41,6 +41,30 @@ function fakeClaude() {
   return { CLAUDE_CONFIG_DIR: join(root, 'claude'), CODEX_HOME: join(root, 'no-codex'), AGENT_BADGES_HOME: join(root, 'home') };
 }
 
+/** 伪造一个最小的 ~/.codex：一个会话，一轮任务。返回目录。 */
+function fakeCodex() {
+  const day = join(root, 'codex', 'sessions', '2026', '05', '02');
+  mkdirSync(day, { recursive: true });
+  realFs.writeFileSync(
+    join(day, 'rollout-a.jsonl'),
+    [
+      { type: 'session_meta', timestamp: iso(9), payload: { source: 'cli' } },
+      { type: 'event_msg', timestamp: iso(9, 1), payload: { type: 'task_started' } },
+    ].map((r) => JSON.stringify(r)).join('\n') + '\n',
+  );
+  return join(root, 'codex');
+}
+
+/** 运行 fn，返回它抛出的错误；没有抛出就让测试失败。 */
+function thrownBy(fn) {
+  try {
+    fn();
+  } catch (e) {
+    return e;
+  }
+  throw new Error('预期会抛出错误，但没有抛出');
+}
+
 describe('写入', () => {
   it('写完不留临时文件，内容完整', () => {
     const p = join(root, 'a', 'x.json');
@@ -76,19 +100,12 @@ describe('读到损坏的文件', () => {
   it('账本：抛出 CorruptLedgerError，带上路径和备份', () => {
     const p = join(root, 'x.ledger.json');
     realFs.writeFileSync(p, '{"version":1,"da');
-    expect(() => readLedger(p)).toThrow(CorruptLedgerError);
-    try {
-      readLedger(p);
-    } catch (e) {
-      expect(e.path).toBe(p);
-      expect(e.backup).toBeNull();
-    }
+    const noBackup = thrownBy(() => readLedger(p));
+    expect(noBackup).toBeInstanceOf(CorruptLedgerError);
+    expect(noBackup.path).toBe(p);
+    expect(noBackup.backup).toBeNull();
     realFs.writeFileSync(`${p}.bak`, '{}');
-    try {
-      readLedger(p);
-    } catch (e) {
-      expect(e.backup).toBe(`${p}.bak`);
-    }
+    expect(thrownBy(() => readLedger(p)).backup).toBe(`${p}.bak`);
   });
 
   it('缓存：当作不存在', () => {
@@ -111,7 +128,16 @@ describe('读到损坏的文件', () => {
 });
 
 describe('命令行', () => {
-  const run = (env) => spawnSync(process.execPath, ['bin/agent-badges.mjs', 'collect'], { env: { ...env, LANG: 'en_US.UTF-8', PATH: process.env.PATH }, encoding: 'utf8' });
+  const run = (env, args = ['collect']) => spawnSync(process.execPath, ['bin/agent-badges.mjs', ...args], { env: { ...env, LANG: 'en_US.UTF-8', PATH: process.env.PATH }, encoding: 'utf8' });
+  /** 伪造的 Claude Code 加上一个损坏的账本（旁边有 .bak），返回环境变量和账本路径。 */
+  const corruptClaude = () => {
+    const env = fakeClaude();
+    const p = join(env.AGENT_BADGES_HOME, 'claude-code.ledger.json');
+    mkdirSync(env.AGENT_BADGES_HOME, { recursive: true });
+    realFs.writeFileSync(p, '{"version":1,"da');
+    realFs.writeFileSync(`${p}.bak`, '{"version":1,"firstSeen":null,"days":{}}');
+    return { env, p };
+  };
 
   it('进度文件损坏：提示是哪个文件，照常采集并重写它，退出码 0', () => {
     const env = fakeClaude();
@@ -125,11 +151,7 @@ describe('命令行', () => {
   });
 
   it('账本损坏：提示路径和从 .bak 恢复的命令，退出码非零', () => {
-    const env = fakeClaude();
-    const p = join(env.AGENT_BADGES_HOME, 'claude-code.ledger.json');
-    mkdirSync(env.AGENT_BADGES_HOME, { recursive: true });
-    realFs.writeFileSync(p, '{"version":1,"da');
-    realFs.writeFileSync(`${p}.bak`, '{"version":1,"firstSeen":null,"days":{}}');
+    const { env, p } = corruptClaude();
     const r = run(env);
     expect(r.status).not.toBe(0);
     expect(r.stderr).toContain(p);
@@ -137,17 +159,30 @@ describe('命令行', () => {
     expect(readFileSync(p, 'utf8')).toBe('{"version":1,"da');
   });
 
+  it('有工具采集失败：card 不生成缺了这个工具的卡片，说明是哪个工具，退出码非零', () => {
+    const { env, p } = corruptClaude();
+    const out = join(root, 'card.svg');
+    // Codex 照常采集成功：不拦下来的话，会生成一张只有 Codex 的卡片
+    const r = run({ ...env, CODEX_HOME: fakeCodex() }, ['card', '--out', out]);
+    expect(r.status).not.toBe(0);
+    expect(existsSync(out)).toBe(false);
+    expect(r.stderr).toContain(`cp "${p}.bak" "${p}"`);
+    expect(r.stderr).toContain('claude-code could not be collected');
+    expect(r.stderr).toContain('run again');
+    expect(r.stdout).not.toContain('Card saved');
+  });
+
+  it('collect --json：failed 列出采集失败的工具，没失败时是空数组', () => {
+    const { env } = corruptClaude();
+    const bad = run(env, ['collect', '--json']);
+    expect(JSON.parse(bad.stdout).failed).toEqual(['claude-code']);
+    const ok = run({ ...env, AGENT_BADGES_HOME: join(root, 'home-ok') }, ['collect', '--json']);
+    expect(ok.status).toBe(0);
+    expect(JSON.parse(ok.stdout).failed).toEqual([]);
+  });
+
   it('Codex 缓存损坏：当作空缓存重新解析，采集成功', () => {
-    const env = { ...fakeClaude(), CODEX_HOME: join(root, 'codex') };
-    const day = join(root, 'codex', 'sessions', '2026', '05', '02');
-    mkdirSync(day, { recursive: true });
-    realFs.writeFileSync(
-      join(day, 'rollout-a.jsonl'),
-      [
-        { type: 'session_meta', timestamp: iso(9), payload: { source: 'cli' } },
-        { type: 'event_msg', timestamp: iso(9, 1), payload: { type: 'task_started' } },
-      ].map((r) => JSON.stringify(r)).join('\n') + '\n',
-    );
+    const env = { ...fakeClaude(), CODEX_HOME: fakeCodex() };
     mkdirSync(join(env.AGENT_BADGES_HOME, 'cache'), { recursive: true });
     realFs.writeFileSync(join(env.AGENT_BADGES_HOME, 'cache', 'codex-rollouts.json'), '{"version":4,"fi');
     const r = run(env);

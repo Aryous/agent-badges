@@ -3,6 +3,10 @@
 import { HELP, parseArgs } from './args.js';
 import { pkg } from './paths.js';
 import { checkRuntime } from './runtime.js';
+import { t } from './i18n.js';
+
+// 这几个命令生成要分享出去的东西：有工具没采集成功时不运行，免得用缺了一个工具的结果覆盖完整的
+const SHARING = ['card', 'shelf', 'profile', 'publish'];
 
 export async function main(argv = process.argv.slice(2)) {
   const opts = parseArgs(argv);
@@ -11,8 +15,12 @@ export async function main(argv = process.argv.slice(2)) {
   await checkRuntime();
 
   const { collectAndReport } = await import('./commands/collect.js');
-  const data = await collectAndReport(opts);
+  const { data, failed } = await collectAndReport(opts);
   if (opts.command === 'collect') return;
+  if (failed.length && SHARING.includes(opts.command)) {
+    const ids = failed.join(', ');
+    throw new Error(t(`\n已停止：${ids} 没有采集成功，${opts.command} 会缺少它的数据。先解决上面提示的问题，再重新运行。`, `\nStopped: ${ids} could not be collected, and ${opts.command} would leave ${failed.length > 1 ? 'them' : 'it'} out. Fix the problem shown above and run again.`));
+  }
   if (opts.command === 'card') return (await import('./commands/card.js')).writeCard(data, opts);
   if (opts.command === 'shelf') return (await import('./commands/shelf.js')).writeShelf(data, opts);
   if (opts.command === 'profile') return (await import('./commands/profile.js')).writeProfile(data, opts);

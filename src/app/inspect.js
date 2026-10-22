@@ -18,6 +18,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
   let mode = 'wall';
   let awardRunning = false;
   let closeTimer = null;
+  let closing = null; // 正在播关闭动画的那一枚，动画结束后移出场景
   let onClosed = []; // whenClosed 的等待者，完全关上（徽章移出场景）时放行
 
   async function runAward() {
@@ -90,6 +91,12 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
   function open(item, { award = true, viaKeyboard = false } = {}) {
     if (mode === 'inspect' && inspector.current === item) return;
     clearTimeout(closeTimer);
+    // 关闭动画没播完就打开了另一枚：上一枚的收尾被取消了，现在补上
+    if (closing && closing !== item) {
+      stage.scene.remove(closing.holder);
+      setEngravingSize(closing.badge, 0);
+    }
+    closing = null;
     if (inspector.current && inspector.current !== item) {
       stage.scene.remove(inspector.current.holder);
       setEngravingSize(inspector.current.badge, 0);
@@ -135,7 +142,9 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     exportPanel.set(false);
     document.body.classList.remove('is-inspecting');
     history.replaceState(null, '', location.pathname + location.search);
+    closing = item;
     closeTimer = setTimeout(() => {
+      closing = null;
       overlay.hidden = true;
       if (item) {
         stage.scene.remove(item.holder);

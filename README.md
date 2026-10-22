@@ -160,13 +160,15 @@ npx agent-badges collect --json --lang en
       "recent": [{ "id": "anniversary", "title": "One Year", "earnedAt": "2026-03-02" }],
       "nearMiss": [{ "id": "tokens", "title": "100M Tokens", "current": 48000000, "target": 100000000 }]
     }
-  ]
+  ],
+  "failed": []
 }
 ```
 
 - `newUnlocks`: badges earned since the previous run, empty on the first run. Tiered badges also carry `tier` (`bronze`, `silver`, `gold`, `platinum`, or at the top tier the design you got: `ivory-gold`, `onyx-gold`, `sapphire`) and `upgrade: true` when they moved up a tier.
 - `recent`: the three most recently earned badges.
 - `nearMiss`: up to three badges closest to unlocking.
+- `failed`: ids of tools whose stats couldn't be collected this run (for example a damaged ledger), empty when all went well. The reason is printed on stderr.
 - A tool that isn't installed is left out. Use `--brand codex` for one tool and `--lang zh` for Chinese titles.
 
 ## Show it on your GitHub profile
@@ -192,7 +194,7 @@ Run it again whenever you want to refresh your badges. It keeps its own copy of 
 
 **What becomes public:** your unlocked badges and tiers, badge progress and unlock dates, and your daily token counts and turns (the heatmap). The page embeds only what it shows: locked hidden badges are left out, the update time is just a date, and the detailed ledger (hours of the day, tool calls, model names) never leaves your machine. Old versions stay in the repository's git history.
 
-It stops and tells you, without changing anything, if your profile repository is private, GitHub Pages already publishes from somewhere else, or the repository root has an `index.html` it didn't write.
+It stops and tells you, without changing anything, if your profile repository is private, GitHub Pages already publishes from somewhere else, the repository root has an `index.html` it didn't write, or a tool's stats couldn't be collected this run (it says why; `card`, `shelf` and `profile` stop the same way, so a badge image missing a tool never replaces a complete one).
 
 To manage the repository yourself, `npx agent-badges profile path/to/<you>` only writes the image and the page into that folder and prints the README line. Nothing is committed for you.
 
