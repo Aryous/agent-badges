@@ -19,14 +19,16 @@ npm run check:pack       # pack, install into a temp folder, and run the CLI
 npm run check:shelf      # shelf / profile end to end with fake logs (run build first)
 ```
 
+Contract tests only look at files tracked by git, so `git add` new files before running `npm test`.
+
 Browser checks:
 
 - `npm run check:browser` drives the app in a real browser on sample data: every badge on both walls gets a thumbnail, plus drag snapping, PNG export, the profile view and phone layout, with no console errors. It saves screenshots of the walls, not of every badge (use `peek.mjs` for those). Start the dev server on port 5199 first: `npx vite --port 5199`.
 - `npm run check:site` checks the built site (run `npm run build:site` first; it serves `dist-site/` itself).
 - `node scripts/assets.mjs` regenerates the README and landing-page images from sample data (dev server on 5199).
-- `node scripts/visual.mjs capture <dir>` saves every badge image the app renders (studio, wall thumbnails, shelf, landing gallery, promo wall). Capture before and after a refactor, then `node scripts/visual.mjs compare <before> <after>`: any differing pixel fails. Needs the dev server on 5199; sample data follows today's date, so capture both on the same day.
+- `node scripts/visual.mjs capture <dir>` saves every badge image the app renders (studio, wall thumbnails, shelf, landing gallery). Capture before and after a refactor, then `node scripts/visual.mjs compare <before> <after>`: any differing pixel fails. Needs the dev server on 5199; sample data follows today's date, so capture both on the same day.
 
-Useful URL parameters on the wall: `?source=mock` (sample data), `?lang=en|zh`, `?brand=codex`, `#<badge-id>` (open a badge), `?preview=unlocked&tier=2` (preview every badge unlocked at a given tier). Dev-only pages: `/tools/studio.html` (asset studio) and `/tools/promo.html` (promo animation).
+Useful URL parameters on the wall: `?source=mock` (sample data), `?lang=en|zh`, `?brand=codex`, `#<badge-id>` (open a badge), `?preview=unlocked&tier=2` (preview every badge unlocked at a given tier). Dev-only page: `/tools/studio.html` (asset studio).
 
 ## Project layout
 
@@ -44,8 +46,8 @@ src/
 ├─ site/      landing page
 └─ project/   the Agent Badges logo and the asset studio
 bin/          the CLI entry (thin wrapper around src/cli/main.js)
-tools/        dev-only pages: studio.html, promo.html, promo/
-scripts/      build, check, screenshot, asset and promo scripts
+tools/        dev-only pages: studio.html
+scripts/      build, check, screenshot and asset scripts
 tests/        Vitest suites, including contracts.test.js and docs.test.js
 skills/       the user-facing agent skill, shipped with the plugin
 .agents/skills/              contributor skills for this repo (add-badge); .claude/skills/ links here
@@ -73,7 +75,7 @@ The [`add-badge` skill](.agents/skills/add-badge/SKILL.md) walks through this st
 src/brands/
 ├─ shared/        layout.js (round medal, text ring, medallion), parts.js (terminal, fireworks,
 │                 lantern, calendar…), top-tier.js (the three top-tier designs), pixel-art.js, text.js,
-│                 showcase.js (display states for the landing page, studio and promo)
+│                 showcase.js (display states for the landing page and studio)
 ├─ claude-code/   brand.js (palette), mascot.js (the pixel mascot), app-icon.js (feature family),
 │                 medal.js, milestones/ habits/ features/ limited/
 └─ codex/         brand.js, mark.js (the Codex mark), feature-frame.js, medal.js, the same four series

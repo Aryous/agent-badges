@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { BRANDS } from '../src/brands/index.js';
-import { SHOWCASE_DATE, filledState, peakState, surpriseKeptState } from '../src/brands/shared/showcase.js';
+import { SHOWCASE_DATE, peakState, surpriseKeptState } from '../src/brands/shared/showcase.js';
 
-// 三套展示用状态，期望值照抄自原来 src/site/main.js、src/project/studio.js、tools/promo/main.js 里手写的规则
+// 两套展示用状态，期望值照抄自原来 src/site/main.js、src/project/studio.js 里手写的规则
 const all = BRANDS.flatMap((b) => b.badges);
 const hidden = all.find((c) => c.hidden);
 const plain = all.find((c) => !c.hidden && !c.tiers);
@@ -34,24 +34,5 @@ describe('surpriseKeptState（studio 素材）', () => {
   });
   it('隐藏徽章：在示例数据上改成未解锁', () => {
     expect(surpriseKeptState(hidden, base)).toEqual({ ...base, unlocked: false, earnedAt: null, tier: null });
-  });
-});
-
-describe('filledState（宣传片）', () => {
-  it('默认最高一级，进度按这一级的门槛填满', () => {
-    const top = surprise.tiers.length - 1;
-    const value = surprise.tiers[top].threshold;
-    expect(filledState(surprise)).toEqual({ unlocked: true, earnedAt: '2026-05-02', tier: top, value, progress: { current: value, target: value } });
-  });
-  it('可以指定等级', () => {
-    const value = surprise.tiers[1].threshold;
-    expect(filledState(surprise, 1)).toEqual({ unlocked: true, earnedAt: '2026-05-02', tier: 1, value, progress: { current: value, target: value } });
-  });
-  it('可以指定第 0 级', () => {
-    const value = surprise.tiers[0].threshold;
-    expect(filledState(surprise, 0)).toEqual({ unlocked: true, earnedAt: '2026-05-02', tier: 0, value, progress: { current: value, target: value } });
-  });
-  it('普通徽章进度是 1 / 1', () => {
-    expect(filledState(plain)).toEqual({ unlocked: true, earnedAt: '2026-05-02', tier: null, value: 1, progress: { current: 1, target: 1 } });
   });
 });

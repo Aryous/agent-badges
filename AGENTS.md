@@ -34,8 +34,8 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 | `src/styles/` | Wall CSS by component; `src/style.css` `@import`s them in order | CSS only |
 | `src/main.js`, `src/style.css` | Wall page composer and the CSS entry | anything (entry layer) |
 | `bin/` | `agent-badges.mjs`, a thin entry into `src/cli/main.js` (relative imports only into `src/cli/`, guarded) | cli |
-| `tools/` | Dev-only pages: `studio.html`, `promo.html`, `promo/` | anything (entry layer) |
-| `scripts/` | Build, check, screenshot, asset and promo scripts (`*.mjs`, run by hand or npm scripts) | anything |
+| `tools/` | Dev-only pages: `studio.html` (asset studio) | anything (entry layer) |
+| `scripts/` | Build, check, screenshot and asset scripts (`*.mjs`, run by hand or npm scripts) | anything |
 | `skills/` | The user-facing `badges` skill, shipped with the plugin. Don't move it | — |
 | `.agents/skills/` | Contributor skills for this repo (`add-badge`); `.claude/skills/` links here | — |
 | `.claude-plugin/`, `plugin.json`, `.agents/plugins/` | Claude Code and Codex plugin manifests and marketplaces. Don't move them | — |
@@ -44,7 +44,7 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 
 1. One tool list: `src/brands/index.js`. `COLLECTORS`, `DATA_SOURCES` and `BRAND_INFO` have exactly the same ids; every brand has `launchDate`; every collector exports `TURNS_FIELD` — `tests/contracts.test.js`
 2. No hand-written tool ids (`'claude-code'`, `'codex'`) in `src/`, `bin/`, `vite.config.js` outside tool-specific files (`brands/<id>/`, `collect/<id>.js`, `data/<id>-metrics.js`, `data/mock-<id>.js`, `brands/index.js`) and files marked `// showcase` — `tests/contracts.test.js`
-3. Showcase lists (`{ brand, id }` in site, promo, `scripts/`) name badges that exist — `tests/contracts.test.js`
+3. Showcase lists (`{ brand, id }` in the site and `scripts/`) name badges that exist — `tests/contracts.test.js`
 4. Every badge has exactly one rule: `Object.keys(RULES)` equals the brand's badge ids, and `computeProgress` handles an empty ledger — `tests/contracts.test.js`
 5. Thresholds live only in the badge config (`criteria.target` / `tiers`). Rules read them; unlocking follows the config; the zh and en descriptions state the configured number — `tests/contracts.test.js`
 6. `criteria` is `{ target, unit?, dynamic? }` for one-time badges; tiered badges have no `criteria` — `tests/contracts.test.js`, `tests/validate.test.js`
@@ -59,7 +59,7 @@ Docs and code are one thing: every contract below is enforced by a test. If you 
 15. `src/collect/` has no `console.` and no i18n import; `bin/` imports only `src/cli/` — `tests/contracts.test.js`
 16. Docs match the code: this Map lists every `src/` dir, cited tests exist, README badge counts (the exact count sentence), tool birthdays and `tier` values match the registry, and README anchors linked from the READMEs, landing page and skill exist — `tests/docs.test.js`
 17. Badges with the same outline share body geometry. Shared geometry and textures carry `userData.shared`; free a badge only with `disposeBadge` (`src/engine/badge.js`), which keeps shared resources — `tests/badge.test.js`
-18. Badge images are made through `createBadgeRenderer` (`src/viewer/badge-renderer.js`); the only other `renderBadgePNG` caller is the export panel, which captures the badge being inspected — `tests/contracts.test.js`. The display states for the landing page, studio and promo are `peakState` / `surpriseKeptState` / `filledState` in `src/brands/shared/showcase.js` (unrelated to the `// showcase` file marker in contract 2) — `tests/showcase.test.js`
+18. Badge images are made through `createBadgeRenderer` (`src/viewer/badge-renderer.js`); the only other `renderBadgePNG` caller is the export panel, which captures the badge being inspected — `tests/contracts.test.js`. The display states for the landing page and studio are `peakState` / `surpriseKeptState` in `src/brands/shared/showcase.js` (unrelated to the `// showcase` file marker in contract 2) — `tests/showcase.test.js`
 
 ## Workflows
 

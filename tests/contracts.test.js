@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BRANDS, BRAND_IDS, brandById } from '../src/brands/index.js';
@@ -16,15 +17,12 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sorted = (a) => [...a].sort();
 const read = (f) => readFileSync(join(root, f), 'utf8');
 
-function filesUnder(dir) {
-  const out = [];
-  for (const name of readdirSync(join(root, dir))) {
-    const rel = join(dir, name);
-    if (statSync(join(root, rel)).isDirectory()) out.push(...filesUnder(rel));
-    else if (/\.(m?js)$/.test(name)) out.push(rel);
-  }
-  return out;
-}
+// 只看被 git 跟踪的文件：本机没提交的文件（例如宣传片）不影响结果，本机和 CI 看到的一样。
+// 新建的文件要先 git add，这里才看得到；已删除但还没提交删除的文件跳过。
+const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
+  .split('\0')
+  .filter((f) => f && existsSync(join(root, f)));
+const filesUnder = (dir) => tracked.filter((f) => f.startsWith(`${dir}/`) && /\.m?js$/.test(f));
 
 const importsOf = (file) =>
   [

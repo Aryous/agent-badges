@@ -1,14 +1,10 @@
 // 展示用的徽章状态：不看真实进度，只是把徽章摆出来给人看。
-// 三个地方的规则不同，各有名字，统一放在这里，调用处不要再手写一份：
+// 两个地方的规则不同，各有名字，统一放在这里，调用处不要再手写一份：
 //   peakState          落地页画廊和首屏：分级徽章看最高一级（顶级彩蛋取第 0 款），隐藏徽章保持神秘
 //   surpriseKeptState  README 素材（tools/studio.html）：最高一级是随机彩蛋时展示它下面一级，留住惊喜
-//   filledState        宣传片：指定等级（默认最高一级），进度按这一级的门槛填满
 
 /** 落地页和素材上显示的获得日期。 */
 export const SHOWCASE_DATE = '2026-10-24';
-
-/** 宣传片里的获得日期。 */
-const PROMO_DATE = '2026-05-02';
 
 const topTier = (tiers) => tiers.length - 1;
 
@@ -28,11 +24,4 @@ export function surpriseKeptState(config, base) {
   const { tiers } = config;
   const tier = tiers ? (tiers.at(-1).variants ? topTier(tiers) - 1 : topTier(tiers)) : null;
   return { ...base, unlocked: true, earnedAt: base.earnedAt ?? SHOWCASE_DATE, tier };
-}
-
-/** 宣传片：指定等级（默认最高一级），进度按这一级的门槛填满。宣传片不放隐藏徽章，这里不处理。 */
-export function filledState(config, tier) {
-  const t = config.tiers ? (tier ?? topTier(config.tiers)) : null;
-  const value = config.tiers ? config.tiers[t].threshold : 1;
-  return { unlocked: true, earnedAt: PROMO_DATE, tier: t, value, progress: { current: value, target: value } };
 }

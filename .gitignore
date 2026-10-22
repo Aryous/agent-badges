@@ -6,3 +6,9 @@ screenshots/
 src/data/generated/
 dist-site/
 promo-out/
+
+# 宣传片只在本机制作，不进仓库（输出在 promo-out/）
+tools/promo.html
+tools/promo/
+scripts/promo.mjs
+scripts/promo-audio.mjs

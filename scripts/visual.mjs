@@ -2,7 +2,7 @@
 // 用法：
 //   node scripts/visual.mjs capture <目录>           需要开发服务器：npx vite --port 5199
 //   node scripts/visual.mjs compare <基线目录> <新目录>  有任何一个像素不同就以退出码 1 结束
-// 拍什么：studio 渲染的每枚徽章（正面、斜角；分级徽章另拍最高一级）、陈列墙缩略图、主页图、落地页画廊、宣传片的徽章墙。
+// 拍什么：studio 渲染的每枚徽章（正面、斜角；分级徽章另拍最高一级）、陈列墙缩略图、主页图、落地页画廊。
 // 示例数据的日期跟着当天走：基线和改动后要在同一天拍。
 import { chromium } from 'playwright-core';
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -80,13 +80,6 @@ async function capture() {
     n += items.length;
   }
   await site.close();
-
-  // 宣传片的徽章墙
-  const promo = await open('/tools/promo.html?aspect=16x9&lang=en', () => window.__promo?.ready);
-  const walls = await promo.evaluate(() => [...document.querySelectorAll('#wall img')].map((img) => img.src));
-  walls.forEach((src, i) => save(`promo--wall--${String(i).padStart(2, '0')}`, src));
-  n += walls.length;
-  await promo.close();
 
   console.log(`${n} 张 → ${dirA}`);
 }
