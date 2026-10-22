@@ -84,7 +84,7 @@ export default {
     'agent.chat.a': 'New since last time: <b>Bash Maniac</b>.<br />Claude Code: 27 / 32 unlocked.<br />Almost there: MCP Connector 2 / 3 · Subagent Commander 3 / 5 · 10B Tokens 4.8B / 10B.<br /><br /><span class="chat-offer">Want me to open the 3D badge wall, or make a card for your GitHub profile?</span>',
     'agent.claude.note': 'Then just ask, or run <code>/agent-badges:badges</code>. The skill pre-approves only read-only commands; publishing to your profile asks first.',
     'agent.codex.note': 'Start a new session, then ask, or type <code>$</code> and pick <code>agent-badges:badges</code>. Commands run in Codex\'s sandbox, so it usually asks you to approve.',
-    'agent.more': 'Other agents: the skill is a standard <a href="https://agentskills.io">Agent Skills</a> folder, <a href="https://github.com/Aryous/agent-badges/tree/main/skills/badges"><code>skills/badges</code></a>, or call <code>npx agent-badges collect --json</code> directly. <a href="https://github.com/Aryous/agent-badges#install">Full guide →</a>',
+    'agent.more': 'Other agents: the skill is a standard <a href="https://agentskills.io">Agent Skills</a> folder, <a href="https://github.com/Aryous/agent-badges/tree/main/skills/badges"><code>skills/badges</code></a>, or call <code>npx agent-badges collect --json</code> directly. <a href="https://github.com/Aryous/agent-badges#use-it-in-claude-code-and-codex">Full guide →</a>',
     'foot.disclaimer': 'Agent Badges is an open-source hobby project. It is not affiliated with or endorsed by Anthropic or OpenAI. Claude, Claude Code, Codex and related marks belong to their owners and are used here only to identify the tools each badge is for.',
     'foot.license': 'MIT License',
   },

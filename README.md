@@ -15,13 +15,15 @@
   <b>English</b> · <a href="README.zh-CN.md">简体中文</a> · <a href="https://aryous.github.io/agent-badges/">Website</a> · <a href="https://aryous.github.io/agent-badges/demo/">Live demo</a>
 </p>
 
-Turn your Claude Code and Codex history into collectible 3D achievement badges, Apple Watch style. Entirely on your machine, nothing uploaded.
+Turn your Claude Code and Codex history into collectible 3D achievement badges, Apple Watch style.
 
 ```bash
 npx agent-badges
 ```
 
-**Or ask your agent.** Install the [skill for Claude Code or Codex](#install), then say *"check my badges"*.
+One command opens your badge wall. Everything runs on your machine: it reads only timestamps and usage counts from your logs, never your conversations, and uploads nothing ([privacy details](#privacy)).
+
+**Or ask your agent.** [Install the skill](#use-it-in-claude-code-and-codex) in Claude Code or Codex, then say *"check my badges"*.
 
 <p align="center">
   <img src="assets/spin.gif" alt="Three badges spinning: Claude Code First Session, the Agent Badges logo, Codex First Thread" width="720" />
@@ -49,30 +51,47 @@ npx agent-badges
 
 ![All Codex badges](assets/gallery-codex.png)
 
-The two `???` in each row are hidden achievements. They reveal themselves when you earn them.
+Badges shown as `???` are hidden achievements. They reveal themselves when you earn them.
 
 </details>
 
-## Privacy
+## Quick start
 
-Agent Badges reads only metadata from the logs Claude Code and Codex already keep on your machine: timestamps, token counts, tool names. Your conversations, command arguments and file paths are dropped the moment a log line is parsed and never stored, and credential files are never opened. Nothing is uploaded unless you ask it to [publish to your GitHub profile](#show-it-on-your-github-profile).
+Requires **Node.js 22.15 or later** (it uses Node's built-in zstd and SQLite). Developed on macOS and tested on Linux in CI; Windows should work but hasn't been tried yet.
 
-The rules are strict and covered by tests:
+```bash
+npx agent-badges                    # collect local stats and open your badge wall
+npx agent-badges collect            # collect only, print a summary in the terminal
+npx agent-badges collect --json     # the same summary as JSON
+npx agent-badges export ./my-wall   # a static page you can open offline (contains your stats)
+npx agent-badges publish            # put your badges on your GitHub profile (asks first)
+npx agent-badges shelf              # your unlocked badges as a PNG for your GitHub profile
+npx agent-badges card               # an achievement card SVG for your GitHub profile
+```
 
-- **Local only.** It reads `~/.claude` and `~/.codex` and writes to `~/.agent-badges`. The page is served on `127.0.0.1`, so nothing else on your network can reach it. There are no network calls and no analytics.
-- **Metadata only.** Each log line is reduced to an allowlist of fields the moment it is parsed: timestamps, token counts, tool names, mode values. Prompts, code, tool inputs and outputs are dropped immediately and never stored. Names that could hint at what you work on (MCP server names, Codex model names) are hashed; Claude model names are reduced to the family (opus, sonnet, haiku, fable).
-- **Files it never opens.** Claude Code: `settings.json`, `.credentials.json`, MCP configs, `history.jsonl`, `shell-snapshots`, `session-env`, `paste-cache`, `file-history`. Codex: `auth.json`, `config.toml`, `*.env`, `history.jsonl`, `transcription-history.jsonl`, `thread_history*.sqlite`, `logs*.sqlite`, `memories*`, `shell_snapshots`, `chatgpt-meetings`.
-- **Codex thread index.** `state_*.sqlite` is opened read-only and only six columns are selected (created time, source, thread type, model, reasoning effort, approval mode). Titles, first messages, previews, paths, git info and account ids are never read.
-- **What is saved.** `~/.agent-badges` holds a per-day ledger of numbers, dates and hashes, so badges you earned stay earned even after the tools clean up old logs.
-- **Tested.** The test suite plants fake secrets, prompts, paths and thread titles in fake `~/.claude` and `~/.codex` folders, runs the real collector and export, and checks none of them appear in any output.
+| Option | |
+| --- | --- |
+| `--brand claude-code\|codex` | Only one tool |
+| `--port <n>` | Local page port (default 4747; the next free one if taken) |
+| `--no-open` | Don't open the browser |
+| `--json` | Print the summary as JSON (`collect`) |
+| `--lang en\|zh` | Language of the summary, the shelf and the card (the summary follows your system by default, the shelf and card default to English) |
+| `--out <file>` | Where `shelf` or `card` saves its file |
+| `--yes` | `publish`: go ahead without asking (only after you've seen the plan) |
+| `--name <name>` | Name on the card and the public badge wall (defaults to your GitHub username) |
+| `--theme dark\|light` | Card colors |
 
-The public demo and the npm package contain no personal data. Only `export`, `card`, `shelf` and `profile` write files about your usage, and only where you tell them to. `publish` and `profile` make a page meant to be public; see [what it contains](#show-it-on-your-github-profile).
+| Environment variable | Default |
+| --- | --- |
+| `AGENT_BADGES_HOME` | `~/.agent-badges` (where the ledger and cache live) |
+| `CLAUDE_CONFIG_DIR` | `~/.claude` |
+| `CODEX_HOME` | `~/.codex` |
 
-## Install
+The first run reads every session log you have, which can take a while if you have gigabytes of Codex history. Later runs only read new or changed files.
 
-The CLI itself needs no install: `npx agent-badges` runs it (see [Quick start](#quick-start)). Install the skill if you would rather ask your agent.
+## Use it in Claude Code and Codex
 
-Agent Badges comes with a skill for Claude Code and Codex. Ask in plain words, such as "check my badges", "what did I just unlock?" or "我的徽章". The agent runs the CLI on your machine and tells you what's new, your totals, and what you're closest to.
+With the skill installed, just ask in plain words: "check my badges", "what did I just unlock?", or "看看我的徽章". Your agent runs the CLI on your machine and tells you what's new, your totals, and which badges you're closest to.
 
 ```text
 > check my badges
@@ -113,21 +132,16 @@ Start a new Codex session afterwards so it picks up the skill.
 
 The skill is a plain [Agent Skills](https://agentskills.io) folder, [`skills/badges`](skills/badges). Copy it into any agent that reads `SKILL.md` files, or have your agent call the CLI directly and read its [JSON output](#json-output).
 
-### How it works
+### What the skill does
 
-| | Claude Code | Codex |
-| --- | --- | --- |
-| Use it | Ask about your badges, or run `/agent-badges:badges` | Ask about your badges, or type `$` and pick `agent-badges:badges` (`$badges` if you installed only the skill) |
-| What it runs | `npx -y agent-badges@latest collect --json` | The same |
-| Permissions | The skill pre-approves only read-only commands (`collect`, and `publish` without `--yes`). Anything that changes something, like publishing to your profile, asks you first. | Commands run in Codex's sandbox. npx needs the network and the CLI writes to `~/.agent-badges`, so Codex usually asks you to approve the command. |
-
-- The agent only reports what the CLI prints. It doesn't make up badges, dates or numbers.
-- Opening the badge wall, making a profile image and exporting a page are offered, never run without asking. The agent asks before committing or pushing your profile repository.
-- The skill always runs the latest version on npm, so new badges arrive without reinstalling anything.
+- **Calling it.** Just ask about your badges. To call it by hand, run `/agent-badges:badges` in Claude Code, or type `$` and pick `agent-badges:badges` in Codex (`$badges` if you installed only the skill).
+- **What it runs.** `npx -y agent-badges@latest collect --json`. It always uses the latest version on npm, so new badges arrive without reinstalling anything.
+- **Permissions.** In Claude Code the skill pre-approves only read-only commands (`collect`, and `publish` without `--yes`); anything that changes something still asks you first. In Codex, commands run in the sandbox; npx needs the network and the CLI writes to `~/.agent-badges`, so Codex usually asks you to approve the command.
+- **No guessing.** The agent only reports what the CLI prints and never makes up badges, dates or numbers. Opening the badge wall, making a profile image or exporting a page are offered, not done on its own, and it asks before committing or pushing your profile repository.
 
 ### JSON output
 
-For scripts, or agents without the skill:
+For scripts, or for agents without the skill:
 
 ```bash
 npx agent-badges collect --json --lang en
@@ -155,40 +169,6 @@ npx agent-badges collect --json --lang en
 - `nearMiss`: up to three badges closest to unlocking.
 - A tool that isn't installed is left out. Use `--brand codex` for one tool and `--lang zh` for Chinese titles.
 
-## Quick start
-
-Requires **Node.js 22.15 or later** (it uses Node's built-in zstd and SQLite). Developed on macOS and tested on Linux in CI; Windows should work but hasn't been tried yet.
-
-```bash
-npx agent-badges                    # collect local stats and open your badge wall
-npx agent-badges collect            # collect only, print a summary in the terminal
-npx agent-badges collect --json     # the same summary as JSON
-npx agent-badges export ./my-wall   # a static page you can open offline (contains your stats)
-npx agent-badges publish            # put your badges on your GitHub profile (asks first)
-npx agent-badges shelf              # your unlocked badges as a PNG for your GitHub profile
-npx agent-badges card               # an achievement card SVG for your GitHub profile
-```
-
-| Option | |
-| --- | --- |
-| `--brand claude-code\|codex` | Only one tool |
-| `--port <n>` | Local page port (default 4747; the next free one if taken) |
-| `--no-open` | Don't open the browser |
-| `--json` | Print the summary as JSON (`collect`) |
-| `--lang en\|zh` | Language of the summary, the shelf and the card (the summary follows your system by default, the shelf and card default to English) |
-| `--out <file>` | Where `shelf` or `card` saves its file |
-| `--yes` | `publish`: go ahead without asking (only after you've seen the plan) |
-| `--name <name>` | Name on the card and the public badge wall (defaults to your GitHub username) |
-| `--theme dark\|light` | Card colors |
-
-| Environment variable | Default |
-| --- | --- |
-| `AGENT_BADGES_HOME` | `~/.agent-badges` (where the ledger and cache live) |
-| `CLAUDE_CONFIG_DIR` | `~/.claude` |
-| `CODEX_HOME` | `~/.codex` |
-
-The first run reads every session log you have, which can take a while if you have gigabytes of Codex history. Later runs only read new or changed files.
-
 ## Show it on your GitHub profile
 
 Ask your agent to "put my badges on my GitHub profile", or run:
@@ -199,7 +179,7 @@ npx agent-badges publish
 
 Your profile shows a badge image, and clicking it opens your 3D badge wall on GitHub Pages. See it live: [github.com/Aryous](https://github.com/Aryous) → [aryous.github.io/Aryous](https://aryous.github.io/Aryous/).
 
-It first checks everything and prints a plan, then asks before changing anything. Once you say yes it:
+It checks everything and prints a plan first. Once you confirm, it:
 
 1. creates your profile repository (`<you>/<you>`, public) if you don't have one;
 2. renders your unlocked badges in a browser tab;
@@ -208,11 +188,11 @@ It first checks everything and prints a plan, then asks before changing anything
 
 Run it again whenever you want to refresh your badges. It keeps its own copy of the repository in `~/.agent-badges/profile/`, so you don't need to clone anything.
 
-**Needs** the [GitHub CLI](https://cli.github.com), signed in with `gh auth login`. It uses gh's credentials just for its own git commands and doesn't change your git settings.
+**Requires** the [GitHub CLI](https://cli.github.com), signed in with `gh auth login`. Pushes borrow gh's login; your git config is left alone.
 
 **What becomes public:** your unlocked badges and tiers, badge progress and unlock dates, and your daily token counts and turns (the heatmap). The page embeds only what it shows: locked hidden badges are left out, the update time is just a date, and the detailed ledger (hours of the day, tool calls, model names) never leaves your machine. Old versions stay in the repository's git history.
 
-It won't touch a private profile repository, GitHub Pages set to publish from somewhere else, or an `index.html` it didn't write. It stops and tells you instead.
+It stops and tells you, without changing anything, if your profile repository is private, GitHub Pages already publishes from somewhere else, or the repository root has an `index.html` it didn't write.
 
 To manage the repository yourself, `npx agent-badges profile path/to/<you>` only writes the image and the page into that folder and prints the README line. Nothing is committed for you.
 
@@ -222,7 +202,9 @@ To manage the repository yourself, `npx agent-badges profile path/to/<you>` only
 npx agent-badges shelf --out path/to/<you>/agent-badges-shelf.png
 ```
 
-The 3D badges are rendered with WebGL, so this opens a tab in your browser, renders every badge you have unlocked, hands two PNGs back to the terminal and exits: one for GitHub's dark theme and one for the light theme (`agent-badges-shelf-light.png`). Both have transparent backgrounds; only the text colors differ. It shows unlocked badges only, with names and tiers: no dates and no usage numbers. You can also make it from the **GitHub profile image** button on your badge wall.
+The 3D badges need WebGL, so this opens a browser tab, draws every badge you've unlocked and saves the result as PNGs. You get two: one for GitHub's dark theme and one for the light theme (`agent-badges-shelf-light.png`). Both have transparent backgrounds; only the text color differs. The image shows unlocked badges with their names and tiers, and no dates or usage numbers. The **GitHub profile image** button on your badge wall makes the same thing.
+
+Reference it like this so visitors see the version that matches their theme:
 
 ```html
 <picture>
@@ -241,8 +223,7 @@ The 3D badges are rendered with WebGL, so this opens a tab in your browser, rend
 npx agent-badges card --name "Your Name"
 ```
 
-This writes `agent-badges-card.svg`: unlock counts, totals, streaks and a grid of recent activity. It needs no browser, so it also works on a remote machine.
-
+This writes `agent-badges-card.svg`: unlock counts, totals, streaks and a grid of recent activity. The card contains numbers only, and it needs no browser, so it also works on a remote machine.
 
 ```markdown
 ![Agent Badges](./agent-badges-card.svg)
@@ -255,7 +236,18 @@ This writes `agent-badges-card.svg`: unlock counts, totals, streaks and a grid o
   </picture>
 </p>
 
-The card contains numbers only.
+## Privacy
+
+Agent Badges reads the logs Claude Code and Codex keep on your machine, so the rules are strict, and every one of them is covered by tests.
+
+- **Local only.** It reads `~/.claude` and `~/.codex` and writes to `~/.agent-badges`. The page is served on `127.0.0.1`, so nothing else on your network can reach it. There are no network calls and no analytics.
+- **Metadata only.** Each log line is reduced to an allowlist of fields the moment it is parsed: timestamps, token counts, tool names, mode values. Prompts, code, tool inputs and outputs are dropped immediately and never stored. Names that could hint at what you work on (MCP server names, Codex model names) are hashed; Claude model names are reduced to the family (opus, sonnet, haiku, fable).
+- **Files it never opens.** Claude Code: `settings.json`, `.credentials.json`, MCP configs, `history.jsonl`, `shell-snapshots`, `session-env`, `paste-cache`, `file-history`. Codex: `auth.json`, `config.toml`, `*.env`, `history.jsonl`, `transcription-history.jsonl`, `thread_history*.sqlite`, `logs*.sqlite`, `memories*`, `shell_snapshots`, `chatgpt-meetings`.
+- **Codex thread index.** `state_*.sqlite` is opened read-only and only six columns are selected (created time, source, thread type, model, reasoning effort, approval mode). Titles, first messages, previews, paths, git info and account ids are never read.
+- **What is saved.** `~/.agent-badges` holds a per-day ledger of numbers, dates and hashes, so badges you earned stay earned even after the tools clean up old logs.
+- **Tested.** The test suite plants fake secrets, prompts, paths and thread titles in fake `~/.claude` and `~/.codex` folders, runs the real collector and export, and checks none of them appear in any output.
+
+The public demo and the npm package contain no personal data. Only `export`, `card`, `shelf` and `profile` write files about your usage, and only where you tell them to. `publish` and `profile` make a page that is meant to be public; [Show it on your GitHub profile](#show-it-on-your-github-profile) lists exactly what it contains.
 
 ## How badges are counted
 
@@ -279,7 +271,7 @@ Badge definitions live in [`src/brands`](src/brands). Each tool's metrics are in
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Issues and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers the dev setup, the project layout, and how to add a badge or a tool.
 
 ## Credits
 
