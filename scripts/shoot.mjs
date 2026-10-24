@@ -402,6 +402,14 @@ async function session(viewport, tag) {
   check('主页徽章图面板有提示文字，可以下载', (await page.locator('[data-shelf-status]').textContent()).length > 0 && (await page.locator('[data-shelf-download]').isEnabled()));
   await page.keyboard.press('Escape');
   check('Esc 关闭主页徽章图', !(await page.locator('#shelf').isVisible()));
+  // 放在最后：铸币的 WebGL 上下文丢了，换回刻度环（读屏重新读得到下方的数字）
+  const lost = await page.evaluate(async () => {
+    const fig = document.querySelector('[data-coin]');
+    fig.querySelector('canvas').getContext('webgl2').getExtension('WEBGL_lose_context').loseContext();
+    await new Promise((r) => setTimeout(r, 300));
+    return { has: fig.classList.contains('has-coin'), canvasHidden: fig.querySelector('canvas').hidden, ticks: getComputedStyle(fig.querySelector('.profile-ticks')).display !== 'none', countHidden: fig.querySelector('.profile-count').getAttribute('aria-hidden') };
+  });
+  check('全解锁徽章的上下文丢了就换回刻度环', !lost.has && lost.canvasHidden && lost.ticks && lost.countHidden === null, JSON.stringify(lost));
   check('展示层控制台无报错', errors.length === 0, errors.join(' | '));
   await page.close();
 }

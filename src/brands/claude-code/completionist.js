@@ -25,8 +25,9 @@ function tiles() {
     const center = [(c - 7.5) * CELL + MOSAIC_CENTER[0], MOSAIC_CENTER[1] + (4.5 - r) * CELL];
     return {
       center,
-      lit: { kind: 'rounded-rect', half: CELL * 0.44, radius: CELL * 0.12, center: [0, 0], material: 'ceramic', color: 'primary', height: 0.05, bevel: 0.006, z: MEDALLION_H },
-      ghost: { kind: 'rounded-rect', half: CELL * 0.36, radius: CELL * 0.1, center, material: 'enamel', color: 'ghost', height: 0.008, bevel: 0.002, z: MEDALLION_H },
+      // 圆角只有几个像素，曲线 2–3 段就够（倒角保留默认的 4 段）
+      lit: { kind: 'rounded-rect', half: CELL * 0.44, radius: CELL * 0.12, center, material: 'ceramic', color: 'primary', height: 0.05, bevel: 0.006, z: MEDALLION_H, segments: { curve: 3 } },
+      ghost: { kind: 'rounded-rect', half: CELL * 0.36, radius: CELL * 0.1, center, material: 'enamel', color: 'ghost', height: 0.008, bevel: 0.002, z: MEDALLION_H, segments: { curve: 2 } },
     };
   });
 }

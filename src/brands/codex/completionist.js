@@ -1,6 +1,7 @@
 import brand from './brand.js';
 import { codexMark } from './mark.js';
 import { MEDALLION_H } from '../shared/layout.js';
+import { SMALL } from '../shared/completionist.js';
 
 // 全解锁徽章的 Codex 部件：云形标志的点阵马赛克，圆润的矢量王冠，圆点分隔符。
 // 共用版式见 ../shared/completionist.js。
@@ -53,8 +54,9 @@ function tiles() {
       const center = [((px - 12) / 24) * W, -((py - 12) / 24) * W];
       return {
         center,
-        lit: { kind: 'circle', radius: DOT, center: [0, 0], material: 'enamel', color: `ramp${Math.round((j / (N - 1)) * (RAMP - 1))}`, height: 0.045, bevel: 0.008, z: MEDALLION_H },
-        ghost: { kind: 'circle', radius: DOT * 0.8, center, material: 'enamel', color: 'ghost', height: 0.008, bevel: 0.002, z: MEDALLION_H },
+        // 亮点稍大，曲线 8 段（一圈 16 边）
+        lit: { kind: 'circle', radius: DOT, center, material: 'enamel', color: `ramp${Math.round((j / (N - 1)) * (RAMP - 1))}`, height: 0.045, bevel: 0.008, z: MEDALLION_H, segments: { curve: 8 } },
+        ghost: { kind: 'circle', radius: DOT * 0.8, center, material: 'enamel', color: 'ghost', height: 0.008, bevel: 0.002, z: MEDALLION_H, segments: SMALL },
       };
     });
 }

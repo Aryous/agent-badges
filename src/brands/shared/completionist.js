@@ -5,6 +5,9 @@ import { MEDALLION_H, medallion, scaleRelief } from './layout.js';
 //
 // 环带由外到内都是同心圆，不跟着星芒的起伏走：细线圈 → 小珠 → 环形文字 → 圆盘。
 
+/** 全解锁徽章的 id：不进陈列墙，单枚查看靠它认出这一枚。 */
+export const COMPLETIONIST_ID = 'completionist';
+
 /** 阶段金属：锡 → 铜 → 银 → 金。 */
 export const STAGE_METALS = ['pewter', 'bronze', 'silver', 'gold'];
 
@@ -40,16 +43,25 @@ export const litCount = (tiles, unlocked, total) => (total > 0 ? Math.round((til
 /** 细线圈：倒角要小于半宽，否则内孔会塌成实心圆。 */
 const hairline = (look) => ({ kind: 'ring', radius: HAIR_R, width: 0.012, ...look, height: 0.014, bevel: 0.002 });
 
+/**
+ * 很小的圆件（小珠、点阵）用的分段数：几个像素大的圆不需要默认的 30 段曲线，6 段（一圈 12 边）就够，
+ * 按单枚查看里的大小挑的（徽章半径约 400 像素），弦高在 0.2 像素以内。
+ * 倒角保留默认的 4 段：少了会露出折线高光。小件也都在原位生成、不 share：
+ * 平滑法线和位置有关，挪到原点生成的小件倒角高光会变平。
+ */
+export const SMALL = { curve: 6 };
+
 /** 一圈很细的金属小珠。 */
 const beads = (look, count = 84) =>
   Array.from({ length: count }, (_, i) => {
     const a = (i / count) * Math.PI * 2;
-    return { kind: 'circle', radius: 0.0085, center: [BEAD_R * Math.cos(a), BEAD_R * Math.sin(a)], ...look, height: 0.012, bevel: 0.003 };
+    return { kind: 'circle', radius: 0.0085, center: [BEAD_R * Math.cos(a), BEAD_R * Math.sin(a)], ...look, height: 0.012, bevel: 0.003, segments: SMALL };
   });
 
 const arc = (text, where, look) => ({ kind: 'text-arc', text, arc: where, radius: TEXT_R, size: 0.088, tracking: 0.22, ...look, height: 0.024 });
 
-const countText = (k, n) => (k === n ? 'COMPLETIONIST' : `${k} OF ${n}`);
+/** 下弧的进度文字。 */
+export const countText = (k, n) => (k === n ? 'COMPLETIONIST' : `${k} OF ${n}`);
 
 /** 正反面共用的环带和圆盘：细线圈、小珠、上弧品牌名、左右分隔符、圆盘。 */
 const band = (kit, look) => [
@@ -140,7 +152,7 @@ function stamps(kit, unlocked, total) {
     const dim = { material: 'enamel', color: 'dimBand', height: 0.008, bevel: 0.002 };
     if (i < 3) {
       const look = reached > i ? { material: 'polished-metal', color: STAGE_METALS[i + 1], height: 0.026, bevel: 0.008 } : dim;
-      return { kind: 'rounded-rect', half: 0.033, radius: 0.01, center, ...look };
+      return { kind: 'rounded-rect', half: 0.033, radius: 0.01, center, ...look, segments: { curve: 4 } };
     }
     return isComplete(unlocked, total)
       // 宝石用不透明的珐琅：透明水晶会透出底下的深蓝环带，看起来发黑
@@ -183,11 +195,13 @@ const COPY = {
 /**
  * 全解锁徽章的配置。
  * - 静态版：按 k 只放该显示的亮片或残影；完成时星芒外形、戴王冠、下弧写 COMPLETIONIST。
- * - anim：圆形外形，亮片和残影各放全套，下弧文字 0..unlocked 各一份，由动画切换显示；
- *   亮片在原点生成，中心记在 parts.tileCenters，方便原地缩放弹出。
+ * - anim：圆形外形，亮片和残影各放全套，由动画切换显示；下弧文字只放一份「0 OF n」，动画里按进度换文字（countText）。
+ *   动画版的亮片是 share 件：在原点生成、网格挪到中心，缩放时原地弹出，一百多片也只有一份几何体
+ *   （原来就是在原点生成的，样子不变）。静态版（单枚查看、完成形态）的亮片在原位生成：平滑法线和位置有关，
+ *   原位生成的倒角高光更清楚，近看时要它。
  *
  * @param {object} kit  品牌部件（BRANDS[i].completionist）
- * @returns {{ config: object, parts?: { lit: number[], ghost: number[], counts: number[], tileCenters: number[][] } }}
+ * @returns {{ config: object, parts?: { lit: number[], ghost: number[], count: number } }}
  */
 export function completionistConfig(kit, { unlocked: rawUnlocked, total: rawTotal, metal, anim = false }) {
   // 输入兜底：取整、不为负，解锁数不超过总数（数据里残留已删除徽章的 id 时可能超出）
@@ -198,7 +212,7 @@ export function completionistConfig(kit, { unlocked: rawUnlocked, total: rawTota
   const tiles = kit.tiles();
   const head = [...band(kit, look), ...disc(look), ...(kit.eyes?.() ?? []), ...(done ? kit.crown(look) : [])];
   const config = {
-    id: 'completionist',
+    id: COMPLETIONIST_ID,
     title: '全解锁',
     description: COPY.description,
     en: { title: 'Completionist', description: COPY.en },
@@ -223,17 +237,12 @@ export function completionistConfig(kit, { unlocked: rawUnlocked, total: rawTota
 
   const range = (from, n) => Array.from({ length: n }, (_, i) => from + i);
   const T = tiles.length;
-  config.relief = [
-    ...head,
-    ...tiles.map((t) => t.lit),
-    ...tiles.map((t) => t.ghost),
-    ...Array.from({ length: unlocked + 1 }, (_, j) => arc(countText(j, total), 'bottom', look)),
-  ];
+  // 下弧文字在进场里要换几十次：只在概览里画（字高十几个像素），曲线 4 段就够
+  config.relief = [...head, ...tiles.map((t) => ({ ...place(t), share: true })), ...tiles.map((t) => t.ghost), { ...arc(countText(0, total), 'bottom', look), segments: { curve: 4 } }];
   const parts = {
     lit: range(head.length, T),
     ghost: range(head.length + T, T),
-    counts: range(head.length + 2 * T, unlocked + 1),
-    tileCenters: tiles.map((t) => t.center),
+    count: head.length + 2 * T,
   };
   return { config, parts };
 }

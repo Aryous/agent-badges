@@ -99,12 +99,12 @@ export function createStage(canvas) {
     });
   }
 
-  /** 释放显卡资源并交还 WebGL 上下文（自带舞台的组件卸载时用）。场景里的徽章由调用方先释放。 */
-  function dispose() {
+  /** 释放显卡资源并交还 WebGL 上下文（自带舞台的组件卸载时用）。场景里的徽章由调用方先释放；上下文已经丢了（lost）就不用再交还。 */
+  function dispose({ lost = false } = {}) {
     envMap.dispose();
     pmrem.dispose();
     renderer.dispose();
-    renderer.forceContextLoss();
+    if (!lost) renderer.forceContextLoss();
   }
 
   return { renderer, scene, camera, sweep, view, resize, applyEnvironment, dispose };

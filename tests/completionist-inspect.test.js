@@ -4,8 +4,9 @@ import { BRANDS } from '../src/brands/index.js';
 import { nextStage } from '../src/brands/shared/completionist.js';
 import { describeCompletionist } from '../src/viewer/describe.js';
 import { completionistItem } from '../src/viewer/completionist.js';
+import { buildBadge } from '../src/engine/badge.js';
 
-const { completionist: kit, badges } = BRANDS.find((b) => b.brand.id === 'claude-code');
+const { completionist: kit, badges, brand } = BRANDS.find((b) => b.brand.id === 'claude-code');
 const on = (earnedAt) => ({ unlocked: true, earnedAt, tier: null, progress: { current: 1, target: 1 } });
 const off = { unlocked: false, earnedAt: null, tier: null, progress: { current: 0, target: 1 } };
 /** n 枚徽章，前 k 枚已解锁，解锁日期依次往后。 */
@@ -63,6 +64,7 @@ describe('临时 item', () => {
     expect(item.config.layers[0].color).toBe('silver');
     expect(item.config.back.engraving).toBe(false);
     expect(item.state).toEqual({ unlocked: true, earnedAt: null, tier: null, progress: { current: 22, target: 32 } });
+    expect(item.award).toBe(true);
     expect(item.holder).toBeNull();
   });
 
@@ -74,9 +76,22 @@ describe('临时 item', () => {
     expect(item.state).toEqual({ unlocked: true, earnedAt: latest, tier: null, progress: { current: 12, target: 12 } });
   });
 
-  it('一枚没解锁：未解锁，锡', () => {
+  it('一枚没解锁：锡是起步阶段，按已解锁画（锡色、残影），只是没有获得动画可播', () => {
     const item = completionistItem(kit, itemsOf(0, 32));
-    expect(item.state.unlocked).toBe(false);
+    expect(item.state.unlocked).toBe(true);
+    expect(item.award).toBe(false);
     expect(item.config.layers[0].color).toBe('pewter');
+    expect(item.config.relief.filter((r) => r.color === 'ghost')).toHaveLength(kit.tiles().length);
+    // 和概览一致：副标题写「当前阶段：锡」
+    expect(describeCompletionist(item.state, 'zh').kicker).toBe('当前阶段：锡');
+    // 组装出来不是灰色的未解锁材质
+    const badge = buildBadge(item.config, brand, item.state, { engraving: 0 });
+    expect(badge.userData.locked).toBe(false);
+    expect(badge.getObjectByName('rim').material.userData.preset).toBe('polished-metal');
+  });
+
+  it('解锁了一枚以上：有获得动画', () => {
+    expect(completionistItem(kit, itemsOf(1, 32)).award).toBe(true);
+    expect(completionistItem(kit, itemsOf(32, 32)).award).toBe(true);
   });
 });

@@ -6,8 +6,8 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matc
 
 /**
  * 档案卡 + 热力图。点击徽章、解锁标记、分享和主页图按钮都通过事件交给对应面板。
- * 全解锁徽章在这里挂上：它自带舞台，不等缩略图，页面一出来就能播进场。
- * 切换工具是整页跳转，新页面按新工具重新组装；卸载时 profile.disposeCoin() 交还 WebGL 上下文。
+ * 全解锁徽章在这里挂上：它自带舞台，不等缩略图；但不挤在首屏的同步流程里，等陈列墙挂好、浏览器空闲时再组装，
+ * 之前先显示刻度环。切换工具是整页跳转，新页面按新工具重新组装；WebGL 上下文丢了时 profile.disposeCoin() 换回刻度环。
  * 点开它时用一个临时 item 打开单枚查看：不在 ctx.items 里，陈列墙、总数、海报都不算它。
  */
 export function mount(ctx, { heatSeries, markers, currentDaily }) {
@@ -19,15 +19,19 @@ export function mount(ctx, { heatSeries, markers, currentDaily }) {
     items,
     daily: currentDaily,
     onSelect: (item, viaKeyboard) => ctx.emit('open', item, { viaKeyboard }),
-    onCoin: (viaKeyboard) => coinItem && ctx.emit('open', coinItem, { viaKeyboard }),
+    onCoin: coinItem ? (viaKeyboard) => ctx.emit('open', coinItem, { viaKeyboard }) : null,
     onShare: (e) => ctx.emit('poster', { viaKeyboard: e?.detail === 0 }),
     onShelf: (e) => ctx.emit('shelf', { viaKeyboard: e?.detail === 0 }),
   });
   // 「GitHub 主页图」是给本人用的，公开版不显示
   if (PUBLIC) profile.el.querySelector('[data-shelf]').hidden = true;
-  profile.mountCoin(({ canvas, target }) =>
-    createCompletionistCoin({ canvas, target, kit: ctx.completionist, brand: ctx.brand, unlocked: profile.unlocked, total: profile.total, reducedMotion }),
-  );
+  const mountCoin = () =>
+    profile.mountCoin(({ canvas, target, onLost }) =>
+      createCompletionistCoin({ canvas, target, kit: ctx.completionist, brand: ctx.brand, unlocked: profile.unlocked, total: profile.total, reducedMotion, onLost }),
+    );
+  // 本轮同步流程（陈列墙挂上）走完、浏览器空闲时再组装；没有 requestIdleCallback 就排到下一轮
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(mountCoin, { timeout: 500 });
+  else setTimeout(mountCoin, 1);
   // 关上单枚查看时焦点回到铸币
   if (coinItem) coinItem.tile = profile.coinEl;
   // 单枚查看挡住了概览区：铸币先停下，完全关上后再接着画

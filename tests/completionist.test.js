@@ -6,7 +6,7 @@ import { svgShapes } from '../src/engine/svgpath.js';
 import { reliefGeometry } from '../src/engine/relief.js';
 import { CODEX_MARK } from '../src/brands/codex/mark.js';
 import { CODEX_GRID } from '../src/brands/codex/completionist.js';
-import { STAGE_METALS, completionistConfig, isComplete, stageOf } from '../src/brands/shared/completionist.js';
+import { COMPLETIONIST_ID, STAGE_METALS, completionistConfig, countText, isComplete, stageOf } from '../src/brands/shared/completionist.js';
 
 // 全解锁徽章：不进陈列墙，配置按解锁数生成。
 
@@ -107,7 +107,7 @@ describe('配置', () => {
       for (const k of samples) {
         const { config } = completionistConfig(kit, { unlocked: k, total: n });
         expect(() => validateBadge(config, brand), `${k}/${n}`).not.toThrow();
-        expect(config.id).toBe('completionist');
+        expect(config.id).toBe(COMPLETIONIST_ID);
         expect(config.title).toBe('全解锁');
         expect(config.en.title).toBe('Completionist');
         expect(config.back).toEqual({ material: 'enamel', color: 'midnight', engraving: false });
@@ -162,26 +162,30 @@ describe('配置', () => {
       expect(config.shape.type).toBe('circle');
       expect(parts.lit).toHaveLength(T);
       expect(parts.ghost).toHaveLength(T);
-      expect(parts.tileCenters).toHaveLength(T);
-      expect(parts.counts).toHaveLength(k + 1);
       const tiles = kit.tiles();
       parts.lit.forEach((i, t) => {
         const r = config.relief[i];
         expect(r.color).not.toBe('ghost');
         expect(r.kind).toBe(tiles[t].lit.kind);
-        expect(r.center).toEqual([0, 0]);
-        expect(parts.tileCenters[t]).toEqual(tiles[t].center);
+        // 动画版的亮片是 share 件：摆在各自的中心，网格原点就是中心，弹出时原地缩放
+        expect(r.center).toEqual(tiles[t].center);
+        expect(r.share).toBe(true);
       });
       parts.ghost.forEach((i, t) => {
         expect(config.relief[i].color).toBe('ghost');
         expect(config.relief[i].center).toEqual(tiles[t].center);
       });
-      expect(parts.counts.map((i) => config.relief[i].text)).toEqual(Array.from({ length: k + 1 }, (_, j) => `${j} OF ${n}`));
+      // 静态版（单枚查看）的件都在原位生成，不 share
+      expect(JSON.stringify(completionistConfig(kit, { unlocked: k, total: n }).config)).not.toContain('"share"');
+      // 下弧文字只放一份「0 OF n」，动画里按进度换字
+      expect(arcs(config.relief, 'bottom')).toEqual([`0 OF ${n}`]);
+      expect(config.relief[parts.count].text).toBe(`0 OF ${n}`);
       expect(ghostCount(config.relief)).toBe(T);
-      // 全部解锁的动画版：最后一份文字是 COMPLETIONIST，外形仍是圆
+      // 全部解锁的动画版：外形仍是圆，换字到最后是 COMPLETIONIST
       const full = completionistConfig(kit, { unlocked: n, total: n, anim: true, metal: 'stage' });
       expect(full.config.shape.type).toBe('circle');
-      expect(full.config.relief[full.parts.counts.at(-1)].text).toBe('COMPLETIONIST');
+      expect(countText(n, n)).toBe('COMPLETIONIST');
+      expect(countText(7, n)).toBe(`7 OF ${n}`);
     });
 
     it(`${brand.id}：环带的同心环半径和 spec 一致`, () => {
@@ -226,10 +230,10 @@ describe('输入兜底与几何细节', () => {
       expect(arcs(over.relief, 'bottom')).toEqual(['COMPLETIONIST']);
       expect(over.shape.type).toBe('starburst');
       const neg = completionistConfig(kit, { unlocked: -3, total: n, anim: true, metal: 'stage' });
-      expect(neg.parts.counts).toHaveLength(1);
+      expect(neg.config.relief[neg.parts.count].text).toBe(`0 OF ${n}`);
       expect(arcs(completionistConfig(kit, { unlocked: 7.6, total: n }).config.relief, 'bottom')).toEqual([`7 OF ${n}`]);
       const animOver = completionistConfig(kit, { unlocked: n + 5, total: n, anim: true, metal: 'stage' });
-      expect(animOver.parts.counts).toHaveLength(n + 1);
+      expect(animOver.parts.lit).toHaveLength(T);
       expect(ghostCount(completionistConfig(kit, { unlocked: 3, total: 0 }).config.relief)).toBe(T);
     });
 

@@ -1,11 +1,15 @@
 import { setEngravingSize } from '../engine/badge.js';
 import { badgeDescription, tierKey, tierLabel, upperTitle } from '../brands/shared/text.js';
 import { describeCompletionist, describeState, fmtDate } from '../viewer/describe.js';
+import { COMPLETIONIST_ID } from '../brands/shared/completionist.js';
 import { playAward } from '../viewer/award-animation.js';
 import { t } from '../viewer/i18n.js';
 import { formatCount } from '../data/format.js';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** 有没有获得动画可播：已解锁；全解锁徽章一枚没解锁时（锡）没有（award: false）。 */
+const awardable = (item) => Boolean(item?.state.unlocked) && item.award !== false;
 
 /**
  * 单枚查看：徽章飞到画面中央，下面是说明、等级阶梯和进度条。响应 ctx 的 'open' 事件。
@@ -22,14 +26,14 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
   let onClosed = []; // whenClosed 的等待者，完全关上（徽章移出场景）时放行
 
   async function runAward() {
-    if (awardRunning || !inspector.current?.state.unlocked) return;
+    if (awardRunning || !awardable(inspector.current)) return;
     awardRunning = true;
     $('[data-replay]').disabled = true;
     try {
       await playAward({ stage, tweens, inspector, palette: brand.palette, reducedMotion });
     } finally {
       awardRunning = false;
-      $('[data-replay]').disabled = !inspector.current?.state.unlocked;
+      $('[data-replay]').disabled = !awardable(inspector.current);
     }
   }
 
@@ -37,7 +41,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     const { config, state } = item;
     const d = describeState(config, state);
     // 全解锁徽章：副标题写阶段或完成日期，进度条后面写下一阶段
-    const whole = config.id === 'completionist' ? describeCompletionist(state) : null;
+    const whole = config.id === COMPLETIONIST_ID ? describeCompletionist(state) : null;
     const kicker = $('[data-kicker]');
     if (whole) kicker.textContent = whole.kicker;
     else if (d.masked) kicker.textContent = t('state.hidden');
@@ -85,7 +89,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
         ? whole.meter
         : `${formatCount(current)} / ${formatCount(target)}${config.tiers && state.unlocked ? t('inspect.toNext') : ''}`;
     }
-    $('[data-replay]').hidden = !state.unlocked;
+    $('[data-replay]').hidden = !awardable(item);
   }
 
   /** 顶栏 + 返回按钮、底部信息区各占多少像素，徽章放在中间。 */
@@ -134,7 +138,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     history.replaceState(null, '', `#${item.config.id}`);
     // 只有用键盘打开时才把焦点移进来，避免鼠标用户看到焦点框
     if (viaKeyboard) $('[data-close]').focus({ preventScroll: true });
-    if (award && item.state.unlocked) runAward();
+    if (award && awardable(item)) runAward();
   }
 
   function close() {

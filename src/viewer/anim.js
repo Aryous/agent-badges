@@ -42,6 +42,13 @@ export class Tweens {
     this.list = this.list.filter((tw) => tw.key !== key);
   }
 
+  /** 取消全部补间，并放行等着它们的 await（醒来后的代码自己判断要不要继续）。 */
+  clear() {
+    const list = this.list;
+    this.list = [];
+    list.forEach((tw) => tw.resolve());
+  }
+
   has(key) {
     return this.list.some((tw) => tw.key === key);
   }

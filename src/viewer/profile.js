@@ -23,7 +23,7 @@ function tickRing(ratio, n = 120) {
  * @param {object[]} opts.items  [{ config, state }]
  * @param {object} opts.daily    当前工具的按天用量
  * @param {(item) => void} opts.onSelect
- * @param {(viaKeyboard: boolean) => void} [opts.onCoin]  点开全解锁徽章
+ * @param {(viaKeyboard: boolean) => void} [opts.onCoin]  点开全解锁徽章；不给时铸币不是按钮（没有徽章时）
  * @param {() => void} opts.onShare
  * @param {() => void} opts.onShelf   生成 GitHub 主页徽章图
  */
@@ -41,7 +41,7 @@ export function createProfile({ root, items, daily, onSelect, onCoin, onShare, o
     <div class="rule has-star"><i class="star"></i></div>
     <div class="profile-plate">
       <div class="profile-main">
-        <figure class="profile-coin" data-coin role="button" tabindex="0">
+        <figure class="profile-coin" data-coin${onCoin ? ' role="button" tabindex="0"' : ''}>
           ${tickRing(total ? h.unlocked.length / total : 0)}
           <canvas aria-hidden="true" hidden></canvas>
           <div class="profile-count"><b>${h.unlocked.length}</b><span>/ ${total}</span></div>
@@ -137,14 +137,15 @@ export function createProfile({ root, items, daily, onSelect, onCoin, onShare, o
       el.querySelectorAll(`.profile-item[data-id="${id}"] img`).forEach((img) => (img.src = src));
     },
     /**
-     * 挂上实时的全解锁徽章，换掉兜底的刻度环。create({ canvas, target }) 返回 { dispose }；
-     * 画不出来（比如拿不到 WebGL 上下文）就留着刻度环。下方的数字只留给检查脚本。
+     * 挂上实时的全解锁徽章，换掉兜底的刻度环。create({ canvas, target, onLost }) 返回 { pause, resume, dispose }；
+     * 画不出来（比如拿不到 WebGL 上下文）就留着刻度环；画着画着上下文丢了（onLost）也换回刻度环。
+     * 下方的数字只留给检查脚本。
      */
     mountCoin(create) {
       const canvas = fig.querySelector('canvas');
       canvas.hidden = false;
       try {
-        coin = create({ canvas, target: fig });
+        coin = create({ canvas, target: fig, onLost: () => this.disposeCoin() });
         fig.classList.add('has-coin');
         fig.querySelector('.profile-count').setAttribute('aria-hidden', 'true');
       } catch (err) {
@@ -159,12 +160,13 @@ export function createProfile({ root, items, daily, onSelect, onCoin, onShare, o
     resumeCoin() {
       coin?.resume();
     },
-    /** 卸下全解锁徽章，交还 WebGL 上下文。 */
+    /** 卸下全解锁徽章（交还 WebGL 上下文），换回刻度环。上下文丢了时由 mountCoin 的 onLost 调用。 */
     disposeCoin() {
       coin?.dispose();
       coin = null;
       fig.classList.remove('has-coin');
       fig.querySelector('canvas').hidden = true;
+      fig.querySelector('.profile-count').removeAttribute('aria-hidden');
     },
   };
 }

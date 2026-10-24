@@ -1,10 +1,12 @@
 // 概览区的全解锁徽章：自带一个小舞台，实时渲染（做法同落地页首屏）。
 // 第一次进入视野时播放进场：浮现 → 马赛克一段段亮起，跨过阶段时金属升级（火花、扫光、轻跳）→ 全部解锁时铸成星芒形态。
 // 平时轻轻摆动，每 9 秒一道很淡的扫光；左右拖动翻到背面，松手带惯性滑行，再吸附到正面或背面。
-// 减少动态效果时直接显示最终状态，没有摆动和扫光，仍然可以拖动。
+// 减少动态效果时直接显示最终状态，没有摆动和扫光，仍然可以拖动；静止时不画。
+// 省资源：只组装要用的那一版；完成形态空闲时再组装；进场结束后同材质的浮雕并成一个网格（几十次绘制）。
 import { Color, Group } from 'three';
-import { buildBadge, disposeBadge } from '../engine/badge.js';
-import { STAGE_METALS, completionistConfig, isComplete, stageOf } from '../brands/shared/completionist.js';
+import { buildBadge, disposeBadge, swapRelief } from '../engine/badge.js';
+import { mergeByMaterial } from '../engine/merge.js';
+import { STAGE_METALS, completionistConfig, countText, isComplete, stageOf } from '../brands/shared/completionist.js';
 import { createStage } from './scene.js';
 import { Tweens, ease, lerp } from './anim.js';
 import { burst } from './award-animation.js';
@@ -31,7 +33,7 @@ export const coinState = (unlocked, total) => ({ unlocked: true, earnedAt: null,
 /**
  * 在动画版徽章里找到要动的网格。正面浮雕是最后 relief.length 个子节点（badge.js 先装背面），顺序同配置；
  * 阶段金属是色板键为 'stage' 的材质（渐变材质没有色板键）。
- * @returns {{ front: object[], lit: object[], ghost: object[], counts: object[], metals: Set<object> }}
+ * @returns {{ front: object[], lit: object[], ghost: object[], count: object, metals: Set<object> }}
  */
 export function coinMeshes(badge, config, parts) {
   const front = badge.children.slice(badge.children.length - config.relief.length);
@@ -43,14 +45,44 @@ export function coinMeshes(badge, config, parts) {
     front,
     lit: parts.lit.map((i) => front[i]),
     ghost: parts.ghost.map((i) => front[i]),
-    counts: parts.counts.map((i) => front[i]),
+    count: front[parts.count],
     metals,
   };
 }
 
 /**
+ * 减少动态效果时还要不要画下一帧：拖动中、有补间、还在滑行或没吸附到位就画，停稳了就停。
+ * 不减少动态效果时一直在摆动，每帧都画。
+ */
+export function needsFrame({ reducedMotion, dragging = false, busy = false, vel, off }) {
+  if (!reducedMotion || dragging || busy) return true;
+  const snap = Math.round(off / Math.PI) * Math.PI;
+  return Math.abs(vel) > 0.01 || Math.abs(off - snap) > 0.001;
+}
+
+/**
+ * 合并静态网格，并在传上显卡后丢掉合并几何体在内存里的那份数组（之后不再改它；包围球先算好，视锥裁剪要用）。
+ * 铸币不处理上下文恢复：丢了就换回刻度环，所以不需要留着数组重新上传。
+ */
+function settle(badge) {
+  mergeByMaterial(badge);
+  for (const o of badge.children) {
+    if (o.name !== 'merged') continue;
+    o.geometry.computeBoundingSphere();
+    for (const a of Object.values(o.geometry.attributes)) a.onUpload(release);
+  }
+}
+function release() {
+  this.array = null;
+}
+
+/** 空闲时再做（最多等 timeout 毫秒）；没有 requestIdleCallback 的浏览器排到下一轮。 */
+const idle = (fn, timeout) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout }) : setTimeout(fn, 1));
+
+/**
  * 单枚查看用的临时 item：不进陈列墙，也不算进总数。
  * 模型是当前阶段的静态版；全部解锁时日期取最晚解锁的那一枚。
+ * 锡是起步阶段，不是未解锁：一枚没解锁也按已解锁画（锡色、残影），只是没有获得动画可播（award: false）。
  * @param {object} kit  品牌部件
  * @param {object[]} items  陈列墙的徽章 [{ config, state }]
  */
@@ -62,7 +94,8 @@ export function completionistItem(kit, items) {
   const { config } = completionistConfig(kit, { unlocked: k, total });
   return {
     config,
-    state: { unlocked: k > 0, earnedAt, tier: null, progress: { current: k, target: total } },
+    state: { unlocked: true, earnedAt, tier: null, progress: { current: k, target: total } },
+    award: k > 0,
     badge: null,
     pivot: null,
     holder: null,
@@ -78,9 +111,10 @@ export function completionistItem(kit, items) {
  * @param {number} opts.unlocked
  * @param {number} opts.total
  * @param {boolean} [opts.reducedMotion]
+ * @param {() => void} [opts.onLost]  WebGL 上下文丢了：铸币已经自己释放，调用方换回刻度环
  * @returns {{ pause(): void, resume(): void, dispose(): void }}
  */
-export function createCompletionistCoin({ canvas, target = canvas, kit, brand, unlocked, total, reducedMotion = false }) {
+export function createCompletionistCoin({ canvas, target = canvas, kit, brand, unlocked, total, reducedMotion = false, onLost }) {
   if (!(total > 0)) throw new Error('全解锁徽章需要徽章总数');
   const k = Math.max(0, Math.min(unlocked, total));
   const done = isComplete(k, total);
@@ -89,13 +123,12 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
   const accent = new Color(palette.primary);
   const ivory = new Color(palette.ivory);
 
-  // 配置先算好：出错时还没占用 WebGL 上下文
-  const { config, parts } = completionistConfig(kit, { unlocked: k, total, metal: 'stage', anim: true });
-  const finaleConfig = done ? completionistConfig(kit, { unlocked: total, total }).config : null;
+  // 配置先算好：出错时还没占用 WebGL 上下文。减少动态效果时只要最终的静态版（完成时就是完成形态）
+  const anim = reducedMotion ? null : completionistConfig(kit, { unlocked: k, total, metal: 'stage', anim: true });
+  const finalConfig = reducedMotion || done ? completionistConfig(kit, { unlocked: k, total }).config : null;
 
+  // 像素比沿用舞台的设置（屏幕像素比，最多 2 倍）
   const stage = createStage(canvas);
-  // 只有一枚、一直在动，用不上静止超采样：直接按 2 倍像素渲染
-  stage.renderer.setPixelRatio(2);
   const holder = new Group();
   const pivot = new Group();
   holder.add(pivot);
@@ -125,21 +158,39 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
     return badge;
   }
 
-  // 动画版：圆形外形，亮片、残影各一套，下弧文字 0..k 各一份
-  let badge = assemble(config);
-  // 阶段金属：外圈、细线圈、小珠、文字、圆盘描边、月桂、星共用的材质
-  const { lit, ghost, counts, metals } = coinMeshes(badge, config, parts);
-  // 亮片在原点生成，挪到各自的位置，缩放时原地弹出
-  lit.forEach((m, t) => m.position.set(parts.tileCenters[t][0], parts.tileCenters[t][1], 0));
+  let disposed = false;
+  /** 静态的最终版：组装后同材质的浮雕并成一个网格。 */
+  let finale = null;
+  const buildFinal = () => {
+    if (!finale && !disposed) {
+      finale = assemble(finalConfig);
+      settle(finale);
+    }
+    return finale;
+  };
+
+  // 动画版：圆形外形，亮片、残影各一套（各自共用一份几何体），下弧文字一份、按进度换字
+  let badge;
+  let lit = [];
+  let ghost = [];
+  let countMesh = null;
+  let metals = new Set();
+  if (anim) {
+    badge = assemble(anim.config);
+    // 阶段金属：外圈、细线圈、小珠、文字、圆盘描边、月桂、星共用的材质
+    ({ lit, ghost, count: countMesh, metals } = coinMeshes(badge, anim.config, anim.parts));
+    // 铸成后换上的完成形态（星芒、王冠、金）：空闲时组装，铸成时还没好就当场组装
+    if (done) idle(buildFinal, 2000);
+  } else {
+    badge = buildFinal();
+  }
   pivot.add(badge);
-  // 铸成后换上的静态完成形态（星芒、王冠、金），提前组装好
-  const finale = finaleConfig && assemble(finaleConfig);
 
   const setMetal = (c) => metals.forEach((m) => m.color.copy(c));
 
   let tiles = -1;
-  let shown = -1;
-  /** 进度 j 枚：亮起对应数量的马赛克（新亮的弹一下），下弧文字换成 j。 */
+  let shown = 0; // 配置里的下弧文字是 0
+  /** 进度 j 枚：亮起对应数量的马赛克（新亮的弹一下），下弧文字换成 j（用到哪个生成哪个）。 */
   function setProgress(j, animate = true) {
     const m = Math.round((lit.length * j) / total);
     if (m !== tiles) {
@@ -152,7 +203,7 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
       tiles = m;
     }
     if (j !== shown) {
-      counts.forEach((mesh, i) => (mesh.visible = i === Math.min(j, k)));
+      swapRelief(badge, countMesh, { ...anim.config.relief[anim.parts.count], text: countText(Math.min(j, k), total) });
       shown = j;
     }
   }
@@ -169,7 +220,6 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
 
   let scaleFx = 1;
   let intro = 0; // 进场开始后的秒数：摆动在 1.5 秒后用 2.5 秒加进来
-  let disposed = false;
 
   async function upgrade(from, to) {
     const a = METALS[from];
@@ -179,13 +229,13 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
     sweep(0.9, 30);
     tweens.add({ duration: 0.6, easing: ease.linear, update: (t) => (scaleFx = 1 + Math.sin(t * Math.PI) * 0.045) });
     await tweens.add({ duration: 0.55, easing: ease.inOutCubic, update: (t) => setMetal(c.lerpColors(a, b, t)) });
-    await wait(0.25);
+    if (!disposed) await wait(0.25);
   }
 
   function swapComplete() {
     pivot.remove(badge);
     disposeBadge(badge);
-    badge = finale;
+    badge = buildFinal();
     pivot.add(badge);
   }
 
@@ -219,15 +269,14 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
         level = next;
       }
     }
-    if (done && !disposed) await mint();
+    if (disposed) return;
+    if (done) await mint();
+    // 进场结束：不再单独改动浮雕，同材质的并成一个网格（藏着的残影直接去掉）
+    else idle(() => !disposed && settle(badge), 1000);
   }
 
-  // 起始状态：动画从锡、0 枚开始；减少动态效果时直接是最终状态
-  if (reducedMotion) {
-    setProgress(k, false);
-    setMetal(METALS[stageOf(k, total)]);
-    if (done) swapComplete();
-  } else {
+  // 起始状态：动画从锡、0 枚开始（减少动态效果时已经是静态的最终版）
+  if (anim) {
     setMetal(METALS[0]);
     setProgress(0, false);
   }
@@ -243,6 +292,13 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
     s.x = e.clientX;
     s.t = performance.now();
     target.setPointerCapture(e.pointerId);
+    wake();
+  });
+  // 上下文丢了（显卡重置、标签页太多被浏览器收回）：释放自己，交给调用方换回刻度环
+  on(canvas, 'webglcontextlost', () => {
+    if (disposed) return;
+    dispose({ lost: true });
+    onLost?.();
   });
   on(target, 'pointermove', (e) => {
     if (!s.drag) return;
@@ -275,6 +331,12 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
       }
       s.off += s.vel * dt;
     }
+    // 减少动态效果时停稳了就画完这一帧停下，下次拖动、改尺寸时再开
+    const rest = !needsFrame({ reducedMotion, dragging: s.drag, busy: tweens.list.length > 0 || sw.t >= 0, vel: s.vel, off: s.off });
+    if (rest) {
+      s.off = Math.round(s.off / Math.PI) * Math.PI;
+      s.vel = 0;
+    }
     const t = (now + phase) / 1000;
     const sway = reducedMotion ? 0 : ease.inOutSine(Math.min(1, Math.max(0, (intro - 1.5) / 2.5)));
     pivot.rotation.set(0.04 + Math.sin(t * 0.55) * 0.07 * sway, 0.18 + Math.sin(t * 0.37) * 0.22 * sway + s.off, 0);
@@ -297,26 +359,40 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
       stage.sweep.intensity = Math.sin(p * Math.PI) * peak;
     } else stage.sweep.intensity = 0;
     stage.renderer.render(stage.scene, stage.camera);
+    if (rest) setLoop(false);
   }
-
-  // 尺寸跟着版面走（桌面 184px、手机 140px）
-  const sizer = new ResizeObserver(fit);
-  sizer.observe(canvas);
-  fit();
 
   // 看不见、或被单枚查看挡住（pause）时不画；第一次真正画出来时播放进场，之后不再自动播放
   let played = reducedMotion;
   let visible = false;
   let paused = false;
+  let looping = false;
+  function setLoop(on) {
+    if (on === looping) return;
+    looping = on;
+    last = performance.now();
+    stage.renderer.setAnimationLoop(on ? tick : null);
+  }
+  /** 需要画的时候（拖动、改尺寸、重新露出来）把循环打开；停稳后 tick 自己关。 */
+  function wake() {
+    if (visible && !paused && !disposed) setLoop(true);
+  }
   function sync() {
     const run = visible && !paused && !disposed;
-    last = performance.now();
-    stage.renderer.setAnimationLoop(run ? tick : null);
+    setLoop(run);
     if (run && !played) {
       played = true;
-      play();
+      play().catch((e) => console.warn('全解锁徽章进场出错', e));
     }
   }
+
+  // 尺寸跟着版面走（桌面 184px、手机 140px）
+  const sizer = new ResizeObserver(() => {
+    fit();
+    wake();
+  });
+  sizer.observe(canvas);
+  fit();
   const seen = new IntersectionObserver(
     ([e]) => {
       visible = e.isIntersecting;
@@ -325,6 +401,29 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
     { threshold: 0.5 },
   );
   seen.observe(target);
+
+  /** 释放全部资源；上下文已经丢了（lost）时不再去交还它。 */
+  function dispose({ lost = false } = {}) {
+    if (disposed) return;
+    disposed = true;
+    stage.renderer.setAnimationLoop(null);
+    seen.disconnect();
+    sizer.disconnect();
+    listeners.abort();
+    // 放行等着补间的进场，它醒来看到 disposed 就收手
+    tweens.clear();
+    // 还在飘的火花
+    const points = [];
+    stage.scene.traverse((o) => o.isPoints && points.push(o));
+    for (const o of points) {
+      stage.scene.remove(o);
+      o.geometry.dispose();
+      o.material.dispose();
+    }
+    disposeBadge(badge);
+    if (finale && finale !== badge) disposeBadge(finale);
+    stage.dispose({ lost });
+  }
 
   return {
     /** 停下渲染循环（比如单枚查看挡住了它）；进场也跟着停在原处。 */
@@ -336,25 +435,6 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
       paused = false;
       sync();
     },
-    dispose() {
-      if (disposed) return;
-      disposed = true;
-      stage.renderer.setAnimationLoop(null);
-      seen.disconnect();
-      sizer.disconnect();
-      listeners.abort();
-      tweens.list = [];
-      // 还在飘的火花
-      const points = [];
-      stage.scene.traverse((o) => o.isPoints && points.push(o));
-      for (const o of points) {
-        stage.scene.remove(o);
-        o.geometry.dispose();
-        o.material.dispose();
-      }
-      disposeBadge(badge);
-      if (finale && finale !== badge) disposeBadge(finale);
-      stage.dispose();
-    },
+    dispose: () => dispose(),
   };
 }
