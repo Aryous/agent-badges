@@ -110,7 +110,7 @@ async function waitProof(page, open) {
     const ty = new DOMMatrix(getComputedStyle(sheet).transform).m42;
     const shown = getComputedStyle(box.querySelector('.proof-case')).visibility === 'visible';
     const lifted = getComputedStyle(box.querySelector('.heat-plate')).transform !== 'none';
-    return open ? shown && Math.abs(ty + sheet.offsetHeight - 6) < 0.5 && box.offsetHeight === parseFloat(getComputedStyle(box).getPropertyValue('--case-h')) : !shown && ty === 0 && !lifted;
+    return open ? shown && Math.abs(ty + sheet.offsetHeight - 6) < 0.5 && sheet.getAnimations({ subtree: true }).length === 0 : !shown && ty === 0 && !lifted;
   }, open);
 }
 
@@ -120,10 +120,15 @@ async function proofState(page) {
     const box = document.querySelector('.proof');
     const pull = box.querySelector('.proof-pull');
     const plate = box.querySelector('.heat-plate');
-    const year = document.querySelector('.heat-years [aria-checked="true"]')?.textContent ?? String(new Date().getFullYear());
+    const year = document.querySelector('.heat-years').dataset.year;
     // 期望的月章数：热力图上这一年有亮点的月份（和铸币套装各自独立算）
     const lit = new Set([...document.querySelectorAll(`.heat-cell.is-lit[data-date^="${year}-"]`)].map((c) => c.dataset.date.slice(5, 7)));
+    const tray = box.querySelector('.proof-tray');
+    // 拉环底边到它下面第一排凹槽（横向和拉环重叠的那几个）顶边的距离
+    const pr = pull.getBoundingClientRect();
+    const below = [...tray.children].slice(0, 6).map((n) => n.getBoundingClientRect()).filter((r) => r.right > pr.left && r.left < pr.right);
     return {
+      year,
       expanded: pull.getAttribute('aria-expanded'),
       controls: document.getElementById(pull.getAttribute('aria-controls'))?.getAttribute('role'),
       medals: box.querySelectorAll('.proof-medal').length,
@@ -132,9 +137,46 @@ async function proofState(page) {
       caseInert: box.querySelector('.proof-case').inert,
       boxH: box.offsetHeight,
       plateH: plate.offsetHeight,
+      cols: getComputedStyle(tray).gridTemplateColumns.split(' ').length,
+      rows: getComputedStyle(tray).gridTemplateRows.split(' ').length,
+      slides: tray.scrollWidth > tray.clientWidth,
+      clearance: below.length ? Math.min(...below.map((r) => r.top - pr.bottom)) : null,
       overflow: document.documentElement.scrollWidth > window.innerWidth,
     };
   });
+}
+
+/**
+ * 打开铸币套装：板子滑到一半时把过渡暂停、读一次，停稳后再读一次；然后原路关上再读一次。
+ * 盒子的高度在三个时刻都应该等于板子的高度（不再有比板子高的竖排）。
+ */
+async function proofCycle(page) {
+  const closed = await proofState(page);
+  await page.locator('.proof-pull').click();
+  await waitUntil(page, '滑盖开始滑动', () => document.querySelector('.proof').classList.contains('is-open'));
+  const mid = await page.evaluate(() => {
+    const box = document.querySelector('.proof');
+    const sheet = box.querySelector('.proof-sheet');
+    const a = sheet.getAnimations().find((x) => x.transitionProperty === 'transform');
+    // 暂停、跳到一半读数，再跳回原来的时刻接着播：不改变滑盖的总时长（滑盖在动画期间不响应拉环）
+    const t0 = a?.currentTime;
+    if (a) {
+      a.pause();
+      a.currentTime = a.effect.getComputedTiming().activeDuration / 2;
+    }
+    const r = { sliding: Boolean(a), ty: new DOMMatrix(getComputedStyle(sheet).transform).m42, boxH: box.offsetHeight, plateH: box.querySelector('.heat-plate').offsetHeight };
+    if (a) {
+      a.currentTime = t0;
+      a.play();
+    }
+    return r;
+  });
+  await waitProof(page, true);
+  const open = await proofState(page);
+  await page.locator('.proof-pull').click();
+  await waitProof(page, false);
+  const back = await proofState(page);
+  return { closed, mid, open, back };
 }
 
 // ---------- 桌面 ----------
@@ -359,12 +401,34 @@ async function proofState(page) {
 
   const days = await page.locator('.heat-cell[data-date]').count();
   check('热力图一年 365 或 366 格', days === 365 || days === 366, String(days));
+  // 年份步进：点「上一年」切到 2025 再点「下一年」切回；点阵淡出、重建、淡入，统计行淡一下再换数字
+  const step = (d) => page.locator(`.heat-years [data-d="${d}"]`);
+  const yearSettled = (y) =>
+    waitUntil(page, `点阵换成 ${y} 年`, (y) => {
+      const grid = document.querySelector('.heat-grid');
+      return document.querySelector('.heat-cell[data-date]')?.dataset.date === `${y}-01-01` && !grid.classList.contains('is-fading') && !document.querySelector('.heat-summary').classList.contains('is-swapping') && grid.getAnimations({ subtree: true }).length === 0;
+    }, y);
   const summary2026 = await page.locator('[data-summary]').textContent();
-  await page.locator('.heat-years button', { hasText: '2025' }).click();
-  const summary2025 = await page.locator('[data-summary]').textContent();
-  const first = await page.locator('.heat-cell[data-date]').first().getAttribute('data-date');
-  check('切换年份后日历和汇总跟着变', first === '2025-01-01' && summary2025 !== summary2026, `${first} · ${summary2025}`);
-  await page.locator('.heat-years button', { hasText: '2026' }).click();
+  const nextAt2026 = await step(1).getAttribute('aria-disabled');
+  await step(-1).click();
+  await yearSettled(2025);
+  const at2025 = await page.evaluate(() => ({
+    year: document.querySelector('.heat-years').dataset.year,
+    shown: document.querySelector('.heat-year').textContent.trim().slice(-4),
+    prev: document.querySelector('.heat-years [data-d="-1"]').getAttribute('aria-disabled'),
+    summary: document.querySelector('[data-summary]').textContent,
+    first: document.querySelector('.heat-cell[data-date]').dataset.date,
+  }));
+  check(
+    '年份步进：点「上一年」切到 2025，日历和汇总跟着变；到头的一侧 aria-disabled',
+    at2025.first === '2025-01-01' && at2025.year === '2025' && at2025.shown === '2025' && at2025.summary !== summary2026 && at2025.prev === 'true' && nextAt2026 === 'true',
+    JSON.stringify({ ...at2025, nextAt2026 }),
+  );
+  await page.screenshot({ path: `${out}/desktop-heatmap-2025.png` });
+  await step(1).click();
+  await yearSettled(2026);
+  const back2026 = await page.evaluate(() => ({ year: document.querySelector('.heat-years').dataset.year, summary: document.querySelector('[data-summary]').textContent, next: document.querySelector('.heat-years [data-d="1"]').getAttribute('aria-disabled') }));
+  check('年份步进：点「下一年」切回 2026，汇总复原', back2026.year === '2026' && back2026.summary === summary2026 && back2026.next === 'true', JSON.stringify(back2026));
 
   const marker = page.locator('.heat-cell.is-unlock').first();
   await marker.hover();
@@ -373,28 +437,34 @@ async function proofState(page) {
   check('悬停解锁日显示日期、用量和徽章名', /2026 年/.test(tip) && tip.includes('解锁徽章'), tip.replace(/\s+/g, ' ').slice(0, 80));
   await page.screenshot({ path: `${out}/desktop-heatmap-tip.png` });
 
-  const codexToggle = page.locator('.heat-brand[data-id="codex"]');
+  // 工具开关在图例里：切换时圆点不重建（同一个 DOM 节点），只改颜色
+  await page.evaluate(() => (window.__heatCell = document.querySelector('.heat-cell.is-lit[data-date]')));
+  const codexToggle = page.locator('.heat-legend .heat-brand[data-id="codex"]');
   await codexToggle.click();
   const off = await codexToggle.getAttribute('aria-pressed');
-  const ccToggle = page.locator('.heat-brand[data-id="claude-code"]');
+  const ccToggle = page.locator('.heat-legend .heat-brand[data-id="claude-code"]');
   await ccToggle.click(); // 只剩一个时不能关掉
   const stillOn = await ccToggle.getAttribute('aria-pressed');
-  check('热力图可以按工具开关，至少保留一个', off === 'false' && stillOn === 'true', `${off} / ${stillOn}`);
+  check('热力图可以在图例里按工具开关，至少保留一个', off === 'false' && stillOn === 'true', `${off} / ${stillOn}`);
   await codexToggle.click();
+  const sameNode = await page.evaluate(() => {
+    const c = window.__heatCell;
+    return c.isConnected && c === document.querySelector(`.heat-cell[data-date="${c.dataset.date}"]`);
+  });
+  check('切换工具前后同一个圆点还是同一个 DOM 节点（点阵没有重建）', sameNode);
 
   // 年度铸币套装：点拉环，板子滑上去露出礼盒；再点一下原路关上
-  const proofClosed = await proofState(page);
-  await page.locator('.proof-pull').click();
-  await waitProof(page, true);
-  const proofOpen = await proofState(page);
+  const { closed: proofClosed, mid: proofMid, open: proofOpen, back: proofBack } = await proofCycle(page);
   check(
     '点拉环打开铸币套装：aria-expanded，月章数等于有活动的月份数，礼盒和板子一样高',
     proofClosed.expanded === 'false' && proofClosed.caseInert && proofOpen.expanded === 'true' && proofOpen.controls === 'region' && proofOpen.medals === proofOpen.months && proofOpen.months > 0 && proofOpen.plateInert && !proofOpen.caseInert && proofOpen.boxH === proofOpen.plateH,
     `${proofOpen.medals} 枚 / ${proofOpen.months} 个月 · 高 ${proofOpen.boxH} / ${proofOpen.plateH}`,
   );
-  await page.locator('.proof-pull').click();
-  await waitProof(page, false);
-  const proofBack = await proofState(page);
+  check(
+    '电脑 1440：打开中途和打开后盒子都和板子一样高，托盘 6 × 2 不用滑动，拉环和第一排铸币之间至少 16px',
+    proofMid.boxH === proofMid.plateH && proofOpen.cols === 6 && proofOpen.rows === 2 && !proofOpen.slides && proofOpen.clearance >= 16,
+    `中途 ${proofMid.boxH} / ${proofMid.plateH}（${proofMid.sliding ? `滑到 ${proofMid.ty.toFixed(0)}px` : '没赶上过渡'}）· ${proofOpen.cols} × ${proofOpen.rows} · 拉环下 ${proofOpen.clearance?.toFixed(1)}px`,
+  );
   check('再点一下原路关上，板子上的控件又能用', proofBack.expanded === 'false' && !proofBack.plateInert && proofBack.caseInert && proofBack.boxH === proofBack.plateH, JSON.stringify(proofBack));
 
   await marker.click();
@@ -469,21 +539,72 @@ async function proofState(page) {
   const { page, errors } = await session({ width: 390, height: 844 }, 'mobile');
   const wallOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   check('手机端陈列墙（含热力图）无横向溢出', !wallOverflow);
-  // 手机：托盘 3 × 4，礼盒比板子高，打开时盒子长高，关上再回到板子的高度
-  await page.locator('.proof-pull').click();
-  await waitProof(page, true);
-  const mOpen = await proofState(page);
-  const cols = await page.evaluate(() => getComputedStyle(document.querySelector('.proof-tray')).gridTemplateColumns.split(' ').length);
-  await page.locator('.proof-pull').click();
-  await waitProof(page, false);
-  const mBack = await proofState(page);
-  check('手机端铸币套装 3 列，打开时比板子高，关上后回到板子的高度，无横向溢出', cols === 3 && mOpen.boxH > mOpen.plateH && mBack.boxH === mBack.plateH && !mOpen.overflow, `${cols} 列 · 开 ${mOpen.boxH} / 板 ${mOpen.plateH} · 关 ${mBack.boxH}`);
+  // 手机：礼盒和板子一样高，托盘仍是 6 × 2，在礼盒里横向滑动
+  const m = await proofCycle(page);
+  check(
+    '手机 390：铸币套装打开中途、打开后、关上后都和板子一样高，托盘 6 列可以横向滑动，页面无横向溢出',
+    m.mid.boxH === m.mid.plateH && m.open.boxH === m.open.plateH && m.back.boxH === m.back.plateH && m.open.cols === 6 && m.open.slides && !m.open.overflow,
+    `中途 ${m.mid.boxH} / ${m.mid.plateH} · 开 ${m.open.boxH} / ${m.open.plateH} · 关 ${m.back.boxH} · ${m.open.cols} 列 · 滑动 ${m.open.slides}`,
+  );
   await page.evaluate(() => window.__badgeApp.open('seven-day-streak'));
   await page.waitForTimeout(3000);
   await page.screenshot({ path: `${out}/mobile-inspect.png` });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   check('手机端无横向溢出', !overflow);
   check('手机端控制台无报错', errors.length === 0, errors.join(' | '));
+  await page.close();
+}
+
+// ---------- 中等宽度（820）：铭牌栏仍在左边，托盘放不下 6 枚，在礼盒里横向滑动 ----------
+{
+  const page = await browser.newPage({ viewport: { width: 820, height: 1000 }, deviceScaleFactor: 2 });
+  const errors = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(url, { timeout: NAV_TIMEOUT });
+  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
+  const m = await proofCycle(page);
+  check(
+    '中等宽度 820：铸币套装打开中途、打开后、关上后都和板子一样高，托盘 6 列可以横向滑动，页面无横向溢出',
+    m.mid.boxH === m.mid.plateH && m.open.boxH === m.open.plateH && m.back.boxH === m.back.plateH && m.open.cols === 6 && m.open.slides && !m.open.overflow && !m.closed.overflow,
+    `中途 ${m.mid.boxH} / ${m.mid.plateH} · 开 ${m.open.boxH} / ${m.open.plateH} · 关 ${m.back.boxH} · ${m.open.cols} 列 · 滑动 ${m.open.slides}`,
+  );
+  check('中等宽度控制台无报错', errors.length === 0, errors.join(' | '));
+  await page.close();
+}
+
+// ---------- 减少动态效果（手机 390）：铸币套装和热力图都直接切换 ----------
+{
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, reducedMotion: 'reduce' });
+  const errors = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(url, { timeout: NAV_TIMEOUT });
+  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
+  await page.locator('.proof-pull').click();
+  // 点下去之后立刻读：不等任何一帧动画
+  const opened = await page.evaluate(() => {
+    const box = document.querySelector('.proof');
+    const sheet = box.querySelector('.proof-sheet');
+    return {
+      anims: box.getAnimations({ subtree: true }).map((a) => a.transitionProperty ?? a.animationName),
+      boxH: box.offsetHeight,
+      plateH: box.querySelector('.heat-plate').offsetHeight,
+      slid: Math.abs(new DOMMatrix(getComputedStyle(sheet).transform).m42 + sheet.offsetHeight - 6) < 0.5,
+      heightTransition: getComputedStyle(box).transitionProperty.includes('height') && parseFloat(getComputedStyle(box).transitionDuration) > 0,
+    };
+  });
+  check('减少动态效果：铸币套装直接打开，盒子高度没有过渡、等于板子', opened.anims.length === 0 && opened.slid && opened.boxH === opened.plateH && !opened.heightTransition, JSON.stringify(opened));
+  await page.locator('.proof-pull').click();
+  await page.locator('.heat-legend .heat-brand[data-id="codex"]').click();
+  await page.locator('.heat-years [data-d="-1"]').click();
+  const heat = await page.evaluate(() => ({
+    anims: document.querySelector('.heat').getAnimations({ subtree: true }).length,
+    first: document.querySelector('.heat-cell[data-date]').dataset.date,
+    year: document.querySelector('.heat-year').textContent.trim(),
+  }));
+  check('减少动态效果：切换工具和年份直接切换，没有淡入淡出和数字滚动', heat.anims === 0 && heat.first === '2025-01-01' && heat.year === '2025', JSON.stringify(heat));
+  check('减少动态效果控制台无报错', errors.length === 0, errors.join(' | '));
   await page.close();
 }
 

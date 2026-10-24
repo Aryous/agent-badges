@@ -36,12 +36,26 @@
   .btn,
   .seg button,
   .seg a,
-  .heat-brand {
+  .heat-brand,
+  .heat-step {
     transition: none;
   }
 
-  /* 铸币套装：不抬起、不滑动、不落定，直接切换 */
-  .proof,
+  /* 热力图：切换工具、换年份都直接切换，不淡入淡出、不扫过、不晃 */
+  .heat-cell[data-date]:not(.is-future),
+  .heat-cell.has-ring::after,
+  .heat-grid,
+  .heat-summary,
+  .heat-ramp i,
+  .heat-legend-both {
+    transition: none;
+  }
+
+  .heat-brand.is-nudge {
+    animation: none;
+  }
+
+  /* 铸币套装：不抬起、不滑动、不落定，直接切换（盒子的高度本来就不变） */
   .proof-sheet,
   .proof-sheet > .heat-plate,
   .proof-pull {
@@ -124,29 +138,14 @@
     align-items: flex-start;
   }
 
-  /* 热力图：板的内边距酌减；标题、统计行、控件上下排；点阵在板内横向滚动 */
+  /* 热力图：板的内边距酌减（浮层左右也限制在这个内容区里）；标题和年份步进仍在一行；点阵在板内横向滚动 */
   .heat-plate {
     padding: 20px 18px 18px;
     border-radius: 16px;
   }
 
-  .heat-head {
-    grid-template-columns: minmax(0, 1fr);
-    margin-bottom: 16px;
-  }
-
-  .heat-controls {
-    grid-row: 3;
-    justify-content: flex-start;
-  }
-
   .heat {
     --dot-min: 12px;
     --dot-gap: 4px;
-  }
-
-  .heat-legend {
-    flex-direction: column;
-    align-items: flex-start;
   }
 }

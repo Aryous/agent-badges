@@ -1,27 +1,32 @@
 // 年度铸币套装：藏在热力图珐琅板下面的一只礼盒。左边黄铜铭牌，右边丝绒托盘，每个月一枚「月章」。
 // 板子下沿正中一个皮质拉环：往上拖或点一下，板子先抬起，再滑进礼盒上沿；关上时原路返回。
 // 取色、当前年份、开着的工具、悬停浮层都用热力图的，不另做一份。
-import { enamelColor, SUNK } from './heatmap.js';
+import { enamelColor, escape, SUNK } from './heatmap.js';
 import { today } from '../data/calendar.js';
 import { formatCount } from '../data/format.js';
 import { STAGE_METALS } from '../brands/shared/completionist.js';
 import { t } from './i18n.js';
 
-/** 礼盒的尺寸（px）。电脑上铭牌在左、托盘 6 × 2；放不下时铭牌在上、托盘 4 × 3 或 3 × 4。 */
+/**
+ * 礼盒的尺寸（px）。托盘永远 6 × 2；礼盒永远和板子一样高，放不下 6 枚时托盘横向滑动。
+ * 托盘上下内边距 40：打开后皮质拉环（板子下沿往下 32px）垂在托盘上方，和第一排铸币之间留 16px。
+ */
 export const CASE = {
   pad: 14, // 礼盒内边距
   side: 190, // 铭牌栏宽
   sideGap: 14, // 铭牌栏和托盘之间
   trayX: 30, // 托盘左右内边距
-  trayY: 24, // 托盘上下内边距：打开后拉环垂在托盘上方，和第一排铸币之间留出空
+  trayY: 40, // 托盘上下内边距
   gap: 16, // 铸币之间
-  coinMin: 88, // 再小就看不清珠子和数字
-  coinMax: 120, // 竖排时铸币的上限
-  stackSide: 104, // 竖排时铭牌那一行的高度（上面留出拉环的位置）
-  stackTrayX: 16,
-  stackTrayY: 18,
-  stackGap: 14,
+  coinMax: 120, // 铸币直径的上限
+  narrowAt: 700, // 礼盒窄于这个宽度时，铭牌栏收成竖条
+  narrowSide: 50, // 竖条宽
+  narrowSideGap: 10,
+  narrowTrayX: 22,
 };
+
+/** 板子的最小高度：铸币 120px 时礼盒的高度。由 createProofSet 写到板子的 --plate-min 上。 */
+export const PLATE_MIN = 2 * CASE.pad + 2 * CASE.trayY + CASE.gap + 2 * CASE.coinMax;
 
 /**
  * 每个月的 Token 和活跃天数（只有对话没有 Token 的日子也算活跃）。
@@ -61,22 +66,13 @@ export const plaqueStatus = (year, minted, now = today()) =>
   year < Number(now.slice(0, 4)) ? 'SEALED · 12.31' : `MINTING · ${minted} / 12`;
 
 /**
- * 礼盒的版式：先按板子的高度排 6 × 2，宽度不够再缩；小于下限就改成铭牌在上的竖排。
- * @returns {{ cols, rows, coin, stacked, height }}  height 是礼盒的高度（6 × 2 时就是板子的高度）
+ * 礼盒的版式：高度就是板子的高度，铸币直径按高度算，不超过 120；宽度只决定铭牌栏是不是竖条。
+ * @returns {{ coin: number, narrow: boolean }}
  */
 export function caseLayout({ width, plateHeight }) {
   const c = CASE;
-  const byHeight = Math.floor((plateHeight - 2 * c.pad - 2 * c.trayY - c.gap) / 2);
-  const byWidth = Math.floor((width - 2 * c.pad - c.side - c.sideGap - 2 * c.trayX - 5 * c.gap) / 6);
-  const coin = Math.min(byHeight, byWidth);
-  if (coin >= c.coinMin) return { cols: 6, rows: 2, coin, stacked: false, height: plateHeight };
-  for (const cols of [4, 3]) {
-    const fit = Math.min(c.coinMax, Math.floor((width - 2 * c.pad - 2 * c.stackTrayX - (cols - 1) * c.stackGap) / cols));
-    if (fit < c.coinMin && cols > 3) continue;
-    const rows = 12 / cols;
-    const height = 2 * c.pad + c.stackSide + c.sideGap + 2 * c.stackTrayY + rows * fit + (rows - 1) * c.stackGap;
-    return { cols, rows, coin: fit, stacked: true, height: Math.max(height, plateHeight) };
-  }
+  const coin = Math.min(c.coinMax, Math.floor((plateHeight - 2 * c.pad - 2 * c.trayY - c.gap) / 2));
+  return { coin, narrow: width < c.narrowAt };
 }
 
 // ---------- 月章（SVG，160 × 160） ----------
@@ -196,6 +192,14 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
   plate.replaceWith(box);
   sheet.append(plate, pull);
   for (const [n, left] of scrolled) n.scrollLeft = left;
+  // 板子的最小高度保证铸币是 120px；礼盒的各个尺寸也从 CASE 来，CSS 里不另写一份
+  plate.style.setProperty('--plate-min', `${PLATE_MIN}px`);
+  const px = { pad: CASE.pad, side: CASE.side, 'side-gap': CASE.sideGap, 'tray-x': CASE.trayX, 'tray-y': CASE.trayY, gap: CASE.gap };
+  const narrowPx = { side: CASE.narrowSide, 'side-gap': CASE.narrowSideGap, 'tray-x': CASE.narrowTrayX };
+  const setSizes = (narrow) => {
+    for (const [k, v] of Object.entries({ ...px, ...(narrow ? narrowPx : {}) })) box.style.setProperty(`--case-${k}`, `${v}px`);
+  };
+  setSizes(false);
 
   let open = false;
   let busy = false;
@@ -203,8 +207,10 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
   const timers = [];
   const later = (fn, ms) => timers.push(setTimeout(fn, ms));
 
+  let status = '';
   function labels() {
-    caseEl.setAttribute('aria-label', t('proof.region', { year }));
+    // 窄版不显示铭牌上的状态，读屏名字里总是带上
+    caseEl.setAttribute('aria-label', t('proof.region', { year, status }));
     pull.setAttribute('aria-label', t(open ? 'proof.close' : 'proof.open', { year }));
   }
 
@@ -233,22 +239,39 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
       })
       .join('');
     box.querySelector('[data-year]').textContent = year;
-    box.querySelector('[data-status]').textContent = plaqueStatus(year, minted.size, now);
+    status = plaqueStatus(year, minted.size, now);
+    box.querySelector('[data-status]').textContent = status;
     labels();
   }
 
-  // ---------- 尺寸：先量板子的自然高度，再按它排铸币 ----------
+  // ---------- 尺寸：礼盒就是板子的高度，铸币按它排；宽度只决定铭牌栏是不是竖条 ----------
+  let narrow = null;
   function fit() {
     const plateHeight = plate.offsetHeight;
     const width = box.clientWidth;
     if (!plateHeight || !width) return;
     const l = caseLayout({ width, plateHeight });
-    box.classList.toggle('is-stacked', l.stacked);
+    if (l.narrow !== narrow) {
+      narrow = l.narrow;
+      box.classList.toggle('is-narrow', narrow);
+      setSizes(narrow);
+    }
     box.style.setProperty('--plate-h', `${plateHeight}px`);
-    box.style.setProperty('--case-h', `${l.height}px`);
     box.style.setProperty('--coin', `${l.coin}px`);
-    box.style.setProperty('--cols', l.cols);
-    box.style.setProperty('--rows', l.rows);
+  }
+
+  /** 放不下 6 枚时托盘横向滑动：看今年就把当前月份滑进来（停在右边），看往年从 1 月开始。 */
+  function scrollToMonth() {
+    const now = today();
+    const slot = year === Number(now.slice(0, 4)) ? tray.children[Number(now.slice(5, 7)) - 1] : null;
+    if (!slot) {
+      tray.scrollLeft = 0;
+      return;
+    }
+    const r = slot.getBoundingClientRect();
+    const tr = tray.getBoundingClientRect();
+    const right = r.right - tr.left + tray.scrollLeft + parseFloat(getComputedStyle(tray).paddingRight);
+    tray.scrollLeft = Math.max(0, right - tray.clientWidth);
   }
   new ResizeObserver(fit).observe(plate);
   window.addEventListener('resize', fit);
@@ -273,6 +296,7 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
     plate.inert = open;
     if (open) {
       caseEl.inert = false;
+      scrollToMonth();
       box.classList.add('is-shown');
       if (still()) {
         box.classList.add('is-lifted', 'is-open');
@@ -355,5 +379,3 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
 
 /** 「1 月」/「January」 */
 const monthName = (m) => t('proof.months')[m] ?? String(m + 1);
-
-const escape = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);

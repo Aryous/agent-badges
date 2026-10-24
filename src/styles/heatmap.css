@@ -1,15 +1,14 @@
-/* 年度热力图：午夜蓝珐琅板（全解锁徽章环带的那套材料）、凹点、工具开关、图例、悬浮提示 */
+/* 年度热力图：午夜蓝珐琅板（全解锁徽章环带的那套材料）、年份步进、凹点、图例（兼工具开关）、悬浮提示 */
 
 .heat {
   /* 板上的颜色只在这里用，不进全局变量 */
   --plate: #141f4d; /* 和徽章的 midnight 同色 */
-  --plate-sunk: #0d1538; /* 凹点、控件的槽 */
-  --plate-thumb: #24306a; /* 板上的滑块：比板稍亮的珐琅 */
+  --plate-sunk: #0d1538; /* 凹点 */
   --plate-frame: rgba(160, 152, 138, 0.42); /* 锡色外框 */
-  --plate-ink: #f3ead6; /* 标题、数字、选中项 */
+  --plate-ink: #f3ead6; /* 标题、数字、年份 */
   --plate-sub: #9aa3c4; /* 统计行 */
   --plate-month: #b8a982; /* 沙金色月份 */
-  --plate-dim: #8d96b8; /* 星期、图例文字、未选中项 */
+  --plate-dim: #8d96b8; /* 星期、图例文字、关掉的工具、步进箭头 */
   --plate-name: #e6dcc4; /* 图例里的工具名 */
   --plate-ring: #d9bf86; /* 解锁日的金边 */
   --dot-gap: 5px;
@@ -18,8 +17,13 @@
   margin-bottom: 52px;
 }
 
-/* 珐琅板：午夜蓝底加一层很淡的同心细纹，锡色双线边框，柔和投影 */
+/* 珐琅板：午夜蓝底加一层很淡的同心细纹，锡色双线边框，柔和投影。
+   竖向弹性布局：标题行在上，图例在下，点阵在中间，多出来的空间就是呼吸。
+   最小高度（--plate-min）由铸币套装按 CASE 算好写进来，保证电脑上铸币是 120px；落地页没有铸币套装，按内容高度 */
 .heat-plate {
+  display: flex;
+  flex-direction: column;
+  min-height: var(--plate-min, auto);
   padding: 26px 30px 22px;
   border-radius: 18px;
   background: var(--plate);
@@ -31,24 +35,16 @@
     0 18px 40px rgba(0, 0, 0, 0.35);
 }
 
-/* 标题和控件一行，统计行在下面单独一行 */
+/* 标题行：左边标题，右边年份步进，下面一行统计 */
 .heat-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px 24px;
-  margin-bottom: 18px;
+  gap: 8px 20px;
 }
 
 .heat-title {
   color: var(--plate-ink);
-}
-
-.heat-controls {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
 }
 
 .heat-summary {
@@ -60,6 +56,12 @@
   text-transform: uppercase;
   color: var(--plate-sub);
   font-variant-numeric: tabular-nums;
+  transition: opacity 0.25s ease;
+}
+
+/* 切换工具、换年份时淡一下再换数字 */
+.heat-summary.is-swapping {
+  opacity: 0.25;
 }
 
 :lang(zh) .heat-summary {
@@ -76,90 +78,79 @@
   color: var(--plate-ink);
 }
 
-/* ---------- 板上的控件：外框、槽、滑块换成板上的颜色 ---------- */
+/* ---------- 年份步进：‹ 2026 ›，细线箭头，28px 圆形热区；数字像计数器一样上下滚 ---------- */
 
-.heat .seg {
-  border-color: var(--plate-frame);
-  background: var(--plate-sunk);
-  box-shadow: inset 0 0 0 1px var(--plate), var(--sunk);
-}
-
-.heat .seg::before {
-  background: var(--plate-thumb);
-}
-
-.heat .seg button {
-  color: var(--plate-dim);
-}
-
-.heat .seg button:hover,
-.heat .seg button[aria-checked='true'] {
-  color: var(--plate-ink);
-}
-
-/* 工具开关：同一种胶囊外形，每个工具是独立的开关；打开时立一枚珐琅小滑块，关闭时只剩文字和空心圆点 */
-.heat-brands {
-  display: inline-flex;
-  gap: 3px;
-  height: 32px;
-  padding: 3px;
-  border: 1px solid var(--plate-frame);
-  border-radius: 999px;
-  background: var(--plate-sunk);
-  box-shadow: inset 0 0 0 1px var(--plate), var(--sunk);
-}
-
-.heat-brand {
+.heat-years {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 0 11px;
-  border: 1px solid transparent;
-  border-radius: 999px;
+  gap: 2px;
+}
+
+.heat-step {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
   background: none;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
   color: var(--plate-dim);
   cursor: pointer;
-  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  transition: color 0.15s ease, background-color 0.15s ease;
 }
 
-.heat-brand:hover {
+.heat-step:hover:not([aria-disabled='true']) {
   color: var(--plate-ink);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.heat-brand i {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1.5px var(--c);
+/* 到头的一侧：变淡，点了也没反应 */
+.heat-step[aria-disabled='true'] {
+  opacity: 0.3;
+  cursor: default;
 }
 
-.heat-brand[aria-pressed='true'] {
-  border-color: var(--gold-rim);
-  background: var(--plate-thumb);
-  box-shadow: var(--relief);
+.heat-step:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.heat-step svg {
+  width: 14px;
+  height: 14px;
+}
+
+.heat-year {
+  position: relative;
+  display: inline-block;
+  width: 3.1em;
+  height: 22px;
+  overflow: hidden;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   color: var(--plate-ink);
-}
-
-.heat-brand[aria-pressed='true'] i {
-  background: var(--c);
-  box-shadow: none;
-}
-
-.heat-brand-total {
-  color: var(--plate-sub);
   font-variant-numeric: tabular-nums;
 }
 
-.heat-brand:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.heat-year span {
+  position: absolute;
+  inset: 0;
+  line-height: 22px;
 }
 
 /* ---------- 点阵：一周一列，圆点撑满板宽 ---------- */
+
+.heat-mid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 18px 0 4px;
+}
 
 /* 留出金边和悬停描边的位置：横向滚动会连带裁掉竖向溢出 */
 .heat-scroll {
@@ -197,10 +188,16 @@
   white-space: nowrap;
 }
 
+/* 换年份：点阵整体淡出，换成新的一年再淡入 */
 .heat-grid {
   grid-template-rows: repeat(7, auto);
   grid-auto-flow: column;
   row-gap: var(--dot-gap);
+  transition: opacity 0.2s ease;
+}
+
+.heat-grid.is-fading {
+  opacity: 0;
 }
 
 .heat-wd {
@@ -220,6 +217,19 @@
   align-items: center;
 }
 
+/* 圆点左右两半的颜色：可过渡的颜色变量，初值是凹点色（和 heatmap.js 的 SUNK 同色） */
+@property --a {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #0d1538;
+}
+
+@property --b {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #0d1538;
+}
+
 /* 凹点：没有活动是凹下去的深色点，下缘一道很淡的高光 */
 .heat-cell {
   position: relative;
@@ -229,8 +239,21 @@
   box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-/* 有活动：填品牌色珐琅（背景由 heatmap.js 写入），顶部高光、底部暗边，像凸起的珐琅 */
-.heat-cell.is-lit {
+/* 有日期的圆点：左右两半由 heatmap.js 写进 --a / --b（一个工具时两半同色）。
+   切换工具只改这两个变量，约 0.55 秒淡过去；每周一列错开 5ms，从左往右轻轻扫过。
+   凹点的阴影和「亮起」时的三层一一对应，阴影才能一起平滑过渡 */
+.heat-cell[data-date]:not(.is-future) {
+  background: linear-gradient(90deg, var(--a) 0 50%, var(--b) 50% 100%);
+  box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.55), inset 0 0 0 transparent, 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    --a 0.55s cubic-bezier(0.2, 0.7, 0.2, 1),
+    --b 0.55s cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 0.55s ease;
+  transition-delay: calc(var(--w) * 5ms);
+}
+
+/* 有活动：填品牌色珐琅，顶部高光、底部暗边，像凸起的珐琅 */
+.heat-cell.is-lit[data-date] {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 1px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 0, 0, 0.4);
 }
 
@@ -241,16 +264,35 @@
   box-shadow: inset 0 0 0 1px rgba(184, 169, 130, 0.16);
 }
 
-/* 解锁徽章的日子：离圆点 2px 一圈细金边，可以点开那枚徽章 */
-.heat-cell.is-unlock::after {
+/* 解锁徽章的日子：离圆点 1px 一圈 1px 的细金边（连续解锁的日子不叠在一起）。
+   金边一直在，开关工具只改透明度和大小：关掉时淡出并略缩小，打开时淡入、带一点回弹，跟着同一道扫过 */
+.heat-cell.has-ring::after {
   content: '';
   position: absolute;
-  inset: -2px;
+  inset: -1px;
   border-radius: 50%;
-  box-shadow: 0 0 0 1.2px var(--plate-ring);
+  box-shadow: 0 0 0 1px var(--plate-ring);
   pointer-events: none;
+  opacity: 0;
+  transform: scale(0.7);
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+  transition-delay: calc(var(--w) * 5ms);
 }
 
+.heat-cell.has-ring.ring-on::after {
+  opacity: 1;
+  transform: none;
+}
+
+/* 新建的点阵直接上色，不过渡 */
+.heat-grid.is-still .heat-cell,
+.heat-grid.is-still .heat-cell::after {
+  transition: none;
+}
+
+/* 开着的工具里有人那天解锁：可以点开那枚徽章 */
 .heat-cell.is-unlock {
   cursor: pointer;
 }
@@ -261,10 +303,10 @@
 }
 
 .heat-cell.is-unlock:hover::after {
-  box-shadow: 0 0 0 1.6px var(--plate-ink);
+  box-shadow: 0 0 0 1.4px var(--plate-ink);
 }
 
-/* ---------- 图例：每个工具自己的色阶（和点阵同一个取色函数）、双色点、解锁金边 ---------- */
+/* ---------- 图例就是开关：每个工具一项（工具名 + 它自己的四级色阶），同一天都用，解锁金边 ---------- */
 
 .heat-rule {
   margin-top: 14px;
@@ -275,37 +317,95 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px 24px;
-  margin-top: 16px;
+  gap: 10px 20px;
+  margin-top: 14px;
   font-size: 12px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--plate-dim);
 }
 
-.heat-legend-tools {
+.heat-legend-tools,
+.heat-toggles {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 22px;
+  gap: 4px 6px;
 }
 
-.heat-legend-tool,
-.heat-legend-both,
-.heat-scale-mark {
+/* 按钮有 10px 内边距：往左挪回去，工具名和板上的文字对齐（「同一天都用」折到下一行时也对齐） */
+.heat-toggles {
+  margin-left: -10px;
+}
+
+.heat-brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  color: var(--plate-name);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.3s ease;
 }
 
-.heat-legend-tool b {
+.heat-brand:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.heat-brand:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.heat-brand b {
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: var(--plate-name);
 }
 
 .heat-ramp {
   display: inline-flex;
   gap: 4px;
+}
+
+/* 色阶：和点阵同一个取色函数（--c 由 heatmap.js 写入），关掉时依次错开变成空心圈 */
+.heat-ramp i {
+  background-color: var(--c);
+  transition: background-color 0.35s ease, box-shadow 0.35s ease;
+  transition-delay: calc(var(--k) * 40ms);
+}
+
+/* 关掉的工具：名字变暗、加一道细删除线，色阶变成空心圈 */
+.heat-brand[aria-pressed='false'] {
+  color: var(--plate-dim);
+}
+
+.heat-brand[aria-pressed='false'] b {
+  text-decoration: line-through;
+  text-decoration-color: rgba(141, 150, 184, 0.45);
+  text-decoration-thickness: 1px;
+}
+
+.heat-brand[aria-pressed='false'] .heat-ramp i {
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px rgba(141, 150, 184, 0.4), inset 0 0 0 transparent, 0 0 0 transparent;
+}
+
+/* 只剩一个工具时再点它：轻轻左右晃一下，状态不变 */
+.heat-brand.is-nudge {
+  animation: heat-nudge 0.36s ease;
+}
+
+@keyframes heat-nudge {
+  25% {
+    transform: translateX(-3px);
+  }
+  60% {
+    transform: translateX(2px);
+  }
 }
 
 .heat-legend i {
@@ -316,18 +416,31 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 1px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 0, 0, 0.4);
 }
 
-.heat-scale {
-  display: flex;
-  flex-wrap: wrap;
+.heat-legend-both,
+.heat-legend-unlock {
+  display: inline-flex;
   align-items: center;
-  gap: 8px 20px;
+  gap: 8px;
+  white-space: nowrap;
 }
 
-/* 和点阵上的一样：凹点外隔 2px 板色，再一圈金边 */
-.heat-legend .heat-scale-unlock {
-  background: var(--plate-sunk);
-  box-shadow: 0 0 0 2px var(--plate), 0 0 0 3.2px var(--plate-ring);
+/* 同一天都用：只在两个工具都开着时出现，宽度和透明度一起过渡 */
+.heat-legend-both {
+  overflow: hidden;
+  max-width: 220px;
+  transition: max-width 0.4s ease, opacity 0.3s ease;
+}
+
+.heat-legend-both.is-off {
+  max-width: 0;
+  opacity: 0;
+}
+
+/* 和点阵上的一样：凹点外隔 1px 板色，再一圈 1px 金边 */
+.heat-legend-unlock i {
   margin: 0 2px;
+  background: var(--plate-sunk);
+  box-shadow: 0 0 0 1px var(--plate), 0 0 0 2px var(--plate-ring);
 }
 
 /* ---------- 悬停详情：和单枚查看的弹层同一套颜色 ---------- */
@@ -399,14 +512,14 @@
   border-top: 1px solid var(--pewter-line);
 }
 
-/* 金边圆点，和点阵上的解锁标记同色 */
+/* 金边圆点，和点阵上的解锁标记同色同粗细 */
 .heat-ring {
   flex: none;
   width: 7px;
   height: 7px;
   margin: 5px 1px 0;
   border-radius: 50%;
-  box-shadow: 0 0 0 1.2px var(--plate-ring);
+  box-shadow: 0 0 0 1px var(--plate-ring);
 }
 
 .heat-tip-brand {

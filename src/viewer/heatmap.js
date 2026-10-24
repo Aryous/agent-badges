@@ -6,7 +6,6 @@ import { levelOf, levelThresholds, today, yearWeeks } from '../data/calendar.js'
 import { formatDay, lang, t } from './i18n.js';
 import { formatCount } from '../data/format.js';
 import { describeState } from './describe.js';
-import { trackSegThumb } from './seg.js';
 
 /** 板上凹点的颜色：没有活动的日子，也是混色的另一端。 */
 export const SUNK = '#0d1538';
@@ -26,6 +25,9 @@ export function enamelColor(hex, level) {
   return `rgb(${a.map((v, i) => Math.round(v * k + b[i] * (1 - k))).join(', ')})`;
 }
 
+/** 拼进 HTML 的文字转义（热力图和铸币套装共用）。 */
+export const escape = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
 /** 左右各半的双色点：左边是第一个工具。 */
 export const splitBackground = (left, right) => `linear-gradient(90deg, ${left} 0 50%, ${right} 50% 100%)`;
 
@@ -34,12 +36,6 @@ export function cellBackground(parts) {
   if (!parts.length) return enamelColor(SUNK, 0);
   const [a, b] = parts.map((p) => enamelColor(p.color, p.level));
   return b ? splitBackground(a, b) : a;
-}
-
-/** 统计行的范围：开着一个工具写它的名字，两个写「两个工具合计」。 */
-export function summaryScope(names, l = lang) {
-  if (names.length === 1) return names[0];
-  return names.length === 2 ? t('heat.scopeBoth', {}, l) : t('heat.scopeAll', { n: names.length }, l);
 }
 
 /**
@@ -79,26 +75,37 @@ export function combineDaily(list) {
   return out;
 }
 
+/** 细线箭头（SVG，不用字符）：-1 往左，1 往右。 */
+const chevron = (d) =>
+  `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${d < 0 ? 'M10 3.5 5.5 8 10 12.5' : 'M6 3.5 10.5 8 6 12.5'}"/></svg>`;
+
+const ROLL = { duration: 320, easing: 'cubic-bezier(.2,.7,.2,1)' };
+
 /**
- * 结构：section.heat 里一块珐琅板 .heat-plate（标题、控件、点阵、图例都在板上）和一个悬停浮层。
+ * 结构：section.heat 里一块珐琅板 .heat-plate 和一个悬停浮层。
+ * 板上从上到下：标题行（标题、年份步进、统计行），点阵，图例（同时是工具开关）。
  * 板是单独的一个元素，以后可以整体包起来或移动；浮层不在板里，跟着 section 定位。
+ * 切换工具只改圆点的颜色变量和类名，不重建；换年份才重建点阵，并淡出淡入。
  * @param {object} opts
  * @param {HTMLElement} opts.root
  * @param {{ id, name, color, daily }[]} opts.series  每个工具的按天用量
  * @param {Record<string, { brandId, brandName, id, title }[]>} opts.markers  每天解锁的徽章
  * @param {(marker) => void} [opts.onMarker]  点击解锁标记
+ * @param {boolean} [opts.reducedMotion]  减少动态效果：不淡入淡出、不滚动数字，直接切换
  */
-export function createHeatmap({ root, series, markers = {}, onMarker }) {
+export function createHeatmap({ root, series, markers = {}, onMarker, reducedMotion = false }) {
   const weekStart = lang === 'zh' ? 1 : 0;
   const thresholds = Object.fromEntries(series.map((s) => [s.id, levelThresholds(s.daily)]));
   const enabled = new Set(series.map((s) => s.id));
   const listeners = new Set();
   const now = today();
-  const years = dailyYears(...series.map((s) => s.daily));
-  if (!years.includes(Number(now.slice(0, 4)))) years.push(Number(now.slice(0, 4)));
-  // 默认看有数据的最近一年
+  const thisYear = Number(now.slice(0, 4));
   const withData = dailyYears(...series.map((s) => s.daily));
-  let year = withData.at(-1) ?? Number(now.slice(0, 4));
+  const years = [...new Set([...withData, thisYear])].sort((a, b) => a - b);
+  // 默认看有数据的最近一年
+  let year = withData.at(-1) ?? thisYear;
+  const still = () => reducedMotion || Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  const sunk = enamelColor(SUNK, 0);
 
   const el = document.createElement('section');
   el.className = 'heat';
@@ -106,31 +113,39 @@ export function createHeatmap({ root, series, markers = {}, onMarker }) {
     <div class="heat-plate" data-plate>
       <header class="heat-head">
         <h2 class="section-title heat-title">${t('heat.title')}</h2>
-        <div class="heat-controls">
-          <div class="heat-brands" data-brands></div>
-          <div class="seg heat-years" role="radiogroup" aria-label="${t('heat.title')}" data-years></div>
+        <div class="heat-years" role="group" aria-label="${t('heat.year')}" data-years>
+          <button type="button" class="heat-step" data-d="-1" aria-label="${t('heat.prevYear')}">${chevron(-1)}</button>
+          <span class="heat-year" data-year aria-live="polite"></span>
+          <button type="button" class="heat-step" data-d="1" aria-label="${t('heat.nextYear')}">${chevron(1)}</button>
         </div>
         <p class="heat-summary" data-summary></p>
       </header>
-      <div class="heat-scroll" data-scroll>
-        <div class="heat-body">
-          <div class="heat-months" data-months aria-hidden="true"></div>
-          <div class="heat-wd" data-wd aria-hidden="true"></div>
-          <div class="heat-grid" data-grid role="img"></div>
+      <div class="heat-mid">
+        <div class="heat-scroll" data-scroll>
+          <div class="heat-body">
+            <div class="heat-months" data-months aria-hidden="true"></div>
+            <div class="heat-wd" data-wd aria-hidden="true"></div>
+            <div class="heat-grid" data-grid role="img"></div>
+          </div>
         </div>
       </div>
       <div class="rule heat-rule" aria-hidden="true"></div>
-      <footer class="heat-legend" aria-hidden="true">
-        <div class="heat-legend-tools" data-legend></div>
-        <div class="heat-scale">
-          <span>${t('heat.brighter')}</span>
-          <span class="heat-scale-mark"><i class="heat-scale-unlock"></i>${t('heat.unlock')}</span>
+      <footer class="heat-legend">
+        <div class="heat-legend-tools">
+          <div class="heat-toggles" role="group" aria-label="${t('heat.tools')}" data-legend></div>
+          <span class="heat-legend-both" data-both><i></i>${t('heat.both')}</span>
         </div>
+        <span class="heat-legend-unlock"><i></i>${t('heat.unlock')}</span>
       </footer>
     </div>
     <div class="heat-tip" data-tip role="tooltip" hidden></div>`;
   root.appendChild(el);
   const $ = (s) => el.querySelector(s);
+  const plate = $('[data-plate]');
+  const grid = $('[data-grid]');
+  const tip = $('[data-tip]');
+  const scroll = $('[data-scroll]');
+  const summaryEl = $('[data-summary]');
 
   // 星期标签：只标一、三、五（或 Mon / Wed / Fri）
   const wd = t('weekdays');
@@ -138,44 +153,6 @@ export function createHeatmap({ root, series, markers = {}, onMarker }) {
     const day = (weekStart + i) % 7;
     return `<span>${[1, 3, 5].includes(day) ? wd[day] : ''}</span>`;
   }).join('');
-
-  // 年份切换（只有一年时不显示）
-  const yearsEl = $('[data-years]');
-  yearsEl.hidden = years.length < 2;
-  for (const y of years) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.setAttribute('role', 'radio');
-    b.textContent = y;
-    b.addEventListener('click', () => {
-      year = y;
-      render();
-    });
-    yearsEl.appendChild(b);
-  }
-  trackSegThumb(yearsEl);
-
-  // 工具开关：至少留一个
-  const brandsEl = $('[data-brands]');
-  for (const s of series) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'heat-brand';
-    b.dataset.id = s.id;
-    b.style.setProperty('--c', s.color);
-    b.setAttribute('aria-label', t('heat.toggle', { name: s.name }));
-    b.innerHTML = `<i></i><span class="heat-brand-name"></span><span class="heat-brand-total"></span>`;
-    b.querySelector('.heat-brand-name').textContent = s.name;
-    b.addEventListener('click', () => {
-      if (enabled.has(s.id) && enabled.size === 1) return;
-      enabled.has(s.id) ? enabled.delete(s.id) : enabled.add(s.id);
-      render();
-    });
-    brandsEl.appendChild(b);
-  }
-
-  const grid = $('[data-grid]');
-  const tip = $('[data-tip]');
 
   /** 某一天开着的工具里有活动的几个：{ id, color, level }，按工具顺序（左边是第一个）。 */
   function partsOf(date) {
@@ -190,84 +167,192 @@ export function createHeatmap({ root, series, markers = {}, onMarker }) {
 
   const markersOn = (date) => (markers[date] ?? []).filter((m) => enabled.has(m.brandId));
 
-  // 图例：开着的每个工具一条自己的四级色阶，和点阵用同一个取色函数；两个都开时再放一颗左右各半的点
-  function renderLegend() {
-    const on = series.filter((s) => enabled.has(s.id));
-    const tools = on.map(
-      (s) =>
-        `<span class="heat-legend-tool"><b>${escape(s.name)}</b><span class="heat-ramp">${[1, 2, 3, 4]
-          .map((l) => `<i style="background:${enamelColor(s.color, l)}"></i>`)
-          .join('')}</span></span>`,
-    );
-    if (on.length >= 2) {
-      const both = cellBackground(on.slice(0, 2).map((s) => ({ color: s.color, level: 4 })));
-      tools.push(`<span class="heat-legend-both"><i style="background:${both}"></i>${t('heat.both')}</span>`);
+  const emit = () => {
+    const state = { year, enabled: [...enabled] };
+    for (const fn of listeners) fn(state);
+  };
+
+  // ---------- 年份步进：‹ 2026 ›，只有一年时不显示 ----------
+  const yearsEl = $('[data-years]');
+  const yearWin = $('[data-year]');
+  yearsEl.hidden = years.length < 2;
+
+  /** 年份数字：去年往下滚、明年往上滚，像计数器；到头的一侧变淡、aria-disabled。 */
+  function renderYear(dir = 0) {
+    yearsEl.dataset.year = year;
+    const i = years.indexOf(year);
+    yearsEl.querySelector('[data-d="-1"]').setAttribute('aria-disabled', String(i <= 0));
+    yearsEl.querySelector('[data-d="1"]').setAttribute('aria-disabled', String(i >= years.length - 1));
+    const neu = document.createElement('span');
+    neu.textContent = year;
+    const old = [...yearWin.children];
+    if (!dir || !old.length || still() || typeof neu.animate !== 'function') {
+      yearWin.replaceChildren(neu);
+      return;
     }
-    $('[data-legend]').innerHTML = tools.join('');
+    // 连点时上一轮还没滚完：只留最后一个往外滚
+    old.slice(0, -1).forEach((n) => n.remove());
+    const out = old.at(-1);
+    out.setAttribute('aria-hidden', 'true');
+    yearWin.append(neu);
+    out.animate([{ transform: 'none', opacity: 1 }, { transform: `translateY(${dir > 0 ? -100 : 100}%)`, opacity: 0 }], ROLL).onfinish = () => out.remove();
+    neu.animate([{ transform: `translateY(${dir > 0 ? 100 : -100}%)`, opacity: 0 }, { transform: 'none', opacity: 1 }], ROLL);
   }
 
-  function render() {
+  yearsEl.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-d]');
+    if (!b || b.getAttribute('aria-disabled') === 'true') return;
+    const d = Number(b.dataset.d);
+    const y = years[years.indexOf(year) + d];
+    if (y !== undefined) setYear(y);
+  });
+
+  // ---------- 图例就是开关：工具名加它自己的四级色阶，整项一个按钮；至少留一个 ----------
+  const legendEl = $('[data-legend]');
+  const bothEl = $('[data-both]');
+  for (const s of series) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'heat-brand';
+    b.dataset.id = s.id;
+    b.setAttribute('aria-pressed', 'true');
+    b.setAttribute('aria-label', t('heat.toggle', { name: s.name }));
+    b.innerHTML = `<b class="heat-brand-name">${escape(s.name)}</b><span class="heat-ramp">${[1, 2, 3, 4]
+      .map((l, k) => `<i style="--k:${k};--c:${enamelColor(s.color, l)}"></i>`)
+      .join('')}</span>`;
+    legendEl.appendChild(b);
+  }
+  // 两个工具同一天都用：左右各半的点；只在两个都开着时出现
+  bothEl.querySelector('i').style.background = cellBackground(series.slice(0, 2).map((s) => ({ color: s.color, level: 4 })));
+  const both = series.length >= 2;
+  bothEl.hidden = !both;
+
+  function paintLegend() {
+    for (const b of legendEl.children) b.setAttribute('aria-pressed', String(enabled.has(b.dataset.id)));
+    const off = enabled.size < 2;
+    bothEl.classList.toggle('is-off', off);
+    bothEl.setAttribute('aria-hidden', String(off));
+  }
+
+  legendEl.addEventListener('click', (e) => {
+    const b = e.target.closest('.heat-brand');
+    if (!b) return;
+    const id = b.dataset.id;
+    if (enabled.has(id) && enabled.size === 1) {
+      // 只剩一个：轻轻左右晃一下，状态不变
+      b.classList.remove('is-nudge');
+      void b.offsetWidth;
+      b.classList.add('is-nudge');
+      return;
+    }
+    enabled.has(id) ? enabled.delete(id) : enabled.add(id);
+    paintLegend();
+    paintCells();
+    renderSummary(true);
+    hideTip();
+    emit();
+  });
+  legendEl.addEventListener('animationend', (e) => e.target.classList?.remove('is-nudge'));
+
+  // ---------- 点阵 ----------
+  /** 换年份：重建这一年的格子（每周一列），颜色由 paintCells 写进去。 */
+  function buildGrid() {
     const { weeks, monthStarts } = yearWeeks(year, weekStart);
     el.style.setProperty('--weeks', weeks.length);
-    yearsEl.querySelectorAll('button').forEach((b) => b.setAttribute('aria-checked', String(Number(b.textContent) === year)));
-
     const months = t('months');
     $('[data-months]').innerHTML = monthStarts
       .map(({ month, col }) => `<span style="grid-column-start:${col + 1}">${months[month]}</span>`)
       .join('');
-
     const html = [];
-    for (const col of weeks) {
+    weeks.forEach((col, w) => {
       for (const date of col) {
         if (!date) {
           html.push('<span class="heat-cell is-pad"></span>');
           continue;
         }
-        const unlock = markersOn(date).length ? ' is-unlock' : '';
-        if (date > now) {
-          html.push(`<span class="heat-cell is-future${unlock}" data-date="${date}"></span>`);
-          continue;
-        }
+        // 这天有人（任何工具）解锁了徽章：金边一直在，开关工具只改它的透明度和大小
+        const ring = markers[date]?.length ? ' has-ring' : '';
+        html.push(`<span class="heat-cell${date > now ? ' is-future' : ''}${ring}" data-date="${date}" style="--w:${w}"></span>`);
+      }
+    });
+    // 新格子直接上色，不过渡
+    grid.classList.add('is-still');
+    grid.innerHTML = html.join('');
+    paintCells();
+    void grid.offsetWidth;
+    grid.classList.remove('is-still');
+    // 看今年时滚到最右边（手机上一屏放不下一整年）
+    scroll.scrollLeft = year === thisYear ? scroll.scrollWidth : 0;
+  }
+
+  /** 切换工具：只改每个圆点左右两半的颜色变量和类名，不重建，颜色才能淡入淡出、从左往右扫过。 */
+  function paintCells() {
+    for (const cell of grid.querySelectorAll('.heat-cell[data-date]')) {
+      const date = cell.dataset.date;
+      if (!cell.classList.contains('is-future')) {
         const parts = partsOf(date);
-        html.push(`<span class="heat-cell${parts.length ? ' is-lit' : ''}${unlock}" data-date="${date}" style="background:${cellBackground(parts)}"></span>`);
+        const [a, b] = parts.map((p) => enamelColor(p.color, p.level));
+        cell.style.setProperty('--a', a ?? sunk);
+        cell.style.setProperty('--b', b ?? a ?? sunk);
+        cell.classList.toggle('is-lit', parts.length > 0);
+      }
+      if (cell.classList.contains('has-ring')) {
+        // 开着的工具里有人那天解锁：金边亮起，可以点开那枚徽章
+        const on = markersOn(date).length > 0;
+        cell.classList.toggle('ring-on', on);
+        cell.classList.toggle('is-unlock', on);
       }
     }
-    grid.innerHTML = html.join('');
+  }
 
-    // 汇总：写明范围（两个工具合计 / 某个工具），数字单独提亮
-    const from = `${year}-01-01`;
-    const to = `${year}-12-31`;
+  // ---------- 统计行：只留数字，范围由图例里的开关说明 ----------
+  let summaryTimer = 0;
+  function renderSummary(animate = false) {
     const on = series.filter((s) => enabled.has(s.id));
-    const all = dailyStats(combineDaily(on.map((s) => s.daily)), { from, to });
-    const b = (v) => `<b>${v}</b>`;
-    const summaryEl = $('[data-summary]');
-    // 每一段不在中间折行，窄屏上整段换到下一行
-    summaryEl.innerHTML = t('heat.summary', {
-      scope: escape(summaryScope(on.map((s) => s.name))),
-      tokens: b(formatCount(all.tokens)),
-      days: b(all.activeDays),
-      streak: b(all.longestStreak),
-    })
+    const all = dailyStats(combineDaily(on.map((s) => s.daily)), { from: `${year}-01-01`, to: `${year}-12-31` });
+    const vars = { tokens: formatCount(all.tokens), days: all.activeDays, streak: all.longestStreak };
+    grid.setAttribute('aria-label', t('heat.label', { year, summary: t('heat.summary', vars) }));
+    // 数字单独提亮；每一段不在中间折行，窄屏上整段换到下一行
+    const html = t('heat.summary', Object.fromEntries(Object.entries(vars).map(([k, v]) => [k, `<b>${v}</b>`])))
       .split(' · ')
       .map((part) => `<span>${part}</span>`)
       .join(' · ');
-    grid.setAttribute('aria-label', t('heat.label', { year, summary: summaryEl.textContent }));
-    for (const btn of brandsEl.children) {
-      const s = series.find((x) => x.id === btn.dataset.id);
-      btn.setAttribute('aria-pressed', String(enabled.has(s.id)));
-      btn.querySelector('.heat-brand-total').textContent = formatCount(dailyStats(s.daily, { from, to }).tokens);
-    }
-    renderLegend();
+    clearTimeout(summaryTimer);
+    const swap = () => {
+      summaryEl.innerHTML = html;
+      summaryEl.classList.remove('is-swapping');
+    };
+    if (!animate || still()) return swap();
+    // 淡一下再换数字
+    summaryEl.classList.add('is-swapping');
+    summaryTimer = setTimeout(swap, 180);
+  }
+
+  let fadeTimer = 0;
+  function setYear(y) {
+    if (y === year || !years.includes(y)) return;
+    const dir = Math.sign(y - year);
+    year = y;
+    renderYear(dir);
+    renderSummary(true);
     hideTip();
-    // 看今年时滚到最右边（手机上一屏放不下一整年）
-    const scroll = $('[data-scroll]');
-    scroll.scrollLeft = year === Number(now.slice(0, 4)) ? scroll.scrollWidth : 0;
-    const state = { year, enabled: [...enabled] };
-    for (const fn of listeners) fn(state);
+    clearTimeout(fadeTimer);
+    if (still()) {
+      grid.classList.remove('is-fading');
+      buildGrid();
+    } else {
+      // 点阵整体淡出，换成新的一年再淡入
+      grid.classList.add('is-fading');
+      fadeTimer = setTimeout(() => {
+        buildGrid();
+        grid.classList.remove('is-fading');
+      }, 160);
+    }
+    emit();
   }
 
   // ---------- 悬停详情 ----------
-  /** 在 anchor（section 里的任一元素）上方显示某一天的详情，放不下就放到下方。 */
+  /** 在 anchor（section 里的任一元素）上方显示某一天的详情，放不下就放到下方。左右不出板子的内容区。 */
   function showTip(anchor, date) {
     const rows = series
       .filter((s) => enabled.has(s.id) && s.daily?.[date])
@@ -284,8 +369,12 @@ export function createHeatmap({ root, series, markers = {}, onMarker }) {
     const host = el.getBoundingClientRect();
     const r = anchor.getBoundingClientRect();
     const w = tip.offsetWidth;
-    // 左右各留 8px，不贴板边
-    const x = Math.min(Math.max(r.left + r.width / 2 - host.left - w / 2, 8), host.width - w - 8);
+    // 左右限制在板子的内容区里（板子的左右内边距：电脑 30px、手机 18px），不贴板框
+    const p = plate.getBoundingClientRect();
+    const cs = getComputedStyle(plate);
+    const lo = p.left - host.left + parseFloat(cs.paddingLeft);
+    const hi = p.right - host.left - parseFloat(cs.paddingRight) - w;
+    const x = Math.max(lo, Math.min(r.left + r.width / 2 - host.left - w / 2, hi));
     let y = r.top - host.top - tip.offsetHeight - 10;
     if (y < 0) y = r.bottom - host.top + 10;
     tip.style.transform = `translate(${x}px, ${y}px)`;
@@ -299,7 +388,7 @@ export function createHeatmap({ root, series, markers = {}, onMarker }) {
     else hideTip();
   });
   grid.addEventListener('pointerleave', hideTip);
-  $('[data-scroll]').addEventListener('scroll', hideTip, { passive: true });
+  scroll.addEventListener('scroll', hideTip, { passive: true });
   grid.addEventListener('click', (e) => {
     const cell = e.target.closest('.heat-cell.is-unlock');
     if (!cell) return;
@@ -307,11 +396,14 @@ export function createHeatmap({ root, series, markers = {}, onMarker }) {
     if (m) onMarker?.(m);
   });
 
-  render();
+  renderYear();
+  paintLegend();
+  buildGrid();
+  renderSummary();
   return {
     el,
     /** 珐琅板本身（不含浮层） */
-    plate: $('[data-plate]'),
+    plate,
     series,
     get year() {
       return year;
@@ -319,10 +411,7 @@ export function createHeatmap({ root, series, markers = {}, onMarker }) {
     get enabled() {
       return [...enabled];
     },
-    setYear(y) {
-      year = y;
-      render();
-    },
+    setYear,
     /** 年份或工具开关变了（以及第一次订阅时）回调 { year, enabled }；返回取消订阅 */
     onChange(fn) {
       listeners.add(fn);
@@ -335,5 +424,3 @@ export function createHeatmap({ root, series, markers = {}, onMarker }) {
     hideTip,
   };
 }
-
-const escape = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);

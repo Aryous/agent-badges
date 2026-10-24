@@ -1,21 +1,13 @@
 /* 年度铸币套装：热力图板下面的礼盒（黄铜铭牌 + 丝绒托盘 + 月章），皮质拉环，抽屉式滑盖 */
 
-/* 抽屉：高度等于板子的自然高度；只裁上沿，滑上去的板子消失在礼盒上沿里，左右和下方的阴影保留 */
+/* 抽屉：任何宽度下都和板子一样高，开关的过程中也不变；只裁上沿，滑上去的板子消失在礼盒上沿里，左右和下方的阴影保留。
+   礼盒的各个尺寸（--case-*）由 proof-set.js 从 CASE 写进来 */
 .proof {
   --slide: 0.75s cubic-bezier(0.45, 0.05, 0.25, 1);
   --velvet: radial-gradient(120% 90% at 50% 0%, #1c2a62, #0e1640 70%);
   position: relative;
   height: var(--plate-h, auto);
   clip-path: inset(0 -100px -100px -100px);
-}
-
-/* 竖排时礼盒比板子高：打开时盒子的高度跟着滑盖过渡到礼盒的高度，关上时再回来 */
-.proof.is-stacked {
-  transition: height var(--slide);
-}
-
-.proof.is-open {
-  height: var(--case-h, var(--plate-h, auto));
 }
 
 /* ---------- 礼盒 ---------- */
@@ -25,9 +17,9 @@
   inset: 0;
   z-index: 1;
   display: grid;
-  grid-template-columns: 190px minmax(0, 1fr);
-  gap: 14px;
-  padding: 14px;
+  grid-template-columns: var(--case-side) minmax(0, 1fr);
+  gap: var(--case-side-gap);
+  padding: var(--case-pad);
   box-sizing: border-box;
   border-radius: 18px;
   background: #2a2724;
@@ -35,7 +27,6 @@
     inset 0 0 0 1px rgba(255, 255, 255, 0.06),
     inset 0 2px 0 rgba(255, 255, 255, 0.05),
     0 18px 40px rgba(0, 0, 0, 0.35);
-  /* 竖排时盒子从板子的高度长到礼盒的高度，没露出来的部分先藏着 */
   overflow: hidden;
   visibility: hidden;
 }
@@ -105,16 +96,22 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* 丝绒托盘：铸币直径由 proof-set.js 按板子的高度算好（--coin），四周留足空 */
+/* 丝绒托盘：永远 6 × 2，铸币直径由 proof-set.js 按板子的高度算好（--coin），四周留足空。
+   放不下 6 枚时在礼盒里横向滑动（居中吸附，滚动条隐藏），和手机上热力图在板内滑动一个道理 */
 .proof-tray {
   display: grid;
-  grid-template-columns: repeat(var(--cols, 6), var(--coin, 112px));
-  grid-template-rows: repeat(var(--rows, 2), var(--coin, 112px));
-  gap: 16px;
-  padding: 24px 30px;
+  grid-template-columns: repeat(6, var(--coin, 112px));
+  grid-template-rows: repeat(2, var(--coin, 112px));
+  gap: var(--case-gap);
+  padding: var(--case-tray-y) var(--case-tray-x);
   box-sizing: border-box;
   justify-content: space-between;
   align-content: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
   border-radius: 12px;
   background: var(--velvet);
   box-shadow:
@@ -122,8 +119,13 @@
     inset 0 0 0 1px rgba(0, 0, 0, 0.4);
 }
 
+.proof-tray::-webkit-scrollbar {
+  display: none;
+}
+
 /* 每个月一个圆形凹槽；没有月章时淡淡地写着月份 */
 .proof-slot {
+  scroll-snap-align: center;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -297,47 +299,26 @@
   outline-offset: 3px;
 }
 
-/* ---------- 竖排（手机、窄屏）：铭牌一行在上，托盘 4 × 3 或 3 × 4 ---------- */
+/* ---------- 窄版（礼盒窄于 700px）：铭牌栏收成约 50px 的竖条，铭牌竖排写年份和 PROOF SET；状态那一行不显示（写进了礼盒的读屏名字） ---------- */
 
-.proof.is-stacked .proof-case {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 104px minmax(0, 1fr);
-  border-radius: 16px;
+.proof.is-narrow .proof-brass {
+  width: 36px;
+  padding: 12px 0;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
 }
 
-/* 打开后拉环垂在铭牌这一行的上半部分，铭牌靠下放，不被盖住 */
-.proof.is-stacked .proof-side {
-  align-items: flex-end;
-  padding-bottom: 14px;
+.proof.is-narrow .proof-brass b {
+  font-size: 20px;
+  letter-spacing: 0.08em;
 }
 
-.proof.is-stacked .proof-brass {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-items: center;
-  column-gap: 14px;
-  width: auto;
-  padding: 10px 16px;
-  text-align: left;
+.proof.is-narrow .proof-brass span {
+  margin: 0 0 0 4px;
+  padding: 0;
+  font-size: 8.5px;
 }
 
-.proof.is-stacked .proof-brass b {
-  grid-row: 1 / span 2;
-}
-
-.proof.is-stacked .proof-brass span {
-  margin-top: 0;
-  padding-left: 0;
-}
-
-.proof.is-stacked .proof-brass em {
-  margin-top: 5px;
-  padding-top: 5px;
-  padding-left: 0;
-}
-
-.proof.is-stacked .proof-tray {
-  gap: 14px;
-  padding: 18px 16px;
-  justify-content: space-evenly;
+.proof.is-narrow .proof-brass em {
+  display: none;
 }

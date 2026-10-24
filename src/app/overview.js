@@ -42,6 +42,7 @@ export function mount(ctx, { heatSeries, markers, currentDaily }) {
     series: heatSeries,
     markers,
     onMarker: (m) => ctx.emit('open', items.find((it) => it.config.id === m.id)),
+    reducedMotion,
   });
   // 年度铸币套装藏在热力图板子下面（落地页不挂）
   const proofSet = createProofSet({ heatmap, palette: ctx.brand.palette, reducedMotion });

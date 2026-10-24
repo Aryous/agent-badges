@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { SUNK, cellBackground, enamelColor, splitBackground, summaryScope } from '../src/viewer/heatmap.js';
+import { SUNK, cellBackground, enamelColor, splitBackground } from '../src/viewer/heatmap.js';
+import { t } from '../src/viewer/i18n.js';
 
 const rgbOf = (s) => s.match(/\d+/g).map(Number);
 const hexRgb = (hex) => [16, 8, 0].map((sh) => (parseInt(hex.slice(1), 16) >> sh) & 255);
@@ -36,14 +37,10 @@ describe('热力图取色：品牌色和凹点色之间混色', () => {
   });
 });
 
-describe('统计行的范围', () => {
-  it('两个工具都开着：写合计', () => {
-    expect(summaryScope(['Claude Code', 'Codex'], 'zh')).toBe('两个工具合计');
-    expect(summaryScope(['Claude Code', 'Codex'], 'en')).toBe('Both tools');
-  });
-
-  it('只开一个：写那个工具的名字', () => {
-    expect(summaryScope(['Codex'], 'zh')).toBe('Codex');
-    expect(summaryScope(['Claude Code'], 'en')).toBe('Claude Code');
+describe('统计行', () => {
+  it('只留数字，不写范围（范围由图例里的开关说明）', () => {
+    const vars = { tokens: '10.5B', days: 194, streak: 20 };
+    expect(t('heat.summary', vars, 'zh')).toBe('10.5B Token · 194 个活跃日 · 最长连续 20 天');
+    expect(t('heat.summary', vars, 'en')).toBe('10.5B tokens · 194 active days · longest streak 20 days');
   });
 });

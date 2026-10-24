@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CASE, caseLayout, mintedMonths, monthStats, monthSums, monthTier, plaqueStatus } from '../src/viewer/proof-set.js';
+import { CASE, PLATE_MIN, caseLayout, mintedMonths, monthStats, monthSums, monthTier, plaqueStatus } from '../src/viewer/proof-set.js';
 
 // 两个工具的按天用量：[Token, 对话轮数]
 const cc = {
@@ -74,38 +74,39 @@ describe('铭牌', () => {
 });
 
 describe('礼盒的版式和铸币直径', () => {
-  it('电脑：6 × 2，直径按板子的高度算，典型约 120px', () => {
-    const l = caseLayout({ width: 1116, plateHeight: 333 });
-    expect(l).toMatchObject({ cols: 6, rows: 2, stacked: false, height: 333 });
-    expect(l.coin).toBe(Math.floor((333 - 2 * CASE.pad - 2 * CASE.trayY - CASE.gap) / 2));
-    expect(l.coin).toBeGreaterThanOrEqual(112);
-    expect(l.coin).toBeLessThanOrEqual(128);
+  // 板子的最小高度由 CASE 算出：铸币 120px 时的高度
+  const min = 2 * CASE.pad + 2 * CASE.trayY + CASE.gap + 2 * CASE.coinMax;
+
+  it('板子的最小高度就是铸币 120px 时礼盒的高度', () => {
+    expect(PLATE_MIN).toBe(min);
+    expect(caseLayout({ width: 1116, plateHeight: PLATE_MIN }).coin).toBe(120);
   });
 
-  it('板子变宽但不变高：直径不跟着变大（不拉伸）', () => {
-    expect(caseLayout({ width: 1600, plateHeight: 333 }).coin).toBe(caseLayout({ width: 1116, plateHeight: 333 }).coin);
+  it('电脑、中等宽度、手机：只返回铸币直径和是否窄版，礼盒永远和板子一样高（不再有竖排）', () => {
+    for (const [width, plateHeight] of [[1116, PLATE_MIN], [760, PLATE_MIN + 20], [358, PLATE_MIN + 40]]) {
+      const l = caseLayout({ width, plateHeight });
+      expect(Object.keys(l).sort()).toEqual(['coin', 'narrow']);
+      expect(l.coin).toBe(Math.min(120, Math.floor((plateHeight - 2 * CASE.pad - 2 * CASE.trayY - CASE.gap) / 2)));
+    }
   });
 
-  it('宽度不够时按宽度缩小，6 枚连同间距放得下', () => {
-    const l = caseLayout({ width: 962, plateHeight: 313 });
-    expect(l.cols).toBe(6);
-    const tray = 962 - 2 * CASE.pad - CASE.side - CASE.sideGap - 2 * CASE.trayX;
-    expect(6 * l.coin + 5 * CASE.gap).toBeLessThanOrEqual(tray);
-    expect(l.coin).toBeGreaterThanOrEqual(CASE.coinMin);
+  it('铸币不超过 120：板子再高也不放大', () => {
+    expect(caseLayout({ width: 1116, plateHeight: 900 }).coin).toBe(120);
+    expect(caseLayout({ width: 358, plateHeight: 900 }).coin).toBe(120);
   });
 
-  it('有下限：6 × 2 放不下时换成竖排，铭牌在上，铸币不小于下限', () => {
-    const l = caseLayout({ width: 752, plateHeight: 310 });
-    expect(l.stacked).toBe(true);
-    expect(l.cols * l.rows).toBe(12);
-    expect(l.coin).toBeGreaterThanOrEqual(CASE.coinMin);
+  it('板子比最小高度矮（落地页之类没有礼盒的场合不会发生，这里只验算式）：按高度缩小', () => {
+    expect(caseLayout({ width: 1116, plateHeight: PLATE_MIN - 10 }).coin).toBe(115);
   });
 
-  it('手机：3 × 4，礼盒比板子高', () => {
-    const l = caseLayout({ width: 358, plateHeight: 450 });
-    expect(l).toMatchObject({ cols: 3, rows: 4, stacked: true });
-    expect(l.height).toBeGreaterThan(450);
-    const tray = 358 - 2 * CASE.pad - 2 * CASE.stackTrayX;
-    expect(3 * l.coin + 2 * CASE.stackGap).toBeLessThanOrEqual(tray);
+  it('宽度不影响直径：放不下 6 枚时托盘横向滑动，不缩小', () => {
+    expect(caseLayout({ width: 358, plateHeight: PLATE_MIN }).coin).toBe(caseLayout({ width: 1116, plateHeight: PLATE_MIN }).coin);
+  });
+
+  it('礼盒宽度小于 700px 时铭牌栏收成竖条', () => {
+    expect(caseLayout({ width: 1116, plateHeight: PLATE_MIN }).narrow).toBe(false);
+    expect(caseLayout({ width: 700, plateHeight: PLATE_MIN }).narrow).toBe(false);
+    expect(caseLayout({ width: 699, plateHeight: PLATE_MIN }).narrow).toBe(true);
+    expect(caseLayout({ width: 358, plateHeight: PLATE_MIN }).narrow).toBe(true);
   });
 });
