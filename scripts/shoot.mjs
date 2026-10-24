@@ -289,7 +289,7 @@ async function session(viewport, tag) {
     const img = fig?.querySelector('img');
     return { has: fig?.classList.contains('has-coin'), loaded: !!img?.naturalWidth, alt: img?.alt ?? '' };
   });
-  check('概览区的铸币已渲染，替代文字里的解锁数与陈列墙一致', coin.has && coin.loaded && coin.alt.includes(String(unlockedTiles)), JSON.stringify(coin));
+  check('概览区的铸币已渲染，替代文字里的解锁数与陈列墙一致', coin.has && coin.loaded && Number(coin.alt.match(/\d+/)?.[0]) === unlockedTiles, JSON.stringify(coin));
   const recent = await page.locator('[data-recent] .profile-item').count();
   const next = await page.locator('[data-next] .profile-item img[src^="data:image/png"]').count();
   check('最近获得、即将解锁各 3 枚，且带缩略图', recent === 3 && next === 3, `${recent} / ${next}`);
