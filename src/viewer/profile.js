@@ -77,6 +77,8 @@ export function createProfile({ root, items, daily, onSelect, onCoin, onShare, o
   const stageName = isComplete(k, total) ? 'complete' : STAGE_METALS[stageOf(k, total)];
   fig.setAttribute('aria-label', t('profile.coinLabel', { n: k, total, stage: t(`completionist.${stageName}`) }));
   let coin = null;
+  // 暂停状态单独记：单枚查看可能在铸币挂上之前就打开（比如从 #徽章 链接进来），挂上时要照样停着
+  let coinPaused = false;
 
   // 点开全解锁徽章。铸币同时可以拖动：按下后移动超过几像素算拖动，不打开
   let press = null;
@@ -146,6 +148,7 @@ export function createProfile({ root, items, daily, onSelect, onCoin, onShare, o
       canvas.hidden = false;
       try {
         coin = create({ canvas, target: fig, onLost: () => this.disposeCoin() });
+        if (coinPaused) coin.pause();
         fig.classList.add('has-coin');
         fig.querySelector('.profile-count').setAttribute('aria-hidden', 'true');
       } catch (err) {
@@ -155,9 +158,11 @@ export function createProfile({ root, items, daily, onSelect, onCoin, onShare, o
     },
     /** 单枚查看挡住概览区时停下全解锁徽章，关上后接着画。 */
     pauseCoin() {
+      coinPaused = true;
       coin?.pause();
     },
     resumeCoin() {
+      coinPaused = false;
       coin?.resume();
     },
     /** 卸下全解锁徽章（交还 WebGL 上下文），换回刻度环。上下文丢了时由 mountCoin 的 onLost 调用。 */

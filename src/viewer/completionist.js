@@ -282,12 +282,17 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
       await mint();
       return;
     }
-    // 进场结束：不再单独改动浮雕，同材质的并成一个网格（藏着的残影直接去掉）
-    idle(() => {
-      if (disposed) return;
-      settle(badge);
-      forgetAnim();
-    }, 1000);
+    // 进场结束：不再单独改动浮雕，同材质的并成一个网格（藏着的残影直接去掉）。
+    // 合并会把每片当时的缩放写进几何体，所以要等最后几片「弹出」放完再并；保险起见并之前把亮片都摆回原大小
+    const settleWhenQuiet = () =>
+      idle(() => {
+        if (disposed) return;
+        if (tweens.list.length) return settleWhenQuiet();
+        lit.forEach((mesh) => mesh.scale.setScalar(1));
+        settle(badge);
+        forgetAnim();
+      }, 1000);
+    settleWhenQuiet();
   }
 
   // 起始状态：动画从锡、0 枚开始（减少动态效果时已经是静态的最终版）
