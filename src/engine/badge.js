@@ -251,7 +251,8 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh', engraving = 1
       }
       let mesh;
       if (item.share) {
-        // 共用几何体：在原点生成一次，网格挪到 center；背面转半圈后 x 取反
+        // 共用几何体：在原点生成一次，网格挪到 center；背面转半圈后 x 取反。
+        // 注意平滑法线按 0.01 的格子合并顶点，结果和位置有关：在原点生成的小圆件四面对称，倒角高光比摆在原位生成的柔和一点
         const { center = [0, 0], share: _s, material: _m, color: _c, effect: _e, ...form } = item;
         const key = side + JSON.stringify(form);
         let geo = sharedGeo.get(key);

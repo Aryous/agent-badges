@@ -134,7 +134,7 @@ export function validateBadge(config, brand) {
         if (Object.keys(extraKeys).length) fail(`${field}[${i}] 的 segments 只能有 curve、bevel`);
         if (!int(curve, 1, 64)) fail(`${field}[${i}] 的 segments.curve 需要 1–64 的整数`);
         if (!int(bevel, 1, 8)) fail(`${field}[${i}] 的 segments.bevel 需要 1–8 的整数`);
-        if (['text', 'text-arc', 'gem'].includes(r.kind)) fail(`${field}[${i}] 的 segments 对 ${r.kind} 不起作用`);
+        if (['text', 'gem'].includes(r.kind)) fail(`${field}[${i}] 的 segments 对 ${r.kind} 不起作用`);
       }
       if (r.share !== undefined) {
         if (typeof r.share !== 'boolean') fail(`${field}[${i}] 的 share 只能是 true 或 false`);

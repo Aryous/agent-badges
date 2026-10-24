@@ -61,6 +61,13 @@ describe('segments：分段数', () => {
     expect(ok({ kind: 'gem', radius: 0.04, material: 'enamel', color: 'primary', segments: { curve: 4 } })).toThrow(/不起作用/);
   });
 
+  it('text-arc 也认 segments（默认曲线 9 段、倒角 2 段）', () => {
+    const arc = { kind: 'text-arc', text: '27 OF 32', arc: 'bottom', radius: 0.69, size: 0.088, tracking: 0.22, height: 0.024 };
+    expect(count(reliefGeometry(arc))).toBe(count(reliefGeometry({ ...arc, segments: { curve: 9, bevel: 2 } })));
+    expect(count(reliefGeometry({ ...arc, segments: { curve: 4 } }))).toBeLessThan(count(reliefGeometry(arc)) * 0.6);
+    expect(() => validateBadge(coin([{ ...arc, material: 'polished-metal', color: 'gold', segments: { curve: 4 } }]), brand)).not.toThrow();
+  });
+
   it('陈列墙上的徽章都没写 segments 和 share（都按原来的方式画）', () => {
     const marked = BRANDS.flatMap(({ badges: list }) => list.filter((b) => /"(segments|share)"/.test(JSON.stringify(b))).map((b) => b.id));
     expect(marked).toEqual([]);

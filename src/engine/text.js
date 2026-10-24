@@ -67,8 +67,9 @@ export function layoutArc({ text, radius, size, tracking = 0.2, wordSpacing = 0.
 
 /**
  * 生成整圈文字的合并几何体，底面在 z=0，向 +z 凸起 height。
+ * segments：{ curve, bevel } 字形曲线和倒角的分段数，默认 9 和 2。
  */
-export function arcTextGeometry({ text, radius, size, tracking, arc = 'top', height = 0.03, bevel = 0.006 }) {
+export function arcTextGeometry({ text, radius, size, tracking, arc = 'top', height = 0.03, bevel = 0.006, segments = {} }) {
   const { em, chars } = layoutArc({ text, radius, size, tracking, arc });
   const b = Math.min(bevel, height * 0.4);
   const parts = [];
@@ -81,8 +82,8 @@ export function arcTextGeometry({ text, radius, size, tracking, arc = 'top', hei
       bevelThickness: b / em,
       bevelSize: (b * 0.7) / em,
       bevelOffset: (-b * 0.7) / em,
-      bevelSegments: 2,
-      curveSegments: 9,
+      bevelSegments: segments.bevel ?? 2,
+      curveSegments: segments.curve ?? 9,
     });
     geo.translate(-g.advance / 2, 0, b / em);
     geo.scale(em, em, em);
