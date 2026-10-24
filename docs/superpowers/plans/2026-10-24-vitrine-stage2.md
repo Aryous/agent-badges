@@ -4,6 +4,7 @@
 
 **Goal:** 完成陈列柜重设计的第二段：
 - 热力图做成午夜蓝珐琅板；
+- 板子下面藏一只年度铸币套装（抽屉式滑盖、皮质拉环）；
 - 徽章分区标题改成细双线，加页脚；
 - 弹层换成新的变量。
 
@@ -16,7 +17,10 @@
 
 **原计划：** `docs/superpowers/plans/2026-10-24-vitrine-wall.md` 的 Task 5–8。下面每个任务写明沿用哪一段、改哪些地方。
 
-**参考实现：** `.superpowers/sdd/heatmap-lab-reference.html` 的方案 B（不提交）。
+**参考实现（都不提交）：**
+- `.superpowers/sdd/heatmap-lab-reference.html`：方案 B，以及方案 C 的月章和 `centerStack`；
+- `.superpowers/sdd/proof-set-lab-reference.html`：方案 (c) 和 `case2`；
+- `.superpowers/sdd/pull-lab-reference.html`：方案 5，皮质拉环。
 
 ## Global Constraints
 
@@ -56,7 +60,8 @@
 - [ ] **Step 2:** 跑测试，确认失败。
 - [ ] **Step 3:** 实现：
   - 板、点阵、图例、控件按 spec「修正：第二段开工前 · 热力图」做，数值照参考实现方案 B；
-  - 点阵撑满板宽，点的直径不小于 9px；
+  - 点阵撑满板宽：电脑上圆点 14px、间距 5px（spec「热力图的尺寸」）；
+  - 图例：每个工具显示它自己的色阶，和点阵用同一个取色函数；不用中性色阶；
   - 年份胶囊和工具开关在板上要看得清（spec 里有原则）；
   - 悬停浮层换颜色；
   - 原计划 Task 5 里仍然适用的部分照做，比如未来日子和占位格的处理、`.heat-scale-unlock` 图例、浮层里的解锁标记，但颜色一律按新的。
@@ -77,7 +82,49 @@
   用 `?source=mock`。
 - [ ] **Step 6:** 提交：`style: heatmap as a midnight enamel plate (sunk dots, enamel fills, left/right split, gold ring on unlock days)`。
 
-### Task 2: 徽章分区与页脚
+### Task 2: 年度铸币套装（抽屉式滑盖 + 皮质拉环）
+
+**Files:**
+- Create: `src/viewer/proof-set.js`：月章（SVG）、礼盒、滑盖交互。
+- Modify: `src/viewer/heatmap.js`：在板子下面挂上礼盒；共用取色函数、当前年份、开着的工具和悬停浮层；拉环。
+- Modify: `src/styles/heatmap.css`，或者新建 `src/styles/proof-set.css` 并接入入口样式，二选一，说明理由。
+- Modify: `src/styles/responsive.css`、`src/viewer/i18n.js`：月章的文字说明、礼盒名、拉环的开 / 关文字、月份。
+- Test: `tests/proof-set.test.js`（新建）。
+
+**Interfaces:**
+- 纯函数，放在 viewer 或 data 层，能在 node 下测：
+  - `monthSums(daily[], year)`：每个月的 Token；
+  - `monthTier(sum, maxSum)`：返回 0..3，以当年最多那个月的 1/4、1/2、3/4 为界；
+  - `mintedMonths(...)`：有活动且已经开始的月份；
+  - 铭牌状态文字：今年 `MINTING · n / 12`，往年 `SEALED · 12.31`。
+- 取色和热力图共用一个函数（Task 1 的 `cellBackground` 或者它背后的混色），不复制一份。
+
+- [ ] **Step 1:** 先写失败的测试：
+  - 分级的边界；
+  - 空月份不铸币；
+  - 今年和往年的铭牌文字；
+  - 只开一个工具时只算那个工具；
+  - 铸币直径的计算：按高度算，有下限，电脑上的典型高度约 120px。
+- [ ] **Step 2:** 跑测试，确认失败。
+- [ ] **Step 3:** 实现：
+  - 版式、尺寸、交互、无障碍、减少动态效果全部按 spec「年度铸币套装」；
+  - 打开、关上走同一条路（先抬起再滑，收回时先滑回再放下）；
+  - 只裁上沿；
+  - 月章中间文字用视觉居中；
+  - 礼盒和板子一样高；
+  - 留足呼吸。
+- [ ] **Step 4:** `npm test` 和 `npm run check:browser` 全部通过。在 `scripts/shoot.mjs` 里加一项：点拉环后礼盒展开，`aria-expanded="true"`，月章数和有活动的月份数一致；再点一下，原路关上。
+- [ ] **Step 5:** 截图存到 `$S/stage2/proof-set/`：
+  - 电脑：关着、打开中、打开后；
+  - 手机 390px：关着、打开；
+  - 往年（2025）；
+  - 只开一个工具；
+  - 月章 2 倍放大。
+
+  逐张看，对照参考实现：铸币清楚、留白够、两者一样高、拉环像皮革。
+- [ ] **Step 6:** 提交：`feat: yearly proof set under the heatmap plate (leather pull, slide-out drawer, month medals)`。
+
+### Task 3: 徽章分区与页脚
 
 照原计划 Task 6 做（`docs/superpowers/plans/2026-10-24-vitrine-wall.md` 第 1487 行起），改动如下：
 - `.series-head::after` 的双线用 `var(--pewter-line)`；
@@ -91,7 +138,7 @@
 
 提交：`style: series heads on a double rule; colophon footer with build-time version`。
 
-### Task 3: 弹层换成新的变量
+### Task 4: 弹层换成新的变量
 
 照原计划 Task 7 做（第 1638 行起），改动如下：
 - 表格里的 `var(--gold-line)` 一律换成 `var(--pewter-line)`；
