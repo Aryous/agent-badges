@@ -97,7 +97,7 @@
 
 .lang-switch:hover {
   color: var(--text);
-  border-color: rgba(240, 238, 230, 0.3);
+  border-color: var(--pewter);
 }
 
 .source-link {

@@ -22,9 +22,9 @@ body.is-modal {
   flex-direction: column;
   width: min(460px, 100%);
   max-height: 100%;
-  border: 1px solid rgba(240, 238, 230, 0.14);
+  border: 1px solid var(--pewter-line);
   border-radius: 18px;
-  background: #1c1b19;
+  background: var(--bg-lift);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
   overflow: hidden;
 }
@@ -46,8 +46,9 @@ body.is-modal {
 
 .modal-title {
   margin: 0;
+  font-family: var(--font);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .btn-icon {
@@ -63,7 +64,7 @@ body.is-modal {
 }
 
 .btn-icon:hover {
-  background: rgba(240, 238, 230, 0.08);
+  background: rgba(239, 236, 228, 0.08);
   color: var(--text);
 }
 
@@ -86,7 +87,7 @@ body.is-modal {
 
 /* 透明图放在棋盘格上预览，看得出哪里是透明的 */
 .shelf-preview img {
-  background: repeating-conic-gradient(rgba(240, 238, 230, 0.06) 0 25%, transparent 0 50%) 0 0 / 16px 16px;
+  background: repeating-conic-gradient(rgba(239, 236, 228, 0.06) 0 25%, transparent 0 50%) 0 0 / 16px 16px;
 }
 
 .shelf-foot {

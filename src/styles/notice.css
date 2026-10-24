@@ -7,12 +7,12 @@
   transform: translateX(-50%);
   max-width: min(560px, calc(100vw - 32px));
   padding: 10px 14px;
-  border: 1px solid rgba(217, 119, 87, 0.4);
+  border: 1px solid var(--pewter-line);
   border-radius: 8px;
-  background: rgba(40, 24, 18, 0.85);
+  background: var(--bg-lift);
   font-size: 13px;
   line-height: 1.5;
-  color: #f3c9b8;
+  color: var(--text);
   z-index: 13;
   white-space: pre-line;
 }

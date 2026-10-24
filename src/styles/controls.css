@@ -152,7 +152,7 @@
   width: 10px;
   height: 10px;
   border-radius: 2px;
-  box-shadow: 0 0 0 1px rgba(240, 238, 230, 0.35);
+  box-shadow: 0 0 0 1px var(--pewter-line);
 }
 
 [data-bg='transparent'] > .swatch {
@@ -191,7 +191,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #f7f6f2;
+  background: var(--text);
 }
 
 /* ---------- 徽章外圈的排法：字距拉开的小字 ---------- */
