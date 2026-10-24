@@ -1,166 +1,157 @@
-/* 年度热力图：网格、品牌筛选、图例、悬浮提示 */
+/* 年度热力图：午夜蓝珐琅板（全解锁徽章环带的那套材料）、凹点、工具开关、图例、悬浮提示 */
 
-/* 卡片外观与 .profile-main / .profile-col 一致（见 profile.css），再加上定位与下边距 */
 .heat {
+  /* 板上的颜色只在这里用，不进全局变量 */
+  --plate: #141f4d; /* 和徽章的 midnight 同色 */
+  --plate-sunk: #0d1538; /* 凹点、控件的槽 */
+  --plate-thumb: #24306a; /* 板上的滑块：比板稍亮的珐琅 */
+  --plate-frame: rgba(160, 152, 138, 0.42); /* 锡色外框 */
+  --plate-ink: #f3ead6; /* 标题、数字、选中项 */
+  --plate-sub: #9aa3c4; /* 统计行 */
+  --plate-month: #b8a982; /* 沙金色月份 */
+  --plate-dim: #8d96b8; /* 星期、图例文字、未选中项 */
+  --plate-name: #e6dcc4; /* 图例里的工具名 */
+  --plate-ring: #d9bf86; /* 解锁日的金边 */
+  --dot-gap: 5px;
+  --dot-min: 11px; /* 板太窄时点阵在板内横向滚动，圆点不再缩小 */
   position: relative;
   margin-bottom: 52px;
-  padding: 22px 24px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(240, 238, 230, 0.025);
 }
 
+/* 珐琅板：午夜蓝底加一层很淡的同心细纹，锡色双线边框，柔和投影 */
+.heat-plate {
+  padding: 26px 30px 22px;
+  border-radius: 18px;
+  background: var(--plate);
+  background-image: repeating-radial-gradient(circle at 50% -40%, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 4px);
+  box-shadow:
+    inset 0 0 0 1px var(--plate-frame),
+    inset 0 0 0 5px var(--plate),
+    inset 0 0 0 6px rgba(160, 152, 138, 0.22),
+    0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* 标题和控件一行，统计行在下面单独一行 */
 .heat-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 24px;
   margin-bottom: 18px;
 }
 
+.heat-title {
+  color: var(--plate-ink);
+}
+
+.heat-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .heat-summary {
-  margin: 6px 0 0;
-  font-size: 13px;
-  color: var(--muted);
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--plate-sub);
   font-variant-numeric: tabular-nums;
 }
 
-.heat-scroll {
-  overflow-x: auto;
-  scrollbar-width: thin;
-  padding-bottom: 4px;
+:lang(zh) .heat-summary {
+  letter-spacing: var(--label-track-zh);
 }
 
-.heat-body {
-  --gap: 3px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  column-gap: 8px;
-  row-gap: 6px;
-  min-width: 700px;
-}
-
-.heat-months,
-.heat-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--weeks), minmax(0, 1fr));
-  column-gap: var(--gap);
-}
-
-.heat-months {
-  grid-column: 2;
-  font-size: 11px;
-  color: var(--muted);
+.heat-summary > span {
   white-space: nowrap;
 }
 
-.heat-grid {
-  grid-template-rows: repeat(7, auto);
-  grid-auto-flow: column;
-  row-gap: var(--gap);
+.heat-summary b {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--plate-ink);
 }
 
-.heat-wd {
-  display: grid;
-  grid-template-rows: repeat(7, 1fr);
-  row-gap: var(--gap);
-  font-size: 10px;
-  line-height: 1;
-  color: var(--faint);
+/* ---------- 板上的控件：外框、槽、滑块换成板上的颜色 ---------- */
+
+.heat .seg {
+  border-color: var(--plate-frame);
+  background: var(--plate-sunk);
+  box-shadow: inset 0 0 0 1px var(--plate), var(--sunk);
 }
 
-.heat-wd span {
-  display: flex;
-  align-items: center;
+.heat .seg::before {
+  background: var(--plate-thumb);
 }
 
-.heat-cell {
-  position: relative;
-  aspect-ratio: 1;
-  border-radius: 3px;
+.heat .seg button {
+  color: var(--plate-dim);
 }
 
-.heat-cell.is-pad {
-  visibility: hidden;
+.heat .seg button:hover,
+.heat .seg button[aria-checked='true'] {
+  color: var(--plate-ink);
 }
 
-.heat-cell.is-future {
-  box-shadow: inset 0 0 0 1px rgba(240, 238, 230, 0.04);
-}
-
-/* 解锁徽章的日子：中间一个小圆点，可以点开那枚徽章 */
-.heat-cell.is-unlock::after {
-  content: '';
-  position: absolute;
-  inset: 32%;
-  border-radius: 50%;
-  background: #f7f6f2;
-  box-shadow: 0 0 0 1px rgba(20, 20, 19, 0.5);
-}
-
-.heat-cell.is-unlock {
-  cursor: pointer;
-}
-
-.heat-cell:not(.is-pad):not(.is-future):hover {
-  outline: 1.5px solid rgba(240, 238, 230, 0.7);
-  outline-offset: 1px;
-}
-
-.heat-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 20px;
-  margin-top: 14px;
-}
-
+/* 工具开关：同一种胶囊外形，每个工具是独立的开关；打开时立一枚珐琅小滑块，关闭时只剩文字和空心圆点 */
 .heat-brands {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: inline-flex;
+  gap: 3px;
+  height: 32px;
+  padding: 3px;
+  border: 1px solid var(--plate-frame);
+  border-radius: 999px;
+  background: var(--plate-sunk);
+  box-shadow: inset 0 0 0 1px var(--plate), var(--sunk);
 }
 
 .heat-brand {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 30px;
   padding: 0 11px;
-  border: 1px solid var(--line);
+  border: 1px solid transparent;
   border-radius: 999px;
   background: none;
   font-size: 12px;
-  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--plate-dim);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.heat-brand:hover {
+  color: var(--plate-ink);
 }
 
 .heat-brand i {
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
-  background: var(--c);
-}
-
-.heat-brand[aria-pressed='true'] {
-  color: var(--text);
-  background: rgba(240, 238, 230, 0.05);
-}
-
-.heat-brand[aria-pressed='false'] {
-  opacity: 0.55;
-}
-
-.heat-brand[aria-pressed='false'] i {
-  background: none;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   box-shadow: inset 0 0 0 1.5px var(--c);
 }
 
+.heat-brand[aria-pressed='true'] {
+  border-color: var(--gold-rim);
+  background: var(--plate-thumb);
+  box-shadow: var(--relief);
+  color: var(--plate-ink);
+}
+
+.heat-brand[aria-pressed='true'] i {
+  background: var(--c);
+  box-shadow: none;
+}
+
 .heat-brand-total {
+  color: var(--plate-sub);
   font-variant-numeric: tabular-nums;
-  color: var(--muted);
 }
 
 .heat-brand:focus-visible {
@@ -168,34 +159,178 @@
   outline-offset: 2px;
 }
 
-.heat-scale {
+/* ---------- 点阵：一周一列，圆点撑满板宽 ---------- */
+
+/* 留出金边和悬停描边的位置：横向滚动会连带裁掉竖向溢出 */
+.heat-scroll {
+  margin: -6px -6px 0;
+  padding: 6px 6px 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(160, 152, 138, 0.35) transparent;
+}
+
+.heat-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 8px;
+  /* 星期一栏约 36px，加上每周一列的最小宽度 */
+  min-width: calc(var(--weeks) * (var(--dot-min) + var(--dot-gap)) - var(--dot-gap) + 36px);
+}
+
+.heat-months,
+.heat-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--weeks), minmax(0, 1fr));
+  column-gap: var(--dot-gap);
+}
+
+.heat-months {
+  grid-column: 2;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--plate-month);
+  white-space: nowrap;
+}
+
+.heat-grid {
+  grid-template-rows: repeat(7, auto);
+  grid-auto-flow: column;
+  row-gap: var(--dot-gap);
+}
+
+.heat-wd {
+  display: grid;
+  grid-template-rows: repeat(7, 1fr);
+  row-gap: var(--dot-gap);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--plate-dim);
+}
+
+.heat-wd span {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--muted);
 }
 
-.heat-scale > i {
-  width: 11px;
-  height: 11px;
-  border-radius: 2px;
+/* 凹点：没有活动是凹下去的深色点，下缘一道很淡的高光 */
+.heat-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--plate-sunk);
+  box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.heat-scale > span:first-child {
-  margin-right: 4px;
+/* 有活动：填品牌色珐琅（背景由 heatmap.js 写入），顶部高光、底部暗边，像凸起的珐琅 */
+.heat-cell.is-lit {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 1px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 0, 0, 0.4);
 }
 
-.heat-scale > span:nth-last-child(2) {
-  margin-left: 4px;
+/* 年初的占位格和未来的日子：淡轮廓，仍然占位，保证每周一列对齐 */
+.heat-cell.is-pad,
+.heat-cell.is-future {
+  background: none;
+  box-shadow: inset 0 0 0 1px rgba(184, 169, 130, 0.16);
 }
 
+/* 解锁徽章的日子：离圆点 2px 一圈细金边，可以点开那枚徽章 */
+.heat-cell.is-unlock::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.2px var(--plate-ring);
+  pointer-events: none;
+}
+
+.heat-cell.is-unlock {
+  cursor: pointer;
+}
+
+.heat-cell[data-date]:not(.is-future):not(.is-unlock):hover {
+  outline: 1.5px solid rgba(243, 234, 214, 0.85);
+  outline-offset: 1.5px;
+}
+
+.heat-cell.is-unlock:hover::after {
+  box-shadow: 0 0 0 1.6px var(--plate-ink);
+}
+
+/* ---------- 图例：每个工具自己的色阶（和点阵同一个取色函数）、双色点、解锁金边 ---------- */
+
+.heat-rule {
+  margin-top: 14px;
+}
+
+.heat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-top: 16px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--plate-dim);
+}
+
+.heat-legend-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+}
+
+.heat-legend-tool,
+.heat-legend-both,
 .heat-scale-mark {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-left: 14px;
+  gap: 8px;
 }
+
+.heat-legend-tool b {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--plate-name);
+}
+
+.heat-ramp {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.heat-legend i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 1px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 0, 0, 0.4);
+}
+
+.heat-scale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+}
+
+/* 和点阵上的一样：凹点外隔 2px 板色，再一圈金边 */
+.heat-legend .heat-scale-unlock {
+  background: var(--plate-sunk);
+  box-shadow: 0 0 0 2px var(--plate), 0 0 0 3.2px var(--plate-ring);
+  margin: 0 2px;
+}
+
+/* ---------- 悬停详情：和单枚查看的弹层同一套颜色 ---------- */
 
 .heat-tip {
   position: absolute;
@@ -205,11 +340,13 @@
   min-width: 200px;
   max-width: 300px;
   padding: 10px 12px;
-  border: 1px solid rgba(240, 238, 230, 0.16);
+  border: 1px solid var(--pewter-line);
   border-radius: 10px;
-  background: rgba(30, 29, 27, 0.96);
+  background: var(--bg-lift);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
   font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
   pointer-events: none;
 }
 
@@ -218,7 +355,7 @@
 }
 
 .heat-tip-date {
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 6px !important;
 }
 
@@ -233,14 +370,15 @@
 .heat-tip li {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   color: var(--muted);
 }
 
 .heat-tip li i {
+  flex: none;
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: 50%;
 }
 
 .heat-tip li b {
@@ -254,16 +392,21 @@
 
 .heat-tip-unlock {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 8px;
   margin-top: 8px !important;
   padding-top: 8px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--pewter-line);
 }
 
-.heat-tip-unlock .dot {
+/* 金边圆点，和点阵上的解锁标记同色 */
+.heat-ring {
   flex: none;
-  transform: translateY(-1px);
+  width: 7px;
+  height: 7px;
+  margin: 5px 1px 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.2px var(--plate-ring);
 }
 
 .heat-tip-brand {

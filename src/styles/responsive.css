@@ -35,7 +35,8 @@
 
   .btn,
   .seg button,
-  .seg a {
+  .seg a,
+  .heat-brand {
     transition: none;
   }
 }
@@ -106,13 +107,34 @@
     font-size: 22px;
   }
 
-  .heat-head,
   .wall-bar {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .heat-scale-mark {
-    margin-left: 8px;
+  /* 热力图：板的内边距酌减；标题、统计行、控件上下排；点阵在板内横向滚动 */
+  .heat-plate {
+    padding: 20px 18px 18px;
+    border-radius: 16px;
+  }
+
+  .heat-head {
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 16px;
+  }
+
+  .heat-controls {
+    grid-row: 3;
+    justify-content: flex-start;
+  }
+
+  .heat {
+    --dot-min: 12px;
+    --dot-gap: 4px;
+  }
+
+  .heat-legend {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
