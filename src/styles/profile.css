@@ -1,75 +1,102 @@
-/* 成就档案卡：进度环、统计、下一枚徽章列表 */
+/* 成就档案：一块铭牌。上下细双线，三栏用竖向细线隔开；左栏是进度铸币和三个数字 */
 
 .profile {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
-  gap: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 64px;
 }
 
-.profile-main,
-.profile-col {
-  padding: 22px 24px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(240, 238, 230, 0.025);
+.profile-plate {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+  padding: 28px 0;
+}
+
+.profile-plate > * {
+  min-width: 0;
+  padding: 0 32px;
+}
+
+.profile-plate > :first-child {
+  padding-left: 4px;
+}
+
+.profile-plate > * + * {
+  border-left: 1px solid var(--gold-line);
 }
 
 .profile-main {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 28px;
 }
 
-.profile-ring-wrap {
+/* 铸币：画好前显示兜底刻度环，数字叠在环中间；画好后数字作为币下方的小字 */
+.profile-coin {
   position: relative;
   flex: none;
-  width: 132px;
-  height: 132px;
-}
-
-.profile-ring {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.ring-track,
-.ring-fill {
-  fill: none;
-  stroke-width: 11;
-}
-
-.ring-track {
-  stroke: rgba(240, 238, 230, 0.08);
-}
-
-.ring-fill {
-  stroke: var(--accent);
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.8s ease;
-}
-
-.profile-count {
-  position: absolute;
-  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  line-height: 1;
+  gap: 6px;
+  width: 152px;
+  margin: 0;
 }
 
-.profile-count b {
-  font-size: 38px;
-  font-weight: 600;
+.profile-coin img,
+.profile-ticks {
+  display: block;
+  width: 152px;
+  height: 152px;
+}
+
+.profile-coin img {
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.55));
+}
+
+.profile-coin.has-coin .profile-ticks {
+  display: none;
+}
+
+.profile-ticks line {
+  stroke: rgba(239, 236, 228, 0.14);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.profile-ticks line.is-lit {
+  stroke: var(--gold);
+}
+
+.profile-count {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
+.profile-count b {
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .profile-count span {
-  margin-top: 4px;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--muted);
+}
+
+.profile-coin:not(.has-coin) .profile-count {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 152px;
+  height: 152px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-coin:not(.has-coin) .profile-count b {
+  font-size: 40px;
 }
 
 .profile-facts {
@@ -77,36 +104,26 @@
 }
 
 .profile-caption {
-  margin: 0 0 12px;
-  font-size: 13px;
-  color: var(--muted);
+  margin: 0;
 }
 
 .profile-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 18px;
-  margin: 0 0 16px;
-}
-
-.profile-stats dt {
-  font-size: 12px;
-  color: var(--muted);
+  gap: 14px 28px;
+  margin: 14px 0 22px;
 }
 
 .profile-stats dd {
-  margin: 2px 0 0;
-  font-size: 19px;
-  font-weight: 600;
+  margin: 6px 0 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 
 .profile-head {
-  margin: 0 0 10px;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: var(--muted);
+  margin: 0 0 12px;
 }
 
 .profile-list {
@@ -123,7 +140,7 @@
   padding: 6px 8px 6px 4px;
   margin-left: -4px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 12px;
   background: none;
   text-align: left;
   cursor: pointer;
@@ -131,7 +148,7 @@
 }
 
 .profile-item:hover {
-  background: rgba(240, 238, 230, 0.05);
+  background: rgba(201, 164, 92, 0.06);
 }
 
 .profile-item:focus-visible {
@@ -142,7 +159,7 @@
   flex: none;
   width: 46px;
   height: 46px;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
 }
 
 .profile-item img:not([src]) {
@@ -156,20 +173,21 @@
 .profile-item-text {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 
 .profile-item-title {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .profile-item-meta {
-  font-size: 12px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }

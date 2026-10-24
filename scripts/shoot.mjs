@@ -283,6 +283,13 @@ async function session(viewport, tag) {
   const ringCount = Number(await page.locator('.profile-count b').textContent());
   const unlockedTiles = await page.locator('.tile:not(.is-locked)').count();
   check('档案的解锁数与陈列墙一致', ringCount === unlockedTiles, `${ringCount} vs ${unlockedTiles}`);
+  await waitUntil(page, '进度铸币渲染', () => document.querySelector('[data-coin]')?.classList.contains('has-coin'));
+  const coin = await page.evaluate(() => {
+    const fig = document.querySelector('[data-coin]');
+    const img = fig?.querySelector('img');
+    return { has: fig?.classList.contains('has-coin'), loaded: !!img?.naturalWidth, alt: img?.alt ?? '' };
+  });
+  check('概览区的铸币已渲染，替代文字里的解锁数与陈列墙一致', coin.has && coin.loaded && coin.alt.includes(String(unlockedTiles)), JSON.stringify(coin));
   const recent = await page.locator('[data-recent] .profile-item').count();
   const next = await page.locator('[data-next] .profile-item img[src^="data:image/png"]').count();
   check('最近获得、即将解锁各 3 枚，且带缩略图', recent === 3 && next === 3, `${recent} / ${next}`);

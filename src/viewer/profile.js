@@ -1,4 +1,4 @@
-// 成就档案：解锁进度环 + 三个关键数字，旁边是「最近获得」和「即将解锁」。
+// 成就档案：一块铭牌。左栏是进度铸币（兜底刻度环）和三个关键数字，旁边是「最近获得」和「即将解锁」。
 import { highlights } from '../data/highlights.js';
 import { dailyStats } from '../data/daily.js';
 import { lang, t } from './i18n.js';
@@ -6,14 +6,14 @@ import { formatCount } from '../data/format.js';
 import { badgeTitle } from '../brands/shared/text.js';
 import { describeState, fmtDate } from './describe.js';
 
-/** 进度环：Apple 健身圆环那样的一圈，按解锁比例填满。 */
-function ring(ratio) {
-  const r = 52;
-  const c = 2 * Math.PI * r;
-  return `<svg class="profile-ring" viewBox="0 0 120 120" aria-hidden="true">
-    <circle cx="60" cy="60" r="${r}" class="ring-track" />
-    <circle cx="60" cy="60" r="${r}" class="ring-fill" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - ratio)}" />
-  </svg>`;
+/** 兜底的刻度环：铸币画不出来时显示。120 道径向刻度，按解锁比例点亮。 */
+function tickRing(ratio, n = 120) {
+  const lit = Math.round(ratio * n);
+  const ticks = Array.from({ length: n }, (_, i) => {
+    const long = i % 10 === 0;
+    return `<line x1="60" y1="3" x2="60" y2="${long ? 13 : 10}" transform="rotate(${(i / n) * 360} 60 60)"${i < lit ? ' class="is-lit"' : ''} />`;
+  }).join('');
+  return `<svg class="profile-ticks" viewBox="0 0 120 120" aria-hidden="true">${ticks}</svg>`;
 }
 
 /**
@@ -36,32 +36,37 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
   const el = document.createElement('section');
   el.className = 'profile';
   el.innerHTML = `
-    <div class="profile-main">
-      <div class="profile-ring-wrap">
-        ${ring(total ? h.unlocked.length / total : 0)}
-        <div class="profile-count"><b>${h.unlocked.length}</b><span>/ ${total}</span></div>
-      </div>
-      <div class="profile-facts">
-        <p class="profile-caption">${t('profile.unlocked')}</p>
-        <dl class="profile-stats">
-          <div><dt>${t('profile.tokens')}</dt><dd>${formatCount(stats.tokens)}</dd></div>
-          <div><dt>${t('profile.activeDays')}</dt><dd>${stats.activeDays}</dd></div>
-          <div><dt>${t('profile.streak')}</dt><dd>${t('profile.days', { n: stats.longestStreak })}</dd></div>
-        </dl>
-        <div class="profile-actions">
-          <button class="btn btn-primary profile-share" type="button" data-share>${t('profile.share')}</button>
-          <button class="btn" type="button" data-shelf>${t('profile.shelf')}</button>
+    <div class="rule has-star"><i class="star"></i></div>
+    <div class="profile-plate">
+      <div class="profile-main">
+        <figure class="profile-coin" data-coin>
+          ${tickRing(total ? h.unlocked.length / total : 0)}
+          <img alt="" draggable="false" hidden />
+          <figcaption class="profile-count"><b>${h.unlocked.length}</b><span>/ ${total}</span></figcaption>
+        </figure>
+        <div class="profile-facts">
+          <p class="profile-caption label">${t('profile.unlocked')}</p>
+          <dl class="profile-stats">
+            <div><dt class="label">${t('profile.tokens')}</dt><dd>${formatCount(stats.tokens)}</dd></div>
+            <div><dt class="label">${t('profile.activeDays')}</dt><dd>${stats.activeDays}</dd></div>
+            <div><dt class="label">${t('profile.streak')}</dt><dd>${t('profile.days', { n: stats.longestStreak })}</dd></div>
+          </dl>
+          <div class="profile-actions">
+            <button class="btn btn-primary profile-share" type="button" data-share>${t('profile.share')}</button>
+            <button class="btn" type="button" data-shelf>${t('profile.shelf')}</button>
+          </div>
         </div>
       </div>
+      <div class="profile-col">
+        <h3 class="profile-head label">${t('profile.recent')}</h3>
+        <ul class="profile-list" data-recent></ul>
+      </div>
+      <div class="profile-col">
+        <h3 class="profile-head label">${t('profile.next')}</h3>
+        <ul class="profile-list" data-next></ul>
+      </div>
     </div>
-    <div class="profile-col">
-      <h3 class="profile-head">${t('profile.recent')}</h3>
-      <ul class="profile-list" data-recent></ul>
-    </div>
-    <div class="profile-col">
-      <h3 class="profile-head">${t('profile.next')}</h3>
-      <ul class="profile-list" data-next></ul>
-    </div>`;
+    <div class="rule"></div>`;
   root.appendChild(el);
 
   const row = (entry, kind) => {
@@ -102,6 +107,15 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
     total,
     setThumbnail(id, src) {
       el.querySelectorAll(`.profile-item[data-id="${id}"] img`).forEach((img) => (img.src = src));
+    },
+    /** 铸币画好后换掉兜底的刻度环。 */
+    setCoin(src) {
+      const fig = el.querySelector('[data-coin]');
+      const img = fig.querySelector('img');
+      img.src = src;
+      img.alt = t('profile.coinAlt', { n: h.unlocked.length, total });
+      img.hidden = false;
+      fig.classList.add('has-coin');
     },
   };
 }

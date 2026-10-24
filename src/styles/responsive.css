@@ -41,18 +41,43 @@
 }
 
 @media (max-width: 960px) {
-  .profile {
+  .profile-plate {
     grid-template-columns: 1fr 1fr;
+    row-gap: 24px;
   }
 
-  .profile-main {
+  .profile-plate > :first-child {
     grid-column: 1 / -1;
+    padding: 0 4px 24px;
+    border-bottom: 1px solid var(--gold-line);
+  }
+
+  .profile-plate > :nth-child(2) {
+    border-left: 0;
+    padding-left: 4px;
   }
 }
 
 @media (max-width: 640px) {
-  .profile {
+  .profile-plate {
     grid-template-columns: 1fr;
+    row-gap: 0;
+  }
+
+  .profile-plate > * {
+    padding: 20px 4px 0;
+    border-left: 0;
+  }
+
+  .profile-plate > * + * {
+    border-top: 1px solid var(--gold-line);
+    margin-top: 20px;
+  }
+
+  .profile-plate > :first-child {
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom: 0;
   }
 
   .profile-main {
@@ -60,19 +85,21 @@
     gap: 18px;
   }
 
-  .profile-ring-wrap {
-    width: 104px;
-    height: 104px;
+  .profile-coin,
+  .profile-coin img,
+  .profile-ticks,
+  .profile-coin:not(.has-coin) .profile-count {
+    width: 120px;
   }
 
-  .profile-count b {
-    font-size: 30px;
+  .profile-coin img,
+  .profile-ticks,
+  .profile-coin:not(.has-coin) .profile-count {
+    height: 120px;
   }
 
-  .profile-main,
-  .profile-col,
-  .heat {
-    padding: 18px 16px;
+  .profile-stats dd {
+    font-size: 22px;
   }
 
   .heat-head,
