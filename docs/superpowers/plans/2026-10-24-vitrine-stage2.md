@@ -124,6 +124,55 @@
   逐张看，对照参考实现：铸币清楚、留白够、两者一样高、拉环像皮革。
 - [ ] **Step 6:** 提交：`feat: yearly proof set under the heatmap plate (leather pull, slide-out drawer, month medals)`。
 
+### Task 2b: 热力图第二版与礼盒修正
+
+按 spec「热力图第二版与礼盒修正」做。参考实现：`.superpowers/sdd/heat-lab2-reference.html`，用户选的组合是：年份 A 步进、统计行保留一行、午夜蓝、金边收细。实验页里的取色、年份数据、`#console` 都是实验用的，不要照搬。
+
+**Files:**
+- Modify: `src/viewer/heatmap.js`：标题行、年份步进、图例开关、圆点原地更新、统计行。
+- Modify: `src/styles/heatmap.css`、`src/styles/responsive.css`。
+- Modify: `src/viewer/proof-set.js`、`src/styles/proof-set.css`：去掉竖排，礼盒永远和板子一样高；托盘横向滑动；窄铭牌竖条。
+- Modify: `src/viewer/i18n.js`：删掉不用的 `heat.brighter`、`heat.scopeBoth`、`heat.scopeAll`、`heat.sub`（如果确实没人用）；`heat.summary` 去掉 `{scope}`；加上一年 / 下一年的按钮名字、工具开关组的名字。
+- Modify: `src/site/strings.js`：落地页说明里的「小圆点」/「a dot」改成金边圆圈，「一格两色」写明左右各半。
+- Modify: `scripts/shoot.mjs`：检查跟着新结构改，不放宽判断。
+- Test: `tests/heatmap.test.js`、`tests/proof-set.test.js`。
+
+**必须保留的标记：**
+- `.heat-cell`、`data-date`、`.is-unlock`（当前开着的工具里有人那天解锁）；
+- `.heat-years`：放在年份步进的外层；
+- `.heat-brand`、`data-id`、`aria-pressed`、`.heat-brand-name`：放在图例开关按钮上。
+
+**Interfaces:**
+- 删掉 `summaryScope` 和它的测试。
+- `caseLayout({ width, plateHeight })` 改为返回 `{ coin, narrow }`：
+  - `coin = min(120, floor((plateHeight − 2·pad − 2·trayY − gap) / 2))`；
+  - `narrow = width < 700`；
+  - 不再有 `stacked`、`cols`、`rows`、`height`。
+- 板子的最小高度由 `CASE` 算出（铸币 120px 时的高度），作为 CSS 变量给板子用，不要在 CSS 里另写一个魔法数字。
+- 热力图对外的接口（`plate`、`partsOf`、`markersOn`、`onChange`、`showTip`、`hideTip`）不变。
+
+- [ ] **Step 1:** 先写失败的测试：
+  - `caseLayout` 在 1440、820、390 宽度下礼盒高度都等于板子（也就是只返回 coin 和 narrow）；
+  - coin 不超过 120；
+  - `heat.summary` 不再带范围。
+- [ ] **Step 2:** 跑测试，确认失败。
+- [ ] **Step 3:** 实现，照 spec 和参考实现：
+  - 圆点用 `@property --a / --b`，切换工具只改变量和类名，不重建 `innerHTML`；换年份才重建，并淡出淡入；
+  - 金边收细：点阵、图例、浮层同时改；
+  - 浮层左右不再贴板框：限制在板子内容区里（电脑 30px、手机 18px），不是 8px。
+- [ ] **Step 4:** `npm test`、`npm run check:browser`、`npm run check:site`、`npm run build:site` 全部通过。`shoot.mjs` 里：
+  - 年份：点步进切到 2025 再切回；到头的一侧 `aria-disabled="true"`；
+  - 工具开关：在图例里点，至少留一个；
+  - 切换工具前后同一个圆点还是同一个 DOM 节点（证明没有重建）；
+  - 铸币套装：1440、820、390 三个宽度，打开中途和打开后盒子高度都等于板子高度，托盘 6 列；820 和 390 下托盘可以横向滑动，页面不横向溢出；
+  - 原来那条「手机 3 列、比板子高」的检查删掉，换成上面这条；
+  - 减少动态效果时，盒子高度没有过渡。
+- [ ] **Step 5:** 截图存到 `$S/stage2/heat-v2/`：电脑中英文、只开一个工具、切换工具的过程中（约 0.25 秒）、年份 2025、820 和 390 宽度关着和打开、浮层。逐张对照参考实现，确认：
+  - 金边不叠；
+  - 拉环和第一排铸币之间至少 16px；
+  - 标题行不再臃肿。
+- [ ] **Step 6:** 提交：`feat: heatmap v2 (legend toggles, year stepper, fading dots, finer rings); proof set always matches the plate`。
+
 ### Task 3: 徽章分区与页脚
 
 照原计划 Task 6 做（`docs/superpowers/plans/2026-10-24-vitrine-wall.md` 第 1487 行起），改动如下：
