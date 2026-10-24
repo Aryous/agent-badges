@@ -143,7 +143,8 @@ function stamps(kit, unlocked, total) {
       return { kind: 'rounded-rect', half: 0.033, radius: 0.01, center, ...look };
     }
     return isComplete(unlocked, total)
-      ? { kind: 'gem', radius: 0.04, center, material: 'crystal', color: kit.accent.color, height: 0.045 }
+      // 宝石用不透明的珐琅：透明水晶会透出底下的深蓝环带，看起来发黑
+      ? { kind: 'gem', radius: 0.04, center, material: 'enamel', color: kit.accent.color, height: 0.045 }
       : { kind: 'circle', radius: 0.033, center, ...dim };
   });
 }

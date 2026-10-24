@@ -100,7 +100,7 @@
 - 细线圈、小珠、分隔符：同正面。上弧写品牌名。
 - **四枚阶段戳记，放在环带下弧**（半径 0.69，角度 −90° ± 4.5°、± 13.5°，从左到右依次是铜、银、金、宝石）：
   - 前三枚：已达到的是 `rounded-rect`，half 0.033，radius 0.01，`polished-metal` 对应金属，height 0.026，bevel 0.008；没达到的同样大小，`enamel` `dimBand`，height 0.008。
-  - 第四枚：完成时是 `gem`，radius 0.04，`crystal`，颜色用品牌点缀色（Claude Code `primary`，Codex `ramp7`），height 0.045；没完成是 `circle`，radius 0.033，`dimBand`。
+  - 第四枚：完成时是 `gem`，radius 0.04，`enamel`（不用 `crystal`：透明材质透出深蓝环带会发黑），颜色用品牌点缀色（Claude Code `primary`，Codex `ramp7`），height 0.045；没完成是 `circle`，radius 0.033，`dimBand`。
 - **圆盘：**
   - **月桂环（矢量）：** 左右各一枝，阶段金属，z `MEDALLION_H`。
     - 茎：沿半径 0.405 的圆弧生长。角度 θ(t) = −π/2 + side × (0.2 + t × 0.6π)，t 从 0 到 1。茎宽从 0.007 收到 0.0028，height 0.02。

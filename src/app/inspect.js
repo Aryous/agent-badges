@@ -45,6 +45,8 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     else kicker.textContent = t('state.locked');
     kicker.style.color = state.unlocked ? '' : 'var(--muted)';
     $('[data-title]').textContent = d.title;
+    // 全解锁徽章的背面是月桂浮雕，没有刻字
+    $('[data-hint]').textContent = t(whole ? 'inspect.hintCompletionist' : 'inspect.hint');
     // 中文界面在标题下面再写一行英文；英文界面不需要
     const subtitle = $('[data-title-en]');
     subtitle.hidden = lang !== 'zh';
