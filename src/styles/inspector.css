@@ -202,3 +202,12 @@
 .inspector.is-open .btn-back {
   opacity: 1;
 }
+
+/* 导出面板打开时，它后面的说明文字淡下去，只留按钮和面板；收起时按同样的时长淡回来 */
+.info > :not(.actions) {
+  transition: opacity 0.25s ease;
+}
+
+.inspector.is-exporting .info > :not(.actions) {
+  opacity: 0;
+}

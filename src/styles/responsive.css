@@ -23,11 +23,24 @@
   .desc {
     font-size: 13px;
   }
+  /* 导出面板在两个按钮的正上方居中（也就是屏幕正中），不再对齐「导出图片」的右边 */
+  .actions {
+    position: relative;
+  }
+  .export {
+    position: static;
+  }
+  .export-panel {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .export-frame,
   .inspector .info,
+  .inspector .info > :not(.actions),
   .inspector .btn-back,
   .seg.is-ready::before {
     transition: none;

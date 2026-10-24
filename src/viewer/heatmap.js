@@ -297,8 +297,8 @@ export function createHeatmap({ root, series, markers = {}, onMarker, reducedMot
         cell.classList.toggle('is-lit', parts.length > 0);
       }
       if (cell.classList.contains('has-ring')) {
-        // 开着的工具里有人那天解锁：金边亮起，可以点开那枚徽章
-        const on = markersOn(date).length > 0;
+        // 开着的工具里有人那天解锁：金边亮起，可以点开那枚徽章（日期在今天之后的不算，例如时钟偏差）
+        const on = !cell.classList.contains('is-future') && markersOn(date).length > 0;
         cell.classList.toggle('ring-on', on);
         cell.classList.toggle('is-unlock', on);
       }

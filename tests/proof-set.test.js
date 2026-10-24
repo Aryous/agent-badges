@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CASE, PLATE_MIN, caseLayout, mintedMonths, monthStats, monthSums, monthTier, plaqueStatus } from '../src/viewer/proof-set.js';
+import { PLATE_MIN, caseLayout, mintedMonths, monthStats, monthSums, monthTier, plaqueStatus } from '../src/viewer/proof-set.js';
 
 // 两个工具的按天用量：[Token, 对话轮数]
 const cc = {
@@ -74,19 +74,16 @@ describe('铭牌', () => {
 });
 
 describe('礼盒的版式和铸币直径', () => {
-  // 板子的最小高度由 CASE 算出：铸币 120px 时的高度
-  const min = 2 * CASE.pad + 2 * CASE.trayY + CASE.gap + 2 * CASE.coinMax;
-
-  it('板子的最小高度就是铸币 120px 时礼盒的高度', () => {
-    expect(PLATE_MIN).toBe(min);
-    expect(caseLayout({ width: 1116, plateHeight: PLATE_MIN }).coin).toBe(120);
+  it('板子的最小高度是 364：铸币 120px 时礼盒的高度', () => {
+    expect(PLATE_MIN).toBe(364);
+    expect(caseLayout({ width: 1116, plateHeight: 364 }).coin).toBe(120);
   });
 
-  it('电脑、中等宽度、手机：只返回铸币直径和是否窄版，礼盒永远和板子一样高（不再有竖排）', () => {
-    for (const [width, plateHeight] of [[1116, PLATE_MIN], [760, PLATE_MIN + 20], [358, PLATE_MIN + 40]]) {
-      const l = caseLayout({ width, plateHeight });
+  it('电脑、中等宽度、手机：只返回铸币直径和是否窄版，板子 364 高时铸币都是 120（不再有竖排）', () => {
+    for (const width of [1440, 820, 390]) {
+      const l = caseLayout({ width, plateHeight: 364 });
       expect(Object.keys(l).sort()).toEqual(['coin', 'narrow']);
-      expect(l.coin).toBe(Math.min(120, Math.floor((plateHeight - 2 * CASE.pad - 2 * CASE.trayY - CASE.gap) / 2)));
+      expect(l.coin).toBe(120);
     }
   });
 

@@ -48,7 +48,7 @@ async function main() {
   const loop = createLoop(ctx, inspector);
   const inspectPanel = inspect.mount(ctx, { inspector, exportPanel: exporter, loop });
 
-  const app = expose(ctx, { inspector, inspect: inspectPanel, exportPanel: exporter, poster: posterPanel, shelf: shelfPanel, wall: { setFilter }, heatmap });
+  const app = expose(ctx, { inspector, inspect: inspectPanel, exportPanel: exporter, poster: posterPanel, shelf: shelfPanel, wall: { setFilter }, heatmap, coinItem });
 
   // 支持通过 #徽章id 直接打开某一枚（先打开它，缩略图等关上再画）；命令行 ?task=shelf 打开时自动生成主页图
   // 全解锁徽章不在 ctx.items 里，单独认 #completionist

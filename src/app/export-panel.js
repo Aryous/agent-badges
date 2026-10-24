@@ -18,6 +18,8 @@ export function mount(ctx, inspector) {
   function set(open) {
     exportPanel.hidden = !open;
     exportToggle.setAttribute('aria-expanded', String(open));
+    // 面板盖在说明文字上：打开时文字淡下去，收起时原样淡回来（inspector.css 的 .is-exporting）
+    inspectorEl.classList.toggle('is-exporting', open);
     exportFrame.classList.toggle('is-visible', open);
     if (open) {
       place();

@@ -5,7 +5,8 @@
   top: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(var(--bg) 55%, rgba(20, 19, 18, 0));
+  /* 实色到 80%（品牌标签的下划线以下），往下滚的内容不会透到导航后面 */
+  background: linear-gradient(var(--bg) 80%, rgba(20, 19, 18, 0));
   display: flex;
   align-items: center;
   justify-content: space-between;

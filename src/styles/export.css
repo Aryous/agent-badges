@@ -37,11 +37,6 @@
   margin-left: auto;
 }
 
-.panel-label {
-  font-size: 12px;
-  color: var(--muted);
-}
-
 .panel-value {
   font-size: 12px;
   color: var(--text);

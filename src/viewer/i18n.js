@@ -84,6 +84,9 @@ const STRINGS = {
     'heat.prevYear': '上一年',
     'heat.nextYear': '下一年',
     'proof.region': '{year} 年度铸币套装 · {status}',
+    // 铭牌上的状态写英文（MINTING / SEALED），读屏名字里用这两条
+    'proof.minting': '铸造中 · {n} / 12',
+    'proof.sealed': '已封存 · 12.31',
     'proof.open': '打开 {year} 年度铸币套装',
     'proof.close': '收起年度铸币套装，回到热力图',
     'proof.medal': '{month}：{tokens} Token，{days} 个活跃日，{metal}',
@@ -181,6 +184,8 @@ const STRINGS = {
     'heat.prevYear': 'Previous year',
     'heat.nextYear': 'Next year',
     'proof.region': '{year} proof set · {status}',
+    'proof.minting': 'MINTING · {n} / 12',
+    'proof.sealed': 'SEALED · 12.31',
     'proof.open': 'Open the {year} proof set',
     'proof.close': 'Close the proof set and return to the heatmap',
     'proof.medal': '{month}: {tokens} tokens, {days} active days, {metal}',

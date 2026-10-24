@@ -20,7 +20,7 @@ export const CASE = {
   gap: 16, // 铸币之间
   coinMax: 120, // 铸币直径的上限
   narrowAt: 700, // 礼盒窄于这个宽度时，铭牌栏收成竖条
-  narrowSide: 50, // 竖条宽
+  narrowSide: 54, // 竖条宽
   narrowSideGap: 10,
   narrowTrayX: 22,
 };
@@ -207,10 +207,10 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
   const timers = [];
   const later = (fn, ms) => timers.push(setTimeout(fn, ms));
 
-  let status = '';
+  let spoken = ''; // 读屏名字里的状态：铭牌上写英文，这里按界面语言写
   function labels() {
     // 窄版不显示铭牌上的状态，读屏名字里总是带上
-    caseEl.setAttribute('aria-label', t('proof.region', { year, status }));
+    caseEl.setAttribute('aria-label', t('proof.region', { year, status: spoken }));
     pull.setAttribute('aria-label', t(open ? 'proof.close' : 'proof.open', { year }));
   }
 
@@ -239,8 +239,8 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
       })
       .join('');
     box.querySelector('[data-year]').textContent = year;
-    status = plaqueStatus(year, minted.size, now);
-    box.querySelector('[data-status]').textContent = status;
+    box.querySelector('[data-status]').textContent = plaqueStatus(year, minted.size, now);
+    spoken = year < Number(now.slice(0, 4)) ? t('proof.sealed') : t('proof.minting', { n: minted.size });
     labels();
   }
 
@@ -260,7 +260,7 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
     box.style.setProperty('--coin', `${l.coin}px`);
   }
 
-  /** 放不下 6 枚时托盘横向滑动：看今年就把当前月份滑进来（停在右边），看往年从 1 月开始。 */
+  /** 放不下 6 枚时托盘横向滑动：看今年就滑到当前月份（窄屏上会被居中吸附），看往年从 1 月开始。 */
   function scrollToMonth() {
     const now = today();
     const slot = year === Number(now.slice(0, 4)) ? tray.children[Number(now.slice(5, 7)) - 1] : null;
@@ -273,8 +273,8 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
     const right = r.right - tr.left + tray.scrollLeft + parseFloat(getComputedStyle(tray).paddingRight);
     tray.scrollLeft = Math.max(0, right - tray.clientWidth);
   }
+  // 板子和盒子同宽：窗口宽度一变，板子的尺寸跟着变，这一个 ResizeObserver 就够了
   new ResizeObserver(fit).observe(plate);
-  window.addEventListener('resize', fit);
 
   // ---------- 滑盖：打开是 抬起 → 滑上去 → 铸币落定；关上倒过来，先滑回来再放下 ----------
   const still = () => reducedMotion || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;

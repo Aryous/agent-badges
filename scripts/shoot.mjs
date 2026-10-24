@@ -55,6 +55,13 @@ async function waitSpinRest(page, frames = 5) {
   }, frames);
 }
 
+/** 单枚查看里说明文字（导出面板打开时淡出、收起时淡回来）的透明度停在 value。 */
+const INFO_TEXT = ['[data-kicker]', '[data-title]', '[data-desc]', '[data-hint]'];
+async function infoTextAt(page, value) {
+  await waitUntil(page, `说明文字透明度到 ${value}`, ([sel, v]) => sel.every((s) => getComputedStyle(document.querySelector(s)).opacity === v), [INFO_TEXT, value]);
+  return page.evaluate((sel) => sel.map((s) => getComputedStyle(document.querySelector(s)).opacity), INFO_TEXT);
+}
+
 /** 导出预览框淡入完成（0.35 秒的 CSS 过渡，出帧才会前进）。 */
 async function waitFrameShown(page) {
   await waitUntil(page, '预览框淡入', () => getComputedStyle(document.querySelector('#export-frame')).opacity === '1');
@@ -296,6 +303,8 @@ async function proofCycle(page) {
       const hiddenBefore = await page.evaluate(() => getComputedStyle(document.querySelector('#export-frame')).opacity === '0');
       check('导出面板关闭时不显示取景框、不显示背景选项', hiddenBefore && !(await page.locator('[data-bg="ink"]').isVisible()));
       await page.locator('[data-export-toggle]').click();
+      // 面板盖在说明文字上：打开时文字淡出，Esc 收起后原样淡回来（下面检查）
+      const textOpen = await infoTextAt(page, '0');
       await page.locator('[data-bg="ink"]').click();
       await waitFrameShown(page);
       const inkFrame = await frameState();
@@ -315,6 +324,8 @@ async function proofCycle(page) {
       await page.keyboard.press('Escape');
       await page.waitForTimeout(400);
       check('Esc 先收起导出面板，不退出单枚查看', !(await page.locator('#export-panel').isVisible()) && (await page.locator('#inspector').isVisible()));
+      const textBack = await infoTextAt(page, '1');
+      check('导出面板打开时说明文字淡出，收起后淡回来', textOpen.every((o) => o === '0') && textBack.every((o) => o === '1'), `${textOpen.join(',')} → ${textBack.join(',')}`);
       check('选墨色时预览框显示墨色底', inkFrame?.visible && inkFrame.bg === 'ink' && !inkFrame.image, JSON.stringify(inkFrame));
       check('选透明时预览框显示棋盘格', tFrame?.visible && tFrame.bg === 'transparent' && tFrame.image, JSON.stringify(tFrame));
 
@@ -395,6 +406,22 @@ async function proofCycle(page) {
   check('关上后焦点回到铸币，Enter 再次打开', refocused && (await page.locator('[data-title]').textContent()) === '全解锁');
   await page.keyboard.press('Escape');
   await page.locator('#overlay').waitFor({ state: 'hidden' });
+  // 自动化接口也能打开全解锁徽章，和点它一样
+  const viaApi = await page.evaluate(() => {
+    try {
+      window.__badgeApp.open('completionist', { award: false });
+      return null;
+    } catch (e) {
+      return e.message;
+    }
+  });
+  await page.locator('#overlay').waitFor({ state: 'visible' });
+  const apiTitle = await page.locator('[data-title]').textContent();
+  check('__badgeApp.open(\'completionist\') 打开全解锁徽章', viaApi === null && apiTitle === '全解锁', viaApi ?? apiTitle);
+  await page.keyboard.press('Escape');
+  await page.locator('#overlay').waitFor({ state: 'hidden' });
+  const proofName = await page.evaluate(() => document.querySelector('.proof-case').getAttribute('aria-label'));
+  check('中文页面铸币套装的读屏名字是中文状态', /铸造中 · \d+ \/ 12$/.test(proofName) && !/MINTING|SEALED/.test(proofName), proofName);
   const recent = await page.locator('[data-recent] .profile-item').count();
   const next = await page.locator('[data-next] .profile-item img[src^="data:image/png"]').count();
   check('最近获得、即将解锁各 3 枚，且带缩略图', recent === 3 && next === 3, `${recent} / ${next}`);
@@ -551,6 +578,23 @@ async function proofCycle(page) {
   await page.screenshot({ path: `${out}/mobile-inspect.png` });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   check('手机端无横向溢出', !overflow);
+  // 导出面板：在屏幕正中，两侧留白；盖住的说明文字淡出，Esc 收起后淡回来
+  await waitAwardDone(page);
+  await page.locator('[data-export-toggle]').click();
+  const mTextOpen = await infoTextAt(page, '0');
+  const mPanel = await page.evaluate(() => {
+    const r = document.querySelector('#export-panel').getBoundingClientRect();
+    return { off: r.left + r.width / 2 - innerWidth / 2, left: r.left, right: innerWidth - r.right };
+  });
+  await page.screenshot({ path: `${out}/mobile-export-panel.png` });
+  await page.keyboard.press('Escape');
+  const mTextBack = await infoTextAt(page, '1');
+  const mClosed = !(await page.locator('#export-panel').isVisible());
+  check(
+    '手机 390：导出面板在屏幕正中、两侧至少 16px，打开时说明文字淡出，Esc 收起后淡回来',
+    Math.abs(mPanel.off) <= 1 && mPanel.left >= 16 && mPanel.right >= 16 && mTextOpen.every((o) => o === '0') && mTextBack.every((o) => o === '1') && mClosed,
+    `偏 ${mPanel.off.toFixed(1)}px · 左 ${mPanel.left.toFixed(0)} 右 ${mPanel.right.toFixed(0)} · ${mTextOpen.join(',')} → ${mTextBack.join(',')}`,
+  );
   check('手机端控制台无报错', errors.length === 0, errors.join(' | '));
   await page.close();
 }

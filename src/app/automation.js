@@ -1,13 +1,16 @@
+import { COMPLETIONIST_ID } from '../brands/shared/completionist.js';
+
 /**
  * 供自动化验证使用的小接口 window.__badgeApp（scripts/shoot.mjs、peek.mjs、check-shelf.mjs、assets.mjs、check-site.mjs 在用）。
  * face、spin、posterURL、shelfURL 是 getter，每次读都取最新值。ready 由调用方在缩略图完成后置为 true。
+ * ids 只有陈列墙的徽章；open('completionist') 打开概览区的全解锁徽章，和点它一样（它不在 ctx.items 里）。
  */
-export function expose(ctx, { inspector, inspect, exportPanel, poster, shelf, wall, heatmap }) {
+export function expose(ctx, { inspector, inspect, exportPanel, poster, shelf, wall, heatmap, coinItem }) {
   const { items } = ctx;
   window.__badgeApp = {
     ready: false,
     ids: items.map((it) => it.config.id),
-    open: (id, opts) => inspect.open(items.find((it) => it.config.id === id), opts),
+    open: (id, opts) => inspect.open(id === COMPLETIONIST_ID && coinItem ? coinItem : items.find((it) => it.config.id === id), opts),
     close: inspect.close,
     setAngle(a) {
       inspector.spin.angle = a;
