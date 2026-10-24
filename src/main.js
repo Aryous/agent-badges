@@ -4,6 +4,7 @@ import { supportsWebGL } from './viewer/scene.js';
 import { createInspector } from './viewer/inspector.js';
 import { createContext, fatal, showNotice } from './app/context.js';
 import { mountTopbar } from './app/topbar.js';
+import { mountColophon } from './app/colophon.js';
 import { loadAll } from './app/load.js';
 import { createItems } from './app/badges.js';
 import * as overview from './app/overview.js';
@@ -21,6 +22,7 @@ async function main() {
   const ctx = createContext();
   applyStatic();
   const topbar = mountTopbar(ctx);
+  mountColophon(ctx);
   if (!supportsWebGL()) {
     fatal(t('app.noWebGL'));
     return;

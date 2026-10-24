@@ -6,6 +6,8 @@ import { dataHome } from './src/collect/common.js';
 import { BRAND_IDS } from './src/brands/index.js';
 import { injectData } from './src/share/inject.js';
 
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+
 /**
  * 开发服务器：把 ~/.agent-badges 里的本机数据注入页面（npm run collect 生成）。
  * 只在 dev 生效，构建产物不含任何个人数据。
@@ -43,6 +45,8 @@ function inlineFavicon() {
 export default defineConfig({
   plugins: [inlineFavicon(), viteSingleFile(), localData()],
   build: { target: 'es2022', assetsInlineLimit: 100000000 },
+  // 页脚的版本号：构建时从 package.json 读入，不写死（vitest 读同一份配置，测试里也有定义）
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   // 组装全部徽章的测试较重，机器负载高时可能超过默认的 5 秒
   test: { environment: 'node', include: ['tests/**/*.test.js'], testTimeout: 30000 },
 });
