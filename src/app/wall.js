@@ -1,5 +1,6 @@
 import { createGrid } from '../viewer/grid.js';
 import { t } from '../viewer/i18n.js';
+import { trackSegThumb } from '../viewer/seg.js';
 
 /** 陈列墙：按系列排的网格和「全部 / 已获得 / 未解锁」筛选。 */
 export function mount(ctx) {
@@ -37,5 +38,6 @@ export function mount(ctx) {
     empty.textContent = t('filter.empty');
   }
   setFilter('all');
+  trackSegThumb(filterEl);
   return { grid, setFilter };
 }

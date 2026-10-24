@@ -25,8 +25,9 @@ body.site {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-family: var(--serif);
+  font-family: var(--font);
   font-size: 19px;
+  font-weight: 700;
   text-decoration: none;
 }
 
@@ -74,7 +75,7 @@ body.site {
 
 .hero-title {
   margin: 0;
-  font-family: var(--serif);
+  font-family: var(--font);
   font-size: clamp(36px, 5vw, 58px);
   font-weight: 500;
   line-height: 1.12;
@@ -204,7 +205,7 @@ body.site {
 
 .block-title {
   margin: 0;
-  font-family: var(--serif);
+  font-family: var(--font);
   font-size: clamp(28px, 3.4vw, 38px);
   font-weight: 500;
 }

@@ -1,5 +1,6 @@
 import { sourceInfo } from '../data/progress.js';
 import { t } from '../viewer/i18n.js';
+import { trackSegThumb } from '../viewer/seg.js';
 
 /**
  * 顶栏：品牌切换、语言切换和品牌色立即渲染；页面标题和数据来源要等数据加载完再调 showSource()。
@@ -19,14 +20,20 @@ export function mountTopbar(ctx) {
     if (b.brand.id === brand.id) a.setAttribute('aria-current', 'page');
     nav.appendChild(a);
   }
-  // 语言切换：链接到同一页面的另一种语言
+  // 语言切换：胶囊里并排「中」和「EN」，当前语言垫金属滑块；点另一侧跳到同一页面的另一种语言
   const sw = $('[data-lang-switch]');
-  const other = lang === 'zh' ? 'en' : 'zh';
-  const q = new URLSearchParams(location.search);
-  q.set('lang', other);
-  sw.href = `?${q}${location.hash}`;
-  sw.textContent = other === 'zh' ? '中文' : 'EN';
-  sw.lang = other === 'zh' ? 'zh-CN' : 'en';
+  sw.setAttribute('aria-label', t('nav.lang'));
+  for (const [code, label, hreflang] of [['zh', '中', 'zh-CN'], ['en', 'EN', 'en']]) {
+    const a = document.createElement('a');
+    const q = new URLSearchParams(location.search);
+    q.set('lang', code);
+    a.href = `?${q}${location.hash}`;
+    a.textContent = label;
+    a.lang = hreflang;
+    if (code === lang) a.setAttribute('aria-current', 'true');
+    sw.appendChild(a);
+  }
+  trackSegThumb(sw, '[aria-current]');
   document.documentElement.dataset.brand = brand.id;
 
   /** 页面标题和来源标签（本机数据 / 示例数据 / 公开版）。 */

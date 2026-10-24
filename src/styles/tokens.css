@@ -41,6 +41,8 @@
   --label-track-zh: 0.12em;
   --gutter: clamp(16px, 3vw, 32px);
   /* 细颗粒：128px 的平铺图，背景只栅格化一次，不对页面内容施加实时 filter */
+  /* 四角星：和徽章外圈两侧的星号同形（.star 的遮罩） */
+  --star-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 0C8.6 5.2 10.8 7.4 16 8 10.8 8.6 8.6 10.8 8 16 7.4 10.8 5.2 8.6 0 8 5.2 7.4 7.4 5.2 8 0Z'/%3E%3C/svg%3E");
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 

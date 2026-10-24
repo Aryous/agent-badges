@@ -32,18 +32,20 @@
 
 .btn {
   height: 34px;
-  padding: 0 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(240, 238, 230, 0.04);
+  padding: 0 16px;
+  border: 1px solid var(--gold-line);
+  border-radius: 999px;
+  background: transparent;
   font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
 }
 
 .btn:hover {
-  background: rgba(240, 238, 230, 0.09);
-  border-color: rgba(240, 238, 230, 0.22);
+  border-color: var(--gold);
+  background: rgba(201, 164, 92, 0.08);
 }
 
 .btn:disabled {
@@ -53,46 +55,88 @@
 
 .btn-primary {
   border-color: transparent;
-  background: var(--accent);
-  color: #141413;
-  font-weight: 600;
+  background: var(--metal-gold);
+  box-shadow: var(--metal-edge), 0 2px 6px rgba(0, 0, 0, 0.35);
+  color: var(--ink-on-metal);
+  font-weight: 700;
 }
 
 .btn-primary:hover {
-  background: color-mix(in srgb, var(--accent) 86%, white);
   border-color: transparent;
+  background: var(--metal-gold);
+  filter: brightness(1.07);
 }
 
+/* 胶囊：刻在面板上的一道槽，当前项下面垫一块金属滑块（位置由 seg.js 写入） */
 .seg {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
-  height: 34px;
+  height: 32px;
   padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  border: 1px solid var(--gold-line);
+  border-radius: 999px;
+  background: var(--bg-sunk);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
 }
 
-.seg button {
+.seg::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 3px;
+  bottom: 3px;
+  left: var(--thumb-x, 3px);
+  width: var(--thumb-w, 0px);
+  border-radius: 999px;
+  background: var(--metal-gold);
+  box-shadow: var(--metal-edge), 0 1px 3px rgba(0, 0, 0, 0.4);
+  opacity: var(--thumb-on, 0);
+}
+
+.seg.is-ready::before {
+  transition: left 0.22s cubic-bezier(0.2, 0.7, 0.2, 1), width 0.22s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.seg button,
+.seg a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 10px;
+  padding: 0 12px;
   border: 0;
-  border-radius: 5px;
+  border-radius: 999px;
   background: none;
   font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   color: var(--muted);
+  text-decoration: none;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: color 0.15s ease;
 }
 
-.seg button:hover {
+.seg button:hover,
+.seg a:hover {
   color: var(--text);
 }
 
-.seg button[aria-checked='true'] {
-  background: rgba(240, 238, 230, 0.16);
-  color: var(--text);
-  font-weight: 600;
+.seg button[aria-checked='true'],
+.seg a[aria-current] {
+  color: var(--ink-on-metal);
+  font-weight: 700;
+}
+
+.seg button[aria-checked='true'] .seg-count {
+  opacity: 0.7;
+}
+
+/* 没接入滑块的胶囊（例如导出面板的背景选择）：选中项自己垫金属，不滑动 */
+.seg:not(.is-tracked) button[aria-checked='true'] {
+  background: var(--metal-gold);
+  box-shadow: var(--metal-edge);
+  color: var(--ink-on-metal); /* 压过落地页 .gallery-tabs 的浅色字，金属上保持深色 */
 }
 
 /* 按钮里的小色块：棋盘格 = 透明，墨色方块 = 墨色 */
@@ -113,6 +157,7 @@
 
 .btn:focus-visible,
 .seg button:focus-visible,
+.seg a:focus-visible,
 .btn-back:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -183,9 +228,6 @@
   mask: var(--star-mask) center / contain no-repeat;
 }
 
-:root {
-  --star-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 0C8.6 5.2 10.8 7.4 16 8 10.8 8.6 8.6 10.8 8 16 7.4 10.8 5.2 8.6 0 8 5.2 7.4 7.4 5.2 8 0Z'/%3E%3C/svg%3E");
-}
 
 /* ---------- 进度：刻进去的细槽，已完成部分填金 ---------- */
 

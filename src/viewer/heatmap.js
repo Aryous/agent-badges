@@ -6,6 +6,7 @@ import { levelOf, levelThresholds, today, yearWeeks } from '../data/calendar.js'
 import { formatDay, lang, t } from './i18n.js';
 import { formatCount } from '../data/format.js';
 import { describeState } from './describe.js';
+import { trackSegThumb } from './seg.js';
 
 const ALPHA = [0, 0.3, 0.5, 0.74, 1];
 const EMPTY = 'rgba(240, 238, 230, 0.06)';
@@ -129,6 +130,7 @@ export function createHeatmap({ root, series, markers = {}, onMarker }) {
     });
     yearsEl.appendChild(b);
   }
+  trackSegThumb(yearsEl);
 
   // 工具开关：至少留一个
   const brandsEl = $('[data-brands]');
