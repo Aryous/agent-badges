@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { BRANDS } from '../src/brands/index.js';
 import { tierKey } from '../src/brands/shared/text.js';
+import { STAGE_METALS, completionistConfig } from '../src/brands/shared/completionist.js';
 import claudeBrand from '../src/brands/claude-code/brand.js';
 import { layoutIssues } from '../src/engine/layout.js';
 import { validateBadge } from '../src/engine/validate.js';
@@ -57,8 +58,25 @@ describe('CONTRIBUTING.md', () => {
   it('「Adding a tool」列出了每一张按工具 id 索引的表', () => {
     // 这一节读到下一个 `##` 标题为止，所以它自己不能再有 `###` 以外的子标题（`##` 开头的行都会截断）
     const section = read('CONTRIBUTING.md').split(/^### Adding a tool/m)[1]?.split(/^##/m)[0] ?? '';
-    for (const place of ['src/brands/index.js', 'src/collect/index.js', 'src/data/progress.js', 'src/data/mock-', '-metrics.js', 'package.json', 'tests/contracts.test.js', 'launchDate', 'TURNS_FIELD']) {
+    for (const place of ['src/brands/index.js', 'src/collect/index.js', 'src/data/progress.js', 'src/data/mock-', '-metrics.js', 'package.json', 'tests/contracts.test.js', 'launchDate', 'TURNS_FIELD', 'completionist.js']) {
       expect(section, place).toContain(place);
+    }
+  });
+
+  it('「Adding a tool」写全了全解锁徽章共用版式要的色板键', () => {
+    const section = read('CONTRIBUTING.md').split(/^### Adding a tool/m)[1]?.split(/^##/m)[0] ?? '';
+    // 共用版式用到的颜色 = 整枚徽章的颜色 − 品牌部件自己的颜色；再加上铸币火花用的 primary、ivory
+    const colors = (items) => new Set(items.flatMap((r) => [r.color, ...(r.gradient ?? [])]).filter(Boolean));
+    for (const { badges, completionist: kit } of BRANDS) {
+      const n = badges.length;
+      const look = { material: 'polished-metal', color: 'gold' };
+      const own = colors([...kit.tiles().flatMap((t) => [t.lit, t.ghost]), ...kit.crown(look), kit.separator(0, look), ...kit.hero(), kit.accent, ...(kit.eyes?.() ?? [])]);
+      const used = new Set(['stage', 'primary', 'ivory']);
+      for (const k of [0, n]) {
+        const { config } = completionistConfig(kit, { unlocked: k, total: n });
+        for (const c of colors([...config.layers, ...config.relief, ...config.backRelief, config.back])) if (!own.has(c) || STAGE_METALS.includes(c)) used.add(c);
+      }
+      for (const key of used) expect(section, key).toContain(`\`${key}\``);
     }
   });
 });
