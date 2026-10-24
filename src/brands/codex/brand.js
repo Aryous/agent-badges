@@ -54,6 +54,28 @@ export default {
     topaz: '#F2B41E',
     amethyst: '#9A5BD6',
     graphite: '#3A3936', // 未解锁剪影
+    // 全解锁徽章：锡是起步阶段的金属；stage 只给全解锁徽章的动画用（值同锡），不和戳记的铜银金共用材质
+    pewter: '#8c867b',
+    stage: '#8c867b',
+    ghost: '#cdb98f', // 马赛克残影
+    dimBand: '#2a3566', // 环带上没拿到的戳记
+    // 全解锁徽章的点阵：lavender → periwinkle → electric 插值成 16 档（three 的 Color.lerp，线性空间插值，和原型一致）
+    ramp0: '#b1a7ff',
+    ramp1: '#aba6ff',
+    ramp2: '#a5a4ff',
+    ramp3: '#9ea3ff',
+    ramp4: '#97a2ff',
+    ramp5: '#8fa0ff',
+    ramp6: '#879fff',
+    ramp7: '#7f9eff',
+    ramp8: '#7799ff',
+    ramp9: '#7190ff',
+    ramp10: '#6a87ff',
+    ramp11: '#627dff',
+    ramp12: '#5a71ff',
+    ramp13: '#5164ff',
+    ramp14: '#4655ff',
+    ramp15: '#3941ff',
   },
   ui: {
     accent: '#7A9DFF',

@@ -49,6 +49,11 @@ export default {
     topaz: '#F2B41E',
     amethyst: '#9A5BD6',
     graphite: '#3A3936', // 未解锁剪影
+    // 全解锁徽章：锡是起步阶段的金属；stage 只给全解锁徽章的动画用（值同锡），不和戳记的铜银金共用材质
+    pewter: '#8c867b',
+    stage: '#8c867b',
+    ghost: '#cdb98f', // 马赛克残影
+    dimBand: '#2a3566', // 环带上没拿到的戳记
   },
   ui: {
     accent: '#D97757',
