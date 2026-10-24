@@ -27,7 +27,6 @@ export function mountTopbar(ctx) {
   sw.href = `?${q}${location.hash}`;
   sw.textContent = other === 'zh' ? '中文' : 'EN';
   sw.lang = other === 'zh' ? 'zh-CN' : 'en';
-  document.documentElement.style.setProperty('--accent', brand.ui.accent);
   document.documentElement.dataset.brand = brand.id;
 
   /** 页面标题和来源标签（本机数据 / 示例数据 / 公开版）。 */

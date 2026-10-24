@@ -122,10 +122,10 @@
 
 .section-title {
   margin: 0;
-  font-family: var(--serif);
+  font-family: var(--font);
   font-size: 22px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .dot {
@@ -134,4 +134,73 @@
   height: 7px;
   border-radius: 50%;
   background: #f7f6f2;
+}
+
+/* ---------- 徽章外圈的排法：字距拉开的小字 ---------- */
+
+.label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+:lang(zh) .label {
+  font-size: 12px;
+  letter-spacing: var(--label-track-zh);
+}
+
+/* ---------- 细双线（徽章的金属双圈）；.has-star 在正中留出四角星的位置 ---------- */
+
+.rule {
+  --rule-gap: 0px;
+  position: relative;
+  height: 4px;
+  background:
+    linear-gradient(90deg, var(--gold-line) calc(50% - var(--rule-gap)), transparent calc(50% - var(--rule-gap)) calc(50% + var(--rule-gap)), var(--gold-line) calc(50% + var(--rule-gap))) top / 100% 1px no-repeat,
+    linear-gradient(90deg, var(--gold-line) calc(50% - var(--rule-gap)), transparent calc(50% - var(--rule-gap)) calc(50% + var(--rule-gap)), var(--gold-line) calc(50% + var(--rule-gap))) bottom / 100% 1px no-repeat;
+}
+
+.rule.has-star {
+  --rule-gap: 16px;
+}
+
+.rule > .star {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 四角星：和徽章外圈两侧的星号同形 */
+.star {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background: var(--gold);
+  -webkit-mask: var(--star-mask) center / contain no-repeat;
+  mask: var(--star-mask) center / contain no-repeat;
+}
+
+:root {
+  --star-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 0C8.6 5.2 10.8 7.4 16 8 10.8 8.6 8.6 10.8 8 16 7.4 10.8 5.2 8.6 0 8 5.2 7.4 7.4 5.2 8 0Z'/%3E%3C/svg%3E");
+}
+
+/* ---------- 进度：刻进去的细槽，已完成部分填金 ---------- */
+
+.meter-track {
+  display: block;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--bg-sunk);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--gold);
 }

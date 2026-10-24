@@ -38,8 +38,9 @@
 .brand-tab {
   padding: 2px 8px;
   border-radius: 6px;
-  font-family: var(--serif);
+  font-family: var(--font);
   font-size: 19px;
+  font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--faint);
   text-decoration: none;

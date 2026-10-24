@@ -1,16 +1,47 @@
-/* 设计变量、全局重置、body 与 WebGL 画布 */
+/* 设计变量、字体、全局重置、body 背景与 WebGL 画布 */
+
+/* 界面字体：徽章外圈用的 Outfit（OFL 1.1），只打包拉丁子集的 500 / 700；中文落到系统字体 */
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../../node_modules/@fontsource/outfit/files/outfit-latin-500-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../../node_modules/@fontsource/outfit/files/outfit-latin-700-normal.woff2') format('woff2');
+}
 
 :root {
-  --bg: #141413;
-  --bg-lift: #24221f;
-  --text: #f0eee6;
-  --muted: #8f8b82;
-  --faint: #5d5a54;
-  --accent: #d97757;
-  --line: rgba(240, 238, 230, 0.12);
-  --serif: ui-serif, 'Iowan Old Style', 'Palatino Linotype', 'Songti SC', Georgia, serif;
-  --sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', sans-serif;
+  /* 底色：只微微偏暖、接近中性，色彩交给徽章的珐琅 */
+  --bg: #141312;
+  --bg-lift: #242220;
+  --bg-sunk: #0d0c0b; /* 刻进去的槽、凹坑 */
+  --text: #efece4;
+  --muted: #a39e94;
+  --faint: #66625b; /* 只用于不承载信息的装饰 */
+  /* 金：界面唯一的强调色。比金级徽章的 #f2c46b 更沉，不和徽章抢 */
+  --gold: #c9a45c;
+  --gold-bright: #e6c887;
+  --gold-line: rgba(201, 164, 92, 0.35);
+  /* 金属滑块和主按钮：很轻的拉丝渐变 + 顶边一像素高光，只用于小面积 */
+  --metal-gold: linear-gradient(180deg, #e8cd90 0%, #cfaa63 45%, #b38e48 55%, #c9a45c 100%);
+  --metal-edge: inset 0 1px 0 rgba(255, 245, 220, 0.55), inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+  --ink-on-metal: #1c1710;
+  --accent: var(--gold);
+  --line: rgba(239, 236, 228, 0.1);
+  --font: 'Outfit', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', sans-serif;
+  --sans: var(--font);
+  --label-track: 0.18em;
+  --label-track-zh: 0.12em;
   --gutter: clamp(16px, 3vw, 32px);
+  /* 细颗粒：128px 的平铺图，背景只栅格化一次，不对页面内容施加实时 filter */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 * {
@@ -32,12 +63,17 @@ body.is-inspecting {
 }
 
 body {
-  background: radial-gradient(ellipse 80% 70% at 50% 42%, var(--bg-lift) 0%, var(--bg) 70%);
+  /* 从上到下：细颗粒、顶光、四周暗角、底色 */
+  background:
+    var(--grain),
+    radial-gradient(ellipse 70% 55% at 50% -8%, rgba(255, 238, 205, 0.075), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.35) 100%),
+    var(--bg);
   background-color: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  -webkit-font-smoothing: antialiased;
   background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
 }
 
 #stage,
