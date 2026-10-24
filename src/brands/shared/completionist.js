@@ -22,7 +22,7 @@ export const stageOf = (unlocked, total) => [0.25, 0.5, 0.75].filter((f) => unlo
 export const isComplete = (unlocked, total) => total > 0 && unlocked >= total;
 
 /** 亮片数：总片数按解锁比例取整。 */
-export const litCount = (tiles, unlocked, total) => Math.round((tiles * unlocked) / total);
+export const litCount = (tiles, unlocked, total) => (total > 0 ? Math.round((tiles * unlocked) / total) : 0);
 
 // ---------- 环带 ----------
 
@@ -177,7 +177,10 @@ const COPY = {
  * @param {object} kit  品牌部件（BRANDS[i].completionist）
  * @returns {{ config: object, parts?: { lit: number[], ghost: number[], counts: number[], tileCenters: number[][] } }}
  */
-export function completionistConfig(kit, { unlocked, total, metal, anim = false }) {
+export function completionistConfig(kit, { unlocked: rawUnlocked, total: rawTotal, metal, anim = false }) {
+  // 输入兜底：取整、不为负，解锁数不超过总数（数据里残留已删除徽章的 id 时可能超出）
+  const total = Math.max(0, Math.floor(rawTotal) || 0);
+  const unlocked = Math.min(Math.max(0, Math.floor(rawUnlocked) || 0), total);
   const look = { material: 'polished-metal', color: metal ?? STAGE_METALS[stageOf(unlocked, total)] };
   const done = !anim && isComplete(unlocked, total);
   const tiles = kit.tiles();
@@ -187,6 +190,7 @@ export function completionistConfig(kit, { unlocked, total, metal, anim = false 
     title: '全解锁',
     description: COPY.description,
     en: { title: 'Completionist', description: COPY.en },
+    // 只为通过 validateBadge：这枚徽章不进陈列墙，进度由调用方直接给，不按 criteria 计算
     criteria: { target: total },
     shape: done ? STARBURST : CIRCLE,
     layers: [

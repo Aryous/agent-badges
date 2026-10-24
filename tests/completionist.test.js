@@ -3,6 +3,7 @@ import { BRANDS } from '../src/brands/index.js';
 import { validateBadge } from '../src/engine/validate.js';
 import { buildBadge, disposeBadge } from '../src/engine/badge.js';
 import { svgShapes } from '../src/engine/svgpath.js';
+import { reliefGeometry } from '../src/engine/relief.js';
 import { CODEX_MARK } from '../src/brands/codex/mark.js';
 import { CODEX_GRID } from '../src/brands/codex/completionist.js';
 import { STAGE_METALS, completionistConfig, isComplete, stageOf } from '../src/brands/shared/completionist.js';
@@ -212,6 +213,42 @@ describe('配置', () => {
       expect(done[3].kind).toBe('gem');
       // 从左到右
       expect(done.map((r) => r.center[0])).toEqual([...done.map((r) => r.center[0])].sort((a, b) => a - b));
+    });
+  }
+});
+
+describe('输入兜底与几何细节', () => {
+  for (const { brand, kit, n } of kits) {
+    const T = kit.tiles().length;
+
+    it(`${brand.id}：解锁数超出、为负、带小数时都按整数规整到 0..n`, () => {
+      const over = completionistConfig(kit, { unlocked: n + 1, total: n }).config;
+      expect(arcs(over.relief, 'bottom')).toEqual(['COMPLETIONIST']);
+      expect(over.shape.type).toBe('starburst');
+      const neg = completionistConfig(kit, { unlocked: -3, total: n, anim: true, metal: 'stage' });
+      expect(neg.parts.counts).toHaveLength(1);
+      expect(arcs(completionistConfig(kit, { unlocked: 7.6, total: n }).config.relief, 'bottom')).toEqual([`7 OF ${n}`]);
+      const animOver = completionistConfig(kit, { unlocked: n + 5, total: n, anim: true, metal: 'stage' });
+      expect(animOver.parts.counts).toHaveLength(n + 1);
+      expect(ghostCount(completionistConfig(kit, { unlocked: 3, total: 0 }).config.relief)).toBe(T);
+    });
+
+    it(`${brand.id}：静态版的亮片摆在各自的位置上`, () => {
+      const k = Math.ceil(n / 2);
+      const { config } = completionistConfig(kit, { unlocked: k, total: n });
+      const tiles = kit.tiles();
+      const m = Math.round((T * k) / n);
+      const lit = config.relief.filter((r) => r.color !== 'ghost' && tiles.some((t) => t.lit.kind === r.kind && t.lit.color === r.color && t.lit.half === r.half && t.lit.radius === r.radius));
+      expect(lit).toHaveLength(m);
+      lit.forEach((r, i) => expect(r.center).toEqual(tiles[i].center));
+    });
+
+    it(`${brand.id}：完成形态的王冠和伙伴之间留出空隙`, () => {
+      const look = { material: 'polished-metal', color: 'gold' };
+      const minY = (items) => Math.min(...items.map((r) => { const g = reliefGeometry(r); g.computeBoundingBox(); return g.boundingBox.min.y; }));
+      const maxY = (items) => Math.max(...items.map((r) => { const g = reliefGeometry(r); g.computeBoundingBox(); return g.boundingBox.max.y; }));
+      const placed = kit.tiles().map((t) => ({ ...t.lit, center: t.center }));
+      expect(minY(kit.crown(look)) - maxY(placed)).toBeGreaterThan(0.04);
     });
   }
 });
