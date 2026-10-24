@@ -143,7 +143,7 @@
 - **减少动态效果**（`prefers-reduced-motion`）：直接显示最终状态，没有动画、摆动和扫光，仍然可以拖动。
 - **不可见时停止渲染：** 用 IntersectionObserver，和落地页首屏一样。
 - **没有 WebGL：** 保留现有的刻度环 SVG 兜底。
-- **无障碍：** 画布 `aria-hidden`；外面的 figure 带 `role="img"`，aria-label 写「全解锁徽章：已解锁 k / n，当前阶段：银」，英文同理。
+- **无障碍：** 画布 `aria-hidden`；外面的 figure 可以点开，所以带 `role="button"` 和 `tabindex="0"`（Enter / 空格打开），aria-label 写「全解锁徽章：已解锁 k / n，当前阶段：银」，英文同理。
 - **点击铸币：** 打开单枚查看。
 
   | 项目 | 内容 |

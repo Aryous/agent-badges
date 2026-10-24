@@ -1,4 +1,6 @@
 import { badgeTitle, tierKey, tierLabel } from '../brands/shared/text.js';
+import { STAGE_METALS, nextStage, stageOf } from '../brands/shared/completionist.js';
+import { formatCount } from '../data/format.js';
 import { lang, t } from './i18n.js';
 
 // 徽章状态的文字说明：陈列墙、档案、热力图和详情共用。
@@ -21,4 +23,19 @@ export function describeState(config, state) {
   }
   if (state.unlocked) return { title, meta: fmtDate(state.earnedAt), masked };
   return { title, meta: null, masked };
+}
+
+/**
+ * 全解锁徽章在单枚查看里的副标题和进度文字。
+ * 进行中：副标题写当前阶段，进度条写 k / n 和下一阶段；已完成：副标题写完成日期（没有就不写），不显示进度条（meter 为 null）。
+ */
+export function describeCompletionist(state, l = lang) {
+  const { current: k, target: n } = state.progress;
+  const next = nextStage(k, n);
+  if (!next) return { kicker: [t('state.earned', {}, l), fmtDate(state.earnedAt)].filter(Boolean).join(' · '), meter: null };
+  const name = (key) => t(`completionist.${key}`, {}, l);
+  return {
+    kicker: t('completionist.stageNow', { stage: name(STAGE_METALS[stageOf(k, n)]) }, l),
+    meter: `${formatCount(k)} / ${formatCount(n)}${t('completionist.next', { stage: name(next.metal), n: next.remaining }, l)}`,
+  };
 }

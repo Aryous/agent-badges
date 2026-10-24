@@ -1,6 +1,6 @@
 import { setEngravingSize } from '../engine/badge.js';
 import { badgeDescription, tierKey, tierLabel, upperTitle } from '../brands/shared/text.js';
-import { describeState, fmtDate } from '../viewer/describe.js';
+import { describeCompletionist, describeState, fmtDate } from '../viewer/describe.js';
 import { playAward } from '../viewer/award-animation.js';
 import { t } from '../viewer/i18n.js';
 import { formatCount } from '../data/format.js';
@@ -36,8 +36,11 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
   function fillInfo(item) {
     const { config, state } = item;
     const d = describeState(config, state);
+    // 全解锁徽章：副标题写阶段或完成日期，进度条后面写下一阶段
+    const whole = config.id === 'completionist' ? describeCompletionist(state) : null;
     const kicker = $('[data-kicker]');
-    if (d.masked) kicker.textContent = t('state.hidden');
+    if (whole) kicker.textContent = whole.kicker;
+    else if (d.masked) kicker.textContent = t('state.hidden');
     else if (state.unlocked) kicker.textContent = `${d.tier ? d.meta : t('state.earned')} · ${fmtDate(state.earnedAt)}`;
     else kicker.textContent = t('state.locked');
     kicker.style.color = state.unlocked ? '' : 'var(--muted)';
@@ -70,13 +73,15 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
 
     // 进度条：未解锁的普通徽章，或还没满级的分级徽章
     const maxed = config.tiers && state.tier === config.tiers.length - 1;
-    const showMeter = !d.masked && (config.tiers ? !maxed : !state.unlocked);
+    const showMeter = whole ? Boolean(whole.meter) : !d.masked && (config.tiers ? !maxed : !state.unlocked);
     const meter = $('[data-meter]');
     meter.hidden = !showMeter;
     if (showMeter) {
       const { current, target } = state.progress;
       $('[data-meter-fill]').style.width = `${Math.min(100, (current / target) * 100)}%`;
-      $('[data-meter-text]').textContent = `${formatCount(current)} / ${formatCount(target)}${config.tiers && state.unlocked ? t('inspect.toNext') : ''}`;
+      $('[data-meter-text]').textContent = whole
+        ? whole.meter
+        : `${formatCount(current)} / ${formatCount(target)}${config.tiers && state.unlocked ? t('inspect.toNext') : ''}`;
     }
     $('[data-replay]').hidden = !state.unlocked;
   }
@@ -105,6 +110,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     // 打开时才生成刻字，停稳后渲染循环再换成 2048；关闭动画里又打开同一枚时它还留着刻字，不用重做
     if (!item.badge.getObjectByName('back').userData.engravingSize) setEngravingSize(item.badge, 1024);
     mode = 'inspect';
+    ctx.emit('inspecting', true);
     document.body.classList.add('is-inspecting');
     overlay.hidden = false;
     fillInfo(item);
@@ -151,6 +157,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
         setEngravingSize(item.badge, 0); // 关上后释放刻字，换回共用的占位贴图
       }
       loop.stop();
+      ctx.emit('inspecting', false);
       onClosed.forEach((resolve) => resolve());
       onClosed = [];
     }, 320);

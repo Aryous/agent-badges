@@ -289,7 +289,35 @@ async function session(viewport, tag) {
     const canvas = fig?.querySelector('canvas');
     return { has: fig?.classList.contains('has-coin'), canvas: !!canvas && !canvas.hidden && canvas.clientWidth > 0, role: fig?.getAttribute('role'), label: fig?.getAttribute('aria-label') ?? '' };
   });
-  check('概览区的全解锁徽章是实时画布，说明文字里的解锁数与陈列墙一致', coin.has && coin.canvas && coin.role === 'img' && Number(coin.label.match(/\d+/)?.[0]) === unlockedTiles, JSON.stringify(coin));
+  check('概览区的全解锁徽章是实时画布，说明文字里的解锁数与陈列墙一致', coin.has && coin.canvas && coin.role === 'button' && Number(coin.label.match(/\d+/)?.[0]) === unlockedTiles, JSON.stringify(coin));
+
+  // 拖动铸币不打开单枚查看；点击才打开，标题是「全解锁」，它不进陈列墙
+  const figBox = await page.locator('[data-coin]').boundingBox();
+  const cx = figBox.x + figBox.width / 2;
+  const cy = figBox.y + figBox.width / 2; // figure 下方还有说明文字，点铸币正中
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx + 40, cy, { steps: 6 });
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+  check('拖动全解锁徽章不打开单枚查看', !(await page.locator('#overlay').isVisible()));
+  await page.mouse.click(cx, cy);
+  await page.locator('#overlay').waitFor({ state: 'visible' });
+  await waitAwardDone(page);
+  const coinTitle = await page.locator('[data-title]').textContent();
+  const coinMeter = await page.locator('[data-meter-text]').textContent();
+  const notOnWall = await page.evaluate(() => !window.__badgeApp.ids.includes('completionist') && !document.querySelector('.tile[data-id="completionist"]'));
+  check('点开全解锁徽章，标题是「全解锁」，进度写下一阶段', coinTitle === '全解锁' && coinMeter.includes(`${unlockedTiles} / `) && coinMeter.includes('下一阶段'), `${coinTitle} · ${coinMeter}`);
+  check('全解锁徽章不进陈列墙', notOnWall && (await page.locator('.tile').count()) === (await page.evaluate(() => window.__badgeApp.ids.length)));
+  await page.keyboard.press('Escape');
+  await page.locator('#overlay').waitFor({ state: 'hidden' });
+  // 键盘：焦点回到铸币，Enter 再次打开
+  const refocused = await page.evaluate(() => document.activeElement?.matches('[data-coin]'));
+  await page.keyboard.press('Enter');
+  await page.locator('#overlay').waitFor({ state: 'visible' });
+  check('关上后焦点回到铸币，Enter 再次打开', refocused && (await page.locator('[data-title]').textContent()) === '全解锁');
+  await page.keyboard.press('Escape');
+  await page.locator('#overlay').waitFor({ state: 'hidden' });
   const recent = await page.locator('[data-recent] .profile-item').count();
   const next = await page.locator('[data-next] .profile-item img[src^="data:image/png"]').count();
   check('最近获得、即将解锁各 3 枚，且带缩略图', recent === 3 && next === 3, `${recent} / ${next}`);

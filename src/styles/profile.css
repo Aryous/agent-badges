@@ -34,6 +34,7 @@
 .profile-coin {
   --coin: 184px;
   position: relative;
+  cursor: pointer;
   flex: none;
   display: flex;
   flex-direction: column;
@@ -49,10 +50,10 @@
   height: var(--coin);
 }
 
-/* 画布比铸币大一圈，给火花留地方；负外边距让它在版面上仍只占 --coin，不推开旁边的数字。
-   拖动由 figure 接收，画布不挡旁边元素的点击 */
+/* 画布是铸币版面的 2 倍，给火花留地方：阶段升级的火花在画布里飞完，铸成时只有最快的一小部分飞出画布边。
+   负外边距让它在版面上仍只占 --coin，不推开旁边的数字。拖动由 figure 接收，画布不挡旁边元素的点击 */
 .profile-coin canvas {
-  --bleed: calc(var(--coin) * 0.25);
+  --bleed: calc(var(--coin) * 0.5);
   display: block;
   width: calc(var(--coin) + 2 * var(--bleed));
   height: calc(var(--coin) + 2 * var(--bleed));
@@ -69,6 +70,17 @@
 
 .profile-coin.has-coin:active {
   cursor: grabbing;
+}
+
+/* 点开看单枚；按在说明文字上不转铸币，只点开 */
+.profile-coin.has-coin .profile-caption {
+  cursor: pointer;
+}
+
+.profile-coin:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 12px;
 }
 
 .profile-coin.has-coin .profile-ticks {

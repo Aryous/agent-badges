@@ -1,4 +1,4 @@
-// 成就档案：一块铭牌。左栏是全解锁徽章（实时 3D，兜底刻度环，下方写「已解锁徽章」）和三个关键数字，旁边是「最近获得」和「即将解锁」。
+// 成就档案：一块铭牌。左栏是全解锁徽章（实时 3D，兜底刻度环，下方写「已解锁徽章」；点开看单枚）和三个关键数字，旁边是「最近获得」和「即将解锁」。
 import { highlights } from '../data/highlights.js';
 import { dailyStats } from '../data/daily.js';
 import { lang, t } from './i18n.js';
@@ -23,10 +23,11 @@ function tickRing(ratio, n = 120) {
  * @param {object[]} opts.items  [{ config, state }]
  * @param {object} opts.daily    当前工具的按天用量
  * @param {(item) => void} opts.onSelect
+ * @param {(viaKeyboard: boolean) => void} [opts.onCoin]  点开全解锁徽章
  * @param {() => void} opts.onShare
  * @param {() => void} opts.onShelf   生成 GitHub 主页徽章图
  */
-export function createProfile({ root, items, daily, onSelect, onShare, onShelf }) {
+export function createProfile({ root, items, daily, onSelect, onCoin, onShare, onShelf }) {
   const badges = items.map((it) => it.config);
   const progress = Object.fromEntries(items.map((it) => [it.config.id, it.state]));
   const h = highlights(badges, progress);
@@ -40,7 +41,7 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
     <div class="rule has-star"><i class="star"></i></div>
     <div class="profile-plate">
       <div class="profile-main">
-        <figure class="profile-coin" data-coin role="img">
+        <figure class="profile-coin" data-coin role="button" tabindex="0">
           ${tickRing(total ? h.unlocked.length / total : 0)}
           <canvas aria-hidden="true" hidden></canvas>
           <div class="profile-count"><b>${h.unlocked.length}</b><span>/ ${total}</span></div>
@@ -77,6 +78,23 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
   fig.setAttribute('aria-label', t('profile.coinLabel', { n: k, total, stage: t(`completionist.${stageName}`) }));
   let coin = null;
 
+  // 点开全解锁徽章。铸币同时可以拖动：按下后移动超过几像素算拖动，不打开
+  let press = null;
+  fig.addEventListener('pointerdown', (e) => (press = { x: e.clientX, y: e.clientY, moved: false }));
+  fig.addEventListener('pointermove', (e) => {
+    if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 5) press.moved = true;
+  });
+  fig.addEventListener('click', (e) => {
+    const dragged = press?.moved;
+    press = null;
+    if (!dragged) onCoin?.(e.detail === 0);
+  });
+  fig.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault(); // 空格不滚动页面
+    onCoin?.(true);
+  });
+
   const row = (entry, kind) => {
     const item = byId.get(entry.badge.id);
     const d = describeState(item.config, item.state);
@@ -110,6 +128,8 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
 
   return {
     el,
+    /** 全解锁徽章所在的 figure：单枚查看关上后焦点回到这里。 */
+    coinEl: fig,
     stats,
     unlocked: h.unlocked.length,
     total,
@@ -131,6 +151,13 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
         canvas.hidden = true;
         console.warn('全解锁徽章渲染失败，改用刻度环', err);
       }
+    },
+    /** 单枚查看挡住概览区时停下全解锁徽章，关上后接着画。 */
+    pauseCoin() {
+      coin?.pause();
+    },
+    resumeCoin() {
+      coin?.resume();
     },
     /** 卸下全解锁徽章，交还 WebGL 上下文。 */
     disposeCoin() {

@@ -21,6 +21,17 @@ export const stageOf = (unlocked, total) => [0.25, 0.5, 0.75].filter((f) => unlo
 
 export const isComplete = (unlocked, total) => total > 0 && unlocked >= total;
 
+/**
+ * 下一阶段和还差几枚：锡、铜、银的下一阶段是下一种金属，金的下一阶段是 'complete'；已完成返回 null。
+ * @returns {{ metal: string, remaining: number } | null}
+ */
+export function nextStage(unlocked, total) {
+  if (isComplete(unlocked, total)) return null;
+  const s = stageOf(unlocked, total);
+  const at = s < 3 ? Math.ceil(total * [0.25, 0.5, 0.75][s]) : total;
+  return { metal: s < 3 ? STAGE_METALS[s + 1] : 'complete', remaining: at - unlocked };
+}
+
 /** 亮片数：总片数按解锁比例取整。 */
 export const litCount = (tiles, unlocked, total) => (total > 0 ? Math.round((tiles * unlocked) / total) : 0);
 

@@ -9,8 +9,8 @@ import { createStage } from './scene.js';
 import { Tweens, ease, lerp } from './anim.js';
 import { burst } from './award-animation.js';
 
-/** 铸币占画布版面的比例（同原型）：四周留出火花的空间。 */
-const FILL = 0.8;
+/** 铸币占版面的比例：0.9，和原来的 PNG 铸币一样大；火花飞出版面，落在多出来的画布上。 */
+const FILL = 0.9;
 
 /**
  * 进场的分段点：⌈n/4⌉、⌈n/2⌉、⌈3n/4⌉ 中不超过 k 的，最后是 k 本身（去重）。
@@ -25,6 +25,50 @@ export function introStops(unlocked, total) {
 /** 一段推进的时长（秒）：0.35 + 枚数 × 0.085。 */
 export const segmentDuration = (from, to) => 0.35 + (to - from) * 0.085;
 
+/** 动画版徽章用的状态：按已解锁画（不用灰色的未解锁材质）。 */
+export const coinState = (unlocked, total) => ({ unlocked: true, earnedAt: null, progress: { current: unlocked, target: total } });
+
+/**
+ * 在动画版徽章里找到要动的网格。正面浮雕是最后 relief.length 个子节点（badge.js 先装背面），顺序同配置；
+ * 阶段金属是色板键为 'stage' 的材质（渐变材质没有色板键）。
+ * @returns {{ front: object[], lit: object[], ghost: object[], counts: object[], metals: Set<object> }}
+ */
+export function coinMeshes(badge, config, parts) {
+  const front = badge.children.slice(badge.children.length - config.relief.length);
+  const metals = new Set();
+  badge.traverse((o) => {
+    if (o.isMesh && o.material.userData?.colorKey === 'stage') metals.add(o.material);
+  });
+  return {
+    front,
+    lit: parts.lit.map((i) => front[i]),
+    ghost: parts.ghost.map((i) => front[i]),
+    counts: parts.counts.map((i) => front[i]),
+    metals,
+  };
+}
+
+/**
+ * 单枚查看用的临时 item：不进陈列墙，也不算进总数。
+ * 模型是当前阶段的静态版；全部解锁时日期取最晚解锁的那一枚。
+ * @param {object} kit  品牌部件
+ * @param {object[]} items  陈列墙的徽章 [{ config, state }]
+ */
+export function completionistItem(kit, items) {
+  const total = items.length;
+  const done = items.filter((it) => it.state?.unlocked);
+  const k = done.length;
+  const earnedAt = isComplete(k, total) ? (done.map((it) => it.state.earnedAt).filter(Boolean).sort().at(-1) ?? null) : null;
+  const { config } = completionistConfig(kit, { unlocked: k, total });
+  return {
+    config,
+    state: { unlocked: k > 0, earnedAt, tier: null, progress: { current: k, target: total } },
+    badge: null,
+    pivot: null,
+    holder: null,
+  };
+}
+
 /**
  * @param {object} opts
  * @param {HTMLCanvasElement} opts.canvas
@@ -34,7 +78,7 @@ export const segmentDuration = (from, to) => 0.35 + (to - from) * 0.085;
  * @param {number} opts.unlocked
  * @param {number} opts.total
  * @param {boolean} [opts.reducedMotion]
- * @returns {{ dispose(): void }}
+ * @returns {{ pause(): void, resume(): void, dispose(): void }}
  */
 export function createCompletionistCoin({ canvas, target = canvas, kit, brand, unlocked, total, reducedMotion = false }) {
   if (!(total > 0)) throw new Error('全解锁徽章需要徽章总数');
@@ -68,7 +112,7 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
     holder.scale.setScalar(R);
   }
 
-  const state = { unlocked: true, earnedAt: null, progress: { current: k, target: total } };
+  const state = coinState(k, total);
   /** 组装、挂环境贴图，提前把贴图传上显卡、着色器交给后台编译，换上来时不卡。 */
   function assemble(config) {
     const badge = buildBadge(config, brand, state, { engraving: 0 });
@@ -83,18 +127,10 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
 
   // 动画版：圆形外形，亮片、残影各一套，下弧文字 0..k 各一份
   let badge = assemble(config);
-  // 正面浮雕是最后 relief.length 个子节点，顺序同配置
-  const front = badge.children.slice(badge.children.length - config.relief.length);
-  const lit = parts.lit.map((i) => front[i]);
-  const ghost = parts.ghost.map((i) => front[i]);
-  const counts = parts.counts.map((i) => front[i]);
+  // 阶段金属：外圈、细线圈、小珠、文字、圆盘描边、月桂、星共用的材质
+  const { lit, ghost, counts, metals } = coinMeshes(badge, config, parts);
   // 亮片在原点生成，挪到各自的位置，缩放时原地弹出
   lit.forEach((m, t) => m.position.set(parts.tileCenters[t][0], parts.tileCenters[t][1], 0));
-  // 阶段金属：外圈、细线圈、小珠、文字、圆盘描边、月桂、星共用的材质
-  const metals = new Set();
-  badge.traverse((o) => {
-    if (o.isMesh && o.material.userData?.colorKey === 'stage') metals.add(o.material);
-  });
   pivot.add(badge);
   // 铸成后换上的静态完成形态（星芒、王冠、金），提前组装好
   const finale = finaleConfig && assemble(finaleConfig);
@@ -201,6 +237,8 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
   const listeners = new AbortController();
   const on = (el, type, fn) => el.addEventListener(type, fn, { signal: listeners.signal });
   on(target, 'pointerdown', (e) => {
+    // 只认左键；按在下方说明文字上不转
+    if (e.button !== 0 || e.target.closest?.('figcaption')) return;
     s.drag = true;
     s.x = e.clientX;
     s.t = performance.now();
@@ -266,22 +304,38 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
   sizer.observe(canvas);
   fit();
 
-  // 看不见就不画；第一次进入视野时播放进场，之后不再自动播放
+  // 看不见、或被单枚查看挡住（pause）时不画；第一次真正画出来时播放进场，之后不再自动播放
   let played = reducedMotion;
+  let visible = false;
+  let paused = false;
+  function sync() {
+    const run = visible && !paused && !disposed;
+    last = performance.now();
+    stage.renderer.setAnimationLoop(run ? tick : null);
+    if (run && !played) {
+      played = true;
+      play();
+    }
+  }
   const seen = new IntersectionObserver(
     ([e]) => {
-      last = performance.now();
-      stage.renderer.setAnimationLoop(e.isIntersecting ? tick : null);
-      if (e.isIntersecting && !played) {
-        played = true;
-        play();
-      }
+      visible = e.isIntersecting;
+      sync();
     },
     { threshold: 0.5 },
   );
   seen.observe(target);
 
   return {
+    /** 停下渲染循环（比如单枚查看挡住了它）；进场也跟着停在原处。 */
+    pause() {
+      paused = true;
+      sync();
+    },
+    resume() {
+      paused = false;
+      sync();
+    },
     dispose() {
       if (disposed) return;
       disposed = true;

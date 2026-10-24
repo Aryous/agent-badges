@@ -4,6 +4,7 @@ import { selectBrand } from './brand-select.js';
 // 页面共用的上下文：地址参数、当前工具和它的徽章，加载完成后再挂上舞台和徽章列表。
 // 面板之间不互相引用，通过 ctx.emit / ctx.on 通信，事件有：
 //   'open'（item, opts）单枚查看  'poster'（opts）分享海报  'shelf'（opts）GitHub 主页图
+//   'inspecting'（true / false）单枚查看打开 / 完全关上（关闭动画播完）
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 
