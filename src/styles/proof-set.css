@@ -1,0 +1,343 @@
+/* 年度铸币套装：热力图板下面的礼盒（黄铜铭牌 + 丝绒托盘 + 月章），皮质拉环，抽屉式滑盖 */
+
+/* 抽屉：高度等于板子的自然高度；只裁上沿，滑上去的板子消失在礼盒上沿里，左右和下方的阴影保留 */
+.proof {
+  --slide: 0.75s cubic-bezier(0.45, 0.05, 0.25, 1);
+  --velvet: radial-gradient(120% 90% at 50% 0%, #1c2a62, #0e1640 70%);
+  position: relative;
+  height: var(--plate-h, auto);
+  clip-path: inset(0 -100px -100px -100px);
+}
+
+/* 竖排时礼盒比板子高：打开时盒子的高度跟着滑盖过渡到礼盒的高度，关上时再回来 */
+.proof.is-stacked {
+  transition: height var(--slide);
+}
+
+.proof.is-open {
+  height: var(--case-h, var(--plate-h, auto));
+}
+
+/* ---------- 礼盒 ---------- */
+
+.proof-case {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+  box-sizing: border-box;
+  border-radius: 18px;
+  background: #2a2724;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 2px 0 rgba(255, 255, 255, 0.05),
+    0 18px 40px rgba(0, 0, 0, 0.35);
+  /* 竖排时盒子从板子的高度长到礼盒的高度，没露出来的部分先藏着 */
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.proof.is-shown .proof-case {
+  visibility: visible;
+}
+
+.proof-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--velvet);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.55);
+}
+
+/* 黄铜铭牌：年份、PROOF SET、细线下面的状态 */
+.proof-brass {
+  width: 132px;
+  padding: 12px 10px 10px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  text-align: center;
+  background: linear-gradient(#cdb17a, #a3874f);
+  color: #2a2216;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.55);
+}
+
+.proof-brass b {
+  display: block;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.proof-brass span,
+.proof-brass em {
+  display: block;
+  /* 字距加在每个字后面，左边补回同样的量，整行才居中 */
+  padding-left: 0.3em;
+  white-space: nowrap;
+}
+
+.proof-brass span {
+  margin-top: 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+}
+
+.proof-brass em {
+  margin-top: 7px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(42, 34, 22, 0.25);
+  font-style: normal;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  padding-left: 0.22em;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 丝绒托盘：铸币直径由 proof-set.js 按板子的高度算好（--coin），四周留足空 */
+.proof-tray {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 6), var(--coin, 112px));
+  grid-template-rows: repeat(var(--rows, 2), var(--coin, 112px));
+  gap: 16px;
+  padding: 24px 30px;
+  box-sizing: border-box;
+  justify-content: space-between;
+  align-content: center;
+  border-radius: 12px;
+  background: var(--velvet);
+  box-shadow:
+    inset 0 2px 14px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+/* 每个月一个圆形凹槽；没有月章时淡淡地写着月份 */
+.proof-slot {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #0a1033, #121b4a 70%);
+  box-shadow:
+    inset 0 4px 10px rgba(0, 0, 0, 0.7),
+    0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.proof-slot.is-empty span {
+  padding-left: 0.2em;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #4c5786;
+}
+
+.proof-medal {
+  width: 96%;
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.55));
+}
+
+.proof-medal svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* 月章上的字：SVG 的用户单位，跟着铸币一起缩放 */
+.proof-mname {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  fill: #b8a982;
+}
+
+.proof-mval {
+  font-size: 17px;
+  font-weight: 700;
+  fill: #f3ead6;
+  font-variant-numeric: tabular-nums;
+}
+
+.proof-munit {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  fill: #8d96b8;
+}
+
+.proof-bead.is-future {
+  fill: none;
+  stroke: rgba(184, 169, 130, 0.18);
+  stroke-width: 1;
+}
+
+.proof-ring {
+  fill: none;
+  stroke: var(--plate-ring);
+  stroke-width: 1.1;
+}
+
+.proof-bead[data-date]:hover {
+  stroke: rgba(243, 234, 214, 0.85);
+  stroke-width: 1.2;
+}
+
+/* 铸币一枚枚落定：从上方 14px、略小、透明，回弹到位，依次错开 45ms */
+.proof.is-revealing .proof-medal {
+  animation: proof-settle 0.7s cubic-bezier(0.3, 1.3, 0.5, 1) both;
+  animation-delay: calc(var(--i) * 45ms + 250ms);
+}
+
+@keyframes proof-settle {
+  from {
+    transform: translateY(-14px) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ---------- 滑盖：板子先抬起（0.22 秒），再滑进礼盒上沿（0.75 秒，慢—快—慢），最后只露一道边和拉环 ---------- */
+
+.proof-sheet {
+  position: relative;
+  z-index: 3;
+  transition: transform var(--slide);
+}
+
+.proof-sheet > .heat-plate {
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.proof.is-lifted .proof-sheet > .heat-plate {
+  transform: scale(1.012) translateY(-3px);
+  box-shadow:
+    inset 0 0 0 1px var(--plate-frame),
+    inset 0 0 0 5px var(--plate),
+    inset 0 0 0 6px rgba(160, 152, 138, 0.22),
+    0 30px 60px rgba(0, 0, 0, 0.6);
+}
+
+.proof.is-open .proof-sheet {
+  transform: translateY(calc(-100% + 6px));
+}
+
+/* 皮质拉环：深蓝皮革、金色明线、一颗铜铆钉；悬停时轻轻翘起 */
+.proof-pull {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: -32px;
+  width: 40px;
+  height: 40px;
+  margin-left: -20px;
+  padding: 0;
+  border: 0;
+  border-radius: 0 0 12px 12px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.08), transparent 60%),
+    #1a2453;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 4px 5px rgba(0, 0, 0, 0.55);
+  cursor: grab;
+  touch-action: none;
+  transform-origin: 50% 0;
+  transition: transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.proof-pull::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px dashed rgba(217, 191, 134, 0.75);
+  border-top: 0;
+  border-radius: 0 0 9px 9px;
+}
+
+.proof-pull::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 11px;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f3dca2, #9c7d45);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+
+.proof-pull:hover {
+  transform: rotateX(-18deg) translateY(1px);
+}
+
+.proof-pull:active {
+  cursor: grabbing;
+}
+
+.proof-pull:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ---------- 竖排（手机、窄屏）：铭牌一行在上，托盘 4 × 3 或 3 × 4 ---------- */
+
+.proof.is-stacked .proof-case {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 104px minmax(0, 1fr);
+  border-radius: 16px;
+}
+
+/* 打开后拉环垂在铭牌这一行的上半部分，铭牌靠下放，不被盖住 */
+.proof.is-stacked .proof-side {
+  align-items: flex-end;
+  padding-bottom: 14px;
+}
+
+.proof.is-stacked .proof-brass {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 14px;
+  width: auto;
+  padding: 10px 16px;
+  text-align: left;
+}
+
+.proof.is-stacked .proof-brass b {
+  grid-row: 1 / span 2;
+}
+
+.proof.is-stacked .proof-brass span {
+  margin-top: 0;
+  padding-left: 0;
+}
+
+.proof.is-stacked .proof-brass em {
+  margin-top: 5px;
+  padding-top: 5px;
+  padding-left: 0;
+}
+
+.proof.is-stacked .proof-tray {
+  gap: 14px;
+  padding: 18px 16px;
+  justify-content: space-evenly;
+}

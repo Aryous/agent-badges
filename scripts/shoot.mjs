@@ -102,6 +102,41 @@ async function session(viewport, tag) {
   return { page, errors };
 }
 
+/** 年度铸币套装的滑盖停稳：打开时板子滑到只剩一道边，关上时回到原位、礼盒藏起来。 */
+async function waitProof(page, open) {
+  await waitUntil(page, open ? '铸币套装打开' : '铸币套装关上', (open) => {
+    const box = document.querySelector('.proof');
+    const sheet = box.querySelector('.proof-sheet');
+    const ty = new DOMMatrix(getComputedStyle(sheet).transform).m42;
+    const shown = getComputedStyle(box.querySelector('.proof-case')).visibility === 'visible';
+    const lifted = getComputedStyle(box.querySelector('.heat-plate')).transform !== 'none';
+    return open ? shown && Math.abs(ty + sheet.offsetHeight - 6) < 0.5 && box.offsetHeight === parseFloat(getComputedStyle(box).getPropertyValue('--case-h')) : !shown && ty === 0 && !lifted;
+  }, open);
+}
+
+/** 拉一下铸币套装的拉环，读出状态。 */
+async function proofState(page) {
+  return page.evaluate(() => {
+    const box = document.querySelector('.proof');
+    const pull = box.querySelector('.proof-pull');
+    const plate = box.querySelector('.heat-plate');
+    const year = document.querySelector('.heat-years [aria-checked="true"]')?.textContent ?? String(new Date().getFullYear());
+    // 期望的月章数：热力图上这一年有亮点的月份（和铸币套装各自独立算）
+    const lit = new Set([...document.querySelectorAll(`.heat-cell.is-lit[data-date^="${year}-"]`)].map((c) => c.dataset.date.slice(5, 7)));
+    return {
+      expanded: pull.getAttribute('aria-expanded'),
+      controls: document.getElementById(pull.getAttribute('aria-controls'))?.getAttribute('role'),
+      medals: box.querySelectorAll('.proof-medal').length,
+      months: lit.size,
+      plateInert: plate.inert,
+      caseInert: box.querySelector('.proof-case').inert,
+      boxH: box.offsetHeight,
+      plateH: plate.offsetHeight,
+      overflow: document.documentElement.scrollWidth > window.innerWidth,
+    };
+  });
+}
+
 // ---------- 桌面 ----------
 {
   const { page, errors } = await session({ width: 1440, height: 900 }, 'desktop');
@@ -347,6 +382,21 @@ async function session(viewport, tag) {
   check('热力图可以按工具开关，至少保留一个', off === 'false' && stillOn === 'true', `${off} / ${stillOn}`);
   await codexToggle.click();
 
+  // 年度铸币套装：点拉环，板子滑上去露出礼盒；再点一下原路关上
+  const proofClosed = await proofState(page);
+  await page.locator('.proof-pull').click();
+  await waitProof(page, true);
+  const proofOpen = await proofState(page);
+  check(
+    '点拉环打开铸币套装：aria-expanded，月章数等于有活动的月份数，礼盒和板子一样高',
+    proofClosed.expanded === 'false' && proofClosed.caseInert && proofOpen.expanded === 'true' && proofOpen.controls === 'region' && proofOpen.medals === proofOpen.months && proofOpen.months > 0 && proofOpen.plateInert && !proofOpen.caseInert && proofOpen.boxH === proofOpen.plateH,
+    `${proofOpen.medals} 枚 / ${proofOpen.months} 个月 · 高 ${proofOpen.boxH} / ${proofOpen.plateH}`,
+  );
+  await page.locator('.proof-pull').click();
+  await waitProof(page, false);
+  const proofBack = await proofState(page);
+  check('再点一下原路关上，板子上的控件又能用', proofBack.expanded === 'false' && !proofBack.plateInert && proofBack.caseInert && proofBack.boxH === proofBack.plateH, JSON.stringify(proofBack));
+
   await marker.click();
   await page.waitForTimeout(700);
   check('点击解锁标记打开对应徽章', await page.locator('#overlay').isVisible());
@@ -419,6 +469,15 @@ async function session(viewport, tag) {
   const { page, errors } = await session({ width: 390, height: 844 }, 'mobile');
   const wallOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   check('手机端陈列墙（含热力图）无横向溢出', !wallOverflow);
+  // 手机：托盘 3 × 4，礼盒比板子高，打开时盒子长高，关上再回到板子的高度
+  await page.locator('.proof-pull').click();
+  await waitProof(page, true);
+  const mOpen = await proofState(page);
+  const cols = await page.evaluate(() => getComputedStyle(document.querySelector('.proof-tray')).gridTemplateColumns.split(' ').length);
+  await page.locator('.proof-pull').click();
+  await waitProof(page, false);
+  const mBack = await proofState(page);
+  check('手机端铸币套装 3 列，打开时比板子高，关上后回到板子的高度，无横向溢出', cols === 3 && mOpen.boxH > mOpen.plateH && mBack.boxH === mBack.plateH && !mOpen.overflow, `${cols} 列 · 开 ${mOpen.boxH} / 板 ${mOpen.plateH} · 关 ${mBack.boxH}`);
   await page.evaluate(() => window.__badgeApp.open('seven-day-streak'));
   await page.waitForTimeout(3000);
   await page.screenshot({ path: `${out}/mobile-inspect.png` });

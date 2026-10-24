@@ -39,6 +39,18 @@
   .heat-brand {
     transition: none;
   }
+
+  /* 铸币套装：不抬起、不滑动、不落定，直接切换 */
+  .proof,
+  .proof-sheet,
+  .proof-sheet > .heat-plate,
+  .proof-pull {
+    transition: none;
+  }
+
+  .proof.is-revealing .proof-medal {
+    animation: none;
+  }
 }
 
 /* 第一栏放不下三列数字和一行按钮时，全解锁徽章这一栏单独占一行 */

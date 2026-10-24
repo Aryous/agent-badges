@@ -1,4 +1,5 @@
 import { createHeatmap } from '../viewer/heatmap.js';
+import { createProofSet } from '../viewer/proof-set.js';
 import { createProfile } from '../viewer/profile.js';
 import { completionistItem, createCompletionistCoin } from '../viewer/completionist.js';
 
@@ -42,5 +43,7 @@ export function mount(ctx, { heatSeries, markers, currentDaily }) {
     markers,
     onMarker: (m) => ctx.emit('open', items.find((it) => it.config.id === m.id)),
   });
-  return { profile, heatmap, coinItem };
+  // 年度铸币套装藏在热力图板子下面（落地页不挂）
+  const proofSet = createProofSet({ heatmap, palette: ctx.brand.palette, reducedMotion });
+  return { profile, heatmap, coinItem, proofSet };
 }
