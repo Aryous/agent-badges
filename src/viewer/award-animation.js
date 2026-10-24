@@ -42,7 +42,8 @@ export async function playAward({ stage, tweens, inspector, palette, reducedMoti
   spin.angle = 0;
   spin.snapping = true;
 
-  burst(stage, tweens, inspector, palette);
+  const { x, y, r } = inspector.layout;
+  burst(stage, tweens, { x, y, r }, [new Color(palette.gold), new Color(palette.primary), new Color(palette.ivory)], { key: 'burst' });
   await glint(stage, tweens, inspector);
 }
 
@@ -65,45 +66,47 @@ function glint(stage, tweens, inspector) {
   });
 }
 
-/** 一圈向外飘散的火花。 */
-function burst(stage, tweens, inspector, palette) {
-  const { layout } = inspector;
-  const N = 90;
-  const pos = new Float32Array(N * 3);
-  const col = new Float32Array(N * 3);
+/**
+ * 一圈向外飘散的火花：获得动画和概览区的全解锁徽章共用。
+ * @param {{ x: number, y: number, r: number }} at  圆心和徽章半径（世界单位）
+ * @param {Color[]} colors  按顺序轮流取色
+ * @param {{ count?: number, spread?: number, key?: string }} [opts]  spread：散开幅度的倍数
+ */
+export function burst(stage, tweens, { x: cx, y: cy, r }, colors, { count = 90, spread = 1, key } = {}) {
+  const pos = new Float32Array(count * 3);
+  const col = new Float32Array(count * 3);
   const dirs = [];
-  const colors = [new Color(palette.gold), new Color(palette.primary), new Color(palette.ivory)];
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < count; i++) {
     const a = Math.random() * Math.PI * 2;
     const speed = 0.7 + Math.random() * 0.8;
     dirs.push([Math.cos(a) * speed, Math.sin(a) * speed, (Math.random() - 0.3) * 0.6]);
-    const c = colors[i % 3];
+    const c = colors[i % colors.length];
     col.set([c.r, c.g, c.b], i * 3);
   }
   const geo = new BufferGeometry();
   geo.setAttribute('position', new BufferAttribute(pos, 3));
   geo.setAttribute('color', new BufferAttribute(col, 3));
   const mat = new PointsMaterial({
-    size: layout.r * 0.05,
+    size: r * 0.05,
     vertexColors: true,
     transparent: true,
     blending: AdditiveBlending,
     depthWrite: false,
   });
   const points = new Points(geo, mat);
-  points.position.set(layout.x, layout.y, 0);
+  points.position.set(cx, cy, 0);
   stage.scene.add(points);
 
-  tweens.add({
-    key: 'burst',
+  return tweens.add({
+    key,
     duration: 1.3,
     easing: ease.linear,
     update: (t) => {
-      const d = ease.outCubic(t) * layout.r * 0.75;
-      for (let i = 0; i < N; i++) {
+      const d = ease.outCubic(t) * r * 0.75 * spread;
+      for (let i = 0; i < count; i++) {
         const [x, y, z] = dirs[i];
-        pos[i * 3] = x * (layout.r * 0.85 + d);
-        pos[i * 3 + 1] = y * (layout.r * 0.85 + d) - t * t * layout.r * 0.2;
+        pos[i * 3] = x * (r * 0.85 + d);
+        pos[i * 3 + 1] = y * (r * 0.85 + d) - t * t * r * 0.2;
         pos[i * 3 + 2] = z * d;
       }
       geo.attributes.position.needsUpdate = true;
