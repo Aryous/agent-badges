@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { PLATE_MIN, caseLayout, mintedMonths, monthStats, monthSums, monthTier, plaqueStatus } from '../src/viewer/proof-set.js';
+import { PLATE_MIN, caseLayout, isSealed, mintedMonths, monthStats, monthSums, monthTier, plaqueStatus } from '../src/viewer/proof-set.js';
+import { t } from '../src/viewer/i18n.js';
 
 // 两个工具的按天用量：[Token, 对话轮数]
 const cc = {
@@ -70,6 +71,18 @@ describe('铭牌', () => {
 
   it('往年：SEALED · 12.31', () => {
     expect(plaqueStatus(2025, 7, '2026-10-24')).toBe('SEALED · 12.31');
+  });
+
+  it('封存只看年份：往年封存，今年和明年都不封存', () => {
+    expect(isSealed(2025, '2026-01-01')).toBe(true);
+    expect(isSealed(2026, '2026-12-31')).toBe(false);
+    expect(isSealed(2027, '2026-10-24')).toBe(false);
+  });
+
+  it('英文界面的读屏状态和铭牌上的字一致', () => {
+    expect(t('proof.minting', { n: 10 }, 'en')).toBe(plaqueStatus(2026, 10, '2026-10-24'));
+    expect(t('proof.sealed', {}, 'en')).toBe(plaqueStatus(2025, 7, '2026-10-24'));
+    expect(t('proof.region', { year: 2026, status: plaqueStatus(2026, 10, '2026-10-24') }, 'en')).toBe('2026 proof set · MINTING · 10 / 12');
   });
 });
 

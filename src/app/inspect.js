@@ -151,13 +151,14 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     mode = 'wall';
     overlay.classList.remove('is-open');
     inspectorEl.classList.remove('is-open');
-    exportPanel.set(false);
+    exportPanel.set(false, { keepTextFaded: true }); // 文字跟着信息区淡出，关完再复原
     document.body.classList.remove('is-inspecting');
     history.replaceState(null, '', location.pathname + location.search);
     closing = item;
     closeTimer = setTimeout(() => {
       closing = null;
       overlay.hidden = true;
+      exportPanel.set(false); // 遮罩已藏起来，这时复原说明文字不会被看到
       if (item) {
         stage.scene.remove(item.holder);
         setEngravingSize(item.badge, 0); // 关上后释放刻字，换回共用的占位贴图

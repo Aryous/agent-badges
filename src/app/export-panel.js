@@ -15,11 +15,15 @@ export function mount(ctx, inspector) {
   const FACE_LABEL = { front: t('export.front'), back: t('export.back') };
   let exportBg = 'transparent';
 
-  function set(open) {
+  /**
+   * keepTextFaded：退出单枚查看时收起面板，说明文字保持淡出，跟着信息区一起离开，不先淡回来；
+   * 关完后（inspect.js 的 closeTimer）再调一次 set(false) 复原。
+   */
+  function set(open, { keepTextFaded = false } = {}) {
     exportPanel.hidden = !open;
     exportToggle.setAttribute('aria-expanded', String(open));
     // 面板盖在说明文字上：打开时文字淡下去，收起时原样淡回来（inspector.css 的 .is-exporting）
-    inspectorEl.classList.toggle('is-exporting', open);
+    if (!keepTextFaded) inspectorEl.classList.toggle('is-exporting', open);
     exportFrame.classList.toggle('is-visible', open);
     if (open) {
       place();
@@ -28,9 +32,10 @@ export function mount(ctx, inspector) {
   }
   exportToggle.addEventListener('click', () => set(exportPanel.hidden));
   inspector.onFaceChange((face) => ($('[data-export-face]').textContent = FACE_LABEL[face]));
-  // 点面板以外的界面元素时收起；拖动画布旋转徽章不收起，方便转到背面再导出
+  // 点面板以外的界面元素时收起；拖动画布旋转徽章不收起，方便转到背面再导出。
+  // 「全部徽章」除外：由 inspect.js 的 close() 收起面板，说明文字不在按下时就淡回来
   document.addEventListener('pointerdown', (e) => {
-    if (exportPanel.hidden || e.target.closest('.export') || e.target.id === 'stage') return;
+    if (exportPanel.hidden || e.target.closest('.export, [data-close]') || e.target.id === 'stage') return;
     set(false);
   });
 

@@ -62,6 +62,48 @@ async function infoTextAt(page, value) {
   return page.evaluate((sel) => sel.map((s) => getComputedStyle(document.querySelector(s)).opacity), INFO_TEXT);
 }
 
+/**
+ * 导出面板开着时点「全部徽章」退出单枚查看：说明文字不能先淡回来再跟着信息区淡出。
+ * 按住 120ms 再松开，和真人点击一样先收到 pointerdown 再收到 click。逐帧记下说明文字的有效透明度
+ * （文字 × 信息区 × 遮罩是否还显示），至少 400ms、直到遮罩藏起来。遮罩藏起来后整块不显示，记 0。
+ */
+async function leaveWithPanelOpen(page) {
+  await page.locator('[data-export-toggle]').click();
+  const before = await infoTextAt(page, '0');
+  const sampling = page.evaluate((sel) => new Promise((resolve) => {
+    const overlay = document.querySelector('#overlay');
+    const info = document.querySelector('#inspector .info');
+    const t0 = performance.now();
+    const samples = [];
+    const tick = () => {
+      const t = performance.now() - t0;
+      const text = Math.max(...sel.map((s) => Number(getComputedStyle(document.querySelector(s)).opacity)));
+      const shown = overlay.hidden ? 0 : Number(getComputedStyle(info).opacity);
+      samples.push({ t: Math.round(t), text, info: shown, eff: text * shown });
+      if (t >= 400 && overlay.hidden) resolve(samples);
+      else requestAnimationFrame(tick);
+    };
+    tick();
+  }), INFO_TEXT);
+  const box = await page.locator('[data-close]').boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(120);
+  await page.mouse.up();
+  const samples = await sampling;
+  const open = Math.max(...before.map(Number));
+  const peak = Math.max(...samples.map((s) => s.eff));
+  // 每 80ms 左右取一个点写进说明，方便对照
+  const series = [];
+  let last = -Infinity;
+  for (const s of samples) {
+    if (s.t - last < 80) continue;
+    last = s.t;
+    series.push(`${s.t}ms ${s.text.toFixed(2)}×${s.info.toFixed(2)}`);
+  }
+  return { open, peak, n: samples.length, series: series.join(' · ') };
+}
+
 /** 导出预览框淡入完成（0.35 秒的 CSS 过渡，出帧才会前进）。 */
 async function waitFrameShown(page) {
   await waitUntil(page, '预览框淡入', () => getComputedStyle(document.querySelector('#export-frame')).opacity === '1');
@@ -350,6 +392,11 @@ async function proofCycle(page) {
         const ok = bg === 'transparent' ? corner[3] === 0 : corner[3] === 255 && corner[0] < 40;
         check(`导出 PNG（${bg}）背景正确`, ok, `corner rgba=${corner.join(',')}`);
       }
+
+      // 面板开着时点「全部徽章」：说明文字一直保持淡出，跟着信息区一起离开，不先回闪
+      const leave = await leaveWithPanelOpen(page);
+      check('导出面板开着时退出单枚查看，说明文字不回闪', leave.peak <= leave.open + 0.005,
+        `打开时 ${leave.open} · 峰值 ${leave.peak.toFixed(3)}（${leave.n} 帧）· ${leave.series}`);
     }
     await page.keyboard.press('Escape');
     await page.waitForTimeout(900);
@@ -595,6 +642,9 @@ async function proofCycle(page) {
     Math.abs(mPanel.off) <= 1 && mPanel.left >= 16 && mPanel.right >= 16 && mTextOpen.every((o) => o === '0') && mTextBack.every((o) => o === '1') && mClosed,
     `偏 ${mPanel.off.toFixed(1)}px · 左 ${mPanel.left.toFixed(0)} 右 ${mPanel.right.toFixed(0)} · ${mTextOpen.join(',')} → ${mTextBack.join(',')}`,
   );
+  const mLeave = await leaveWithPanelOpen(page);
+  check('手机 390：导出面板开着时退出单枚查看，说明文字不回闪', mLeave.peak <= mLeave.open + 0.005,
+    `打开时 ${mLeave.open} · 峰值 ${mLeave.peak.toFixed(3)}（${mLeave.n} 帧）· ${mLeave.series}`);
   check('手机端控制台无报错', errors.length === 0, errors.join(' | '));
   await page.close();
 }
@@ -649,6 +699,31 @@ async function proofCycle(page) {
   }));
   check('减少动态效果：切换工具和年份直接切换，没有淡入淡出和数字滚动', heat.anims === 0 && heat.first === '2025-01-01' && heat.year === '2025', JSON.stringify(heat));
   check('减少动态效果控制台无报错', errors.length === 0, errors.join(' | '));
+  await page.close();
+}
+
+// ---------- 英文界面：铸币套装的读屏名字用英文状态，和铭牌上的字一致 ----------
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+  const errors = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(url.replace('lang=zh', 'lang=en'), { timeout: NAV_TIMEOUT });
+  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
+  const en = await page.evaluate(() => {
+    const box = document.querySelector('.proof');
+    return {
+      name: box.querySelector('.proof-case').getAttribute('aria-label'),
+      year: box.querySelector('[data-year]').textContent,
+      plaque: box.querySelector('[data-status]').textContent,
+    };
+  });
+  check(
+    '英文页面铸币套装的读屏名字是英文状态，和铭牌一致',
+    /^\d{4} proof set · MINTING · \d+ \/ 12$/.test(en.name) && en.name === `${en.year} proof set · ${en.plaque}` && !/[一-鿿]/.test(en.name),
+    `${en.name} | 铭牌 ${en.plaque}`,
+  );
+  check('英文界面控制台无报错', errors.length === 0, errors.join(' | '));
   await page.close();
 }
 

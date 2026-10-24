@@ -61,9 +61,12 @@ const pad2 = (n) => String(n).padStart(2, '0');
 export const mintedMonths = (stats, year, now = today()) =>
   stats.flatMap((s, m) => (s.days > 0 && `${year}-${pad2(m + 1)}-01` <= now ? [m] : []));
 
+/** 往年的套装已经封存。铭牌和读屏名字共用这一条判断，两处不会分叉。 */
+export const isSealed = (year, now = today()) => year < Number(now.slice(0, 4));
+
 /** 铭牌上细线下面的状态：今年还在铸，往年已封存。 */
 export const plaqueStatus = (year, minted, now = today()) =>
-  year < Number(now.slice(0, 4)) ? 'SEALED · 12.31' : `MINTING · ${minted} / 12`;
+  isSealed(year, now) ? 'SEALED · 12.31' : `MINTING · ${minted} / 12`;
 
 /**
  * 礼盒的版式：高度就是板子的高度，铸币直径按高度算，不超过 120；宽度只决定铭牌栏是不是竖条。
@@ -240,7 +243,7 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
       .join('');
     box.querySelector('[data-year]').textContent = year;
     box.querySelector('[data-status]').textContent = plaqueStatus(year, minted.size, now);
-    spoken = year < Number(now.slice(0, 4)) ? t('proof.sealed') : t('proof.minting', { n: minted.size });
+    spoken = isSealed(year, now) ? t('proof.sealed') : t('proof.minting', { n: minted.size });
     labels();
   }
 
