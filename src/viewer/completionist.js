@@ -2,7 +2,7 @@
 // 第一次进入视野时播放进场：浮现 → 马赛克一段段亮起，跨过阶段时金属升级（火花、扫光、轻跳）→ 全部解锁时铸成星芒形态。
 // 平时轻轻摆动，每 9 秒一道很淡的扫光；左右拖动翻到背面，松手带惯性滑行，再吸附到正面或背面。
 // 减少动态效果时直接显示最终状态，没有摆动和扫光，仍然可以拖动；静止时不画。
-// 省资源：只组装要用的那一版；完成形态空闲时再组装；进场结束后同材质的浮雕并成一个网格（几十次绘制）。
+// 省资源：只组装要用的那一版；完成形态在进场开始前才组装；进场结束后同材质的浮雕并成一个网格（几十次绘制）。
 import { Color, Group } from 'three';
 import { buildBadge, disposeBadge, swapRelief } from '../engine/badge.js';
 import { mergeByMaterial } from '../engine/merge.js';
@@ -179,8 +179,7 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
     badge = assemble(anim.config);
     // 阶段金属：外圈、细线圈、小珠、文字、圆盘描边、月桂、星共用的材质
     ({ lit, ghost, count: countMesh, metals } = coinMeshes(badge, anim.config, anim.parts));
-    // 铸成后换上的完成形态（星芒、王冠、金）：空闲时组装，铸成时还没好就当场组装
-    if (done) idle(buildFinal, 2000);
+    // 铸成后换上的完成形态（星芒、王冠、金）在进场开始前组装（见 sync），不挤在进场动画中间
   } else {
     badge = buildFinal();
   }
@@ -232,9 +231,18 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
     if (!disposed) await wait(0.25);
   }
 
+  /** 动画版用完了：放掉对它网格的引用，几何体数组才能回收。 */
+  function forgetAnim() {
+    lit = [];
+    ghost = [];
+    countMesh = null;
+    metals = new Set();
+  }
+
   function swapComplete() {
     pivot.remove(badge);
     disposeBadge(badge);
+    forgetAnim();
     badge = buildFinal();
     pivot.add(badge);
   }
@@ -270,9 +278,16 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
       }
     }
     if (disposed) return;
-    if (done) await mint();
+    if (done) {
+      await mint();
+      return;
+    }
     // 进场结束：不再单独改动浮雕，同材质的并成一个网格（藏着的残影直接去掉）
-    else idle(() => !disposed && settle(badge), 1000);
+    idle(() => {
+      if (disposed) return;
+      settle(badge);
+      forgetAnim();
+    }, 1000);
   }
 
   // 起始状态：动画从锡、0 枚开始（减少动态效果时已经是静态的最终版）
@@ -382,6 +397,8 @@ export function createCompletionistCoin({ canvas, target = canvas, kit, brand, u
     setLoop(run);
     if (run && !played) {
       played = true;
+      // 第一帧还没画：这时组装完成形态看不出停顿，比在进场中间（空闲回调）组装好
+      if (done) buildFinal();
       play().catch((e) => console.warn('全解锁徽章进场出错', e));
     }
   }
