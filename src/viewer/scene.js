@@ -99,5 +99,13 @@ export function createStage(canvas) {
     });
   }
 
-  return { renderer, scene, camera, sweep, view, resize, applyEnvironment };
+  /** 释放显卡资源并交还 WebGL 上下文（自带舞台的组件卸载时用）。场景里的徽章由调用方先释放。 */
+  function dispose() {
+    envMap.dispose();
+    pmrem.dispose();
+    renderer.dispose();
+    renderer.forceContextLoss();
+  }
+
+  return { renderer, scene, camera, sweep, view, resize, applyEnvironment, dispose };
 }

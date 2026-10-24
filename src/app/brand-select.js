@@ -11,6 +11,6 @@ export function selectBrand(params, data) {
   const local = params.get('source') === 'mock' ? [] : BRANDS.filter((b) => data?.[b.brand.id]);
   const available = local.length ? local : BRANDS;
   const wanted = params.get('brand');
-  const { brand, badges, series } = available.find((b) => b.brand.id === wanted) ?? available[0] ?? getBrand(wanted);
-  return { available, brand, configs: badges, series };
+  const { brand, badges, series, completionist } = available.find((b) => b.brand.id === wanted) ?? available[0] ?? getBrand(wanted);
+  return { available, brand, configs: badges, series, completionist };
 }

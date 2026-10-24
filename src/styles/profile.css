@@ -1,4 +1,4 @@
-/* 成就档案：一块铭牌。上下细双线，三栏用竖向细线隔开；左栏是进度铸币和三个数字 */
+/* 成就档案：一块铭牌。上下细双线，三栏用竖向细线隔开；左栏是全解锁徽章和三个数字 */
 
 .profile {
   margin-bottom: 64px;
@@ -6,7 +6,7 @@
 
 .profile-plate {
   display: grid;
-  /* 第一栏按内容定宽（铸币 + 三个不折行的数字 + 一行按钮），两栏列表平分剩下的 */
+  /* 第一栏按内容定宽（全解锁徽章 + 三个不折行的数字 + 一行按钮），两栏列表平分剩下的 */
   grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1fr);
   padding: 28px 0;
 }
@@ -30,7 +30,7 @@
   gap: 28px;
 }
 
-/* 铸币：画好前显示兜底刻度环，数字叠在环中间；画好后币面自己写着数字，下方只留「已解锁徽章」的说明 */
+/* 全解锁徽章：实时 3D 画布。画好前（或拿不到 WebGL）显示兜底刻度环，数字叠在环中间；画好后币面自己写着进度，下方只留「已解锁徽章」的说明 */
 .profile-coin {
   --coin: 184px;
   position: relative;
@@ -43,15 +43,32 @@
   margin: 0;
 }
 
-.profile-coin img,
 .profile-ticks {
   display: block;
   width: var(--coin);
   height: var(--coin);
 }
 
-.profile-coin img {
-  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.55));
+/* 画布比铸币大一圈，给火花留地方；负外边距让它在版面上仍只占 --coin，不推开旁边的数字。
+   拖动由 figure 接收，画布不挡旁边元素的点击 */
+.profile-coin canvas {
+  --bleed: calc(var(--coin) * 0.25);
+  display: block;
+  width: calc(var(--coin) + 2 * var(--bleed));
+  height: calc(var(--coin) + 2 * var(--bleed));
+  margin: calc(-1 * var(--bleed));
+  pointer-events: none;
+}
+
+.profile-coin.has-coin {
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.profile-coin.has-coin:active {
+  cursor: grabbing;
 }
 
 .profile-coin.has-coin .profile-ticks {
@@ -99,7 +116,7 @@
   color: var(--muted);
 }
 
-/* 铸币画好后：数字只留在页面里给检查脚本读，视觉上隐藏（不用 display: none） */
+/* 全解锁徽章画好后：数字只留在页面里给检查脚本读，视觉上隐藏（不用 display: none） */
 .profile-coin.has-coin .profile-count {
   width: 1px;
   height: 1px;

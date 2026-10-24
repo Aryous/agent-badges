@@ -1,12 +1,13 @@
-// 成就档案：一块铭牌。左栏是进度铸币（兜底刻度环，下方写「已解锁徽章」）和三个关键数字，旁边是「最近获得」和「即将解锁」。
+// 成就档案：一块铭牌。左栏是全解锁徽章（实时 3D，兜底刻度环，下方写「已解锁徽章」）和三个关键数字，旁边是「最近获得」和「即将解锁」。
 import { highlights } from '../data/highlights.js';
 import { dailyStats } from '../data/daily.js';
 import { lang, t } from './i18n.js';
 import { formatCount } from '../data/format.js';
 import { badgeTitle } from '../brands/shared/text.js';
 import { describeState, fmtDate } from './describe.js';
+import { STAGE_METALS, isComplete, stageOf } from '../brands/shared/completionist.js';
 
-/** 兜底的刻度环：铸币画不出来时显示。120 道径向刻度，按解锁比例点亮。 */
+/** 兜底的刻度环：全解锁徽章画不出来时显示。120 道径向刻度，按解锁比例点亮。 */
 function tickRing(ratio, n = 120) {
   const lit = Math.round(ratio * n);
   const ticks = Array.from({ length: n }, (_, i) => {
@@ -39,9 +40,9 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
     <div class="rule has-star"><i class="star"></i></div>
     <div class="profile-plate">
       <div class="profile-main">
-        <figure class="profile-coin" data-coin>
+        <figure class="profile-coin" data-coin role="img">
           ${tickRing(total ? h.unlocked.length / total : 0)}
-          <img alt="" draggable="false" hidden />
+          <canvas aria-hidden="true" hidden></canvas>
           <div class="profile-count"><b>${h.unlocked.length}</b><span>/ ${total}</span></div>
           <figcaption class="profile-caption label">${t('profile.unlocked')}</figcaption>
         </figure>
@@ -68,6 +69,13 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
     </div>
     <div class="rule"></div>`;
   root.appendChild(el);
+
+  // 读屏只读 figure 的说明：解锁数和当前阶段（兜底刻度环也适用）
+  const fig = el.querySelector('[data-coin]');
+  const k = h.unlocked.length;
+  const stageName = isComplete(k, total) ? 'complete' : STAGE_METALS[stageOf(k, total)];
+  fig.setAttribute('aria-label', t('profile.coinLabel', { n: k, total, stage: t(`completionist.${stageName}`) }));
+  let coin = null;
 
   const row = (entry, kind) => {
     const item = byId.get(entry.badge.id);
@@ -108,15 +116,28 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
     setThumbnail(id, src) {
       el.querySelectorAll(`.profile-item[data-id="${id}"] img`).forEach((img) => (img.src = src));
     },
-    /** 铸币画好后换掉兜底的刻度环。币面已经写着解锁数：下方的数字只留给检查脚本，读屏只读图片的替代文字。 */
-    setCoin(src) {
-      const fig = el.querySelector('[data-coin]');
-      const img = fig.querySelector('img');
-      img.src = src;
-      img.alt = t('profile.coinAlt', { n: h.unlocked.length, total });
-      img.hidden = false;
-      fig.querySelector('.profile-count').setAttribute('aria-hidden', 'true');
-      fig.classList.add('has-coin');
+    /**
+     * 挂上实时的全解锁徽章，换掉兜底的刻度环。create({ canvas, target }) 返回 { dispose }；
+     * 画不出来（比如拿不到 WebGL 上下文）就留着刻度环。下方的数字只留给检查脚本。
+     */
+    mountCoin(create) {
+      const canvas = fig.querySelector('canvas');
+      canvas.hidden = false;
+      try {
+        coin = create({ canvas, target: fig });
+        fig.classList.add('has-coin');
+        fig.querySelector('.profile-count').setAttribute('aria-hidden', 'true');
+      } catch (err) {
+        canvas.hidden = true;
+        console.warn('全解锁徽章渲染失败，改用刻度环', err);
+      }
+    },
+    /** 卸下全解锁徽章，交还 WebGL 上下文。 */
+    disposeCoin() {
+      coin?.dispose();
+      coin = null;
+      fig.classList.remove('has-coin');
+      fig.querySelector('canvas').hidden = true;
     },
   };
 }

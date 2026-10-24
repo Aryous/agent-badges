@@ -40,7 +40,7 @@
   }
 }
 
-/* 第一栏放不下三列数字和一行按钮时，铸币栏单独占一行 */
+/* 第一栏放不下三列数字和一行按钮时，全解锁徽章这一栏单独占一行 */
 @media (max-width: 1100px) {
   .profile-plate {
     grid-template-columns: 1fr 1fr;
@@ -81,7 +81,7 @@
     border-bottom: 0;
   }
 
-  /* 手机：铸币、三个数字、两个按钮居中成一列，币的右边不留空 */
+  /* 手机：全解锁徽章、三个数字、两个按钮居中成一列，徽章的右边不留空 */
   .profile-main {
     flex-direction: column;
     align-items: center;

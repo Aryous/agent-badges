@@ -1,6 +1,5 @@
 import { createBadgeRenderer } from '../viewer/badge-renderer.js';
 import { forEachFrame } from '../viewer/frame.js';
-import { renderCoin } from '../viewer/coin.js';
 
 const THUMB_SIZE = 480;
 
@@ -11,12 +10,6 @@ const THUMB_SIZE = 480;
  */
 export async function renderThumbnails(ctx, { grid, profile, inspect }) {
   const renderer = createBadgeRenderer(ctx.stage);
-  // 进度铸币排在缩略图前面：它在第一屏。画不出来就留着兜底的刻度环
-  try {
-    profile.setCoin(renderCoin(renderer, ctx.brand, { unlocked: profile.unlocked, total: profile.total, lang: ctx.lang }));
-  } catch (err) {
-    console.warn('进度铸币渲染失败，改用刻度环', err);
-  }
   await forEachFrame(
     ctx.items,
     (item) => {
