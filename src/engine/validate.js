@@ -128,6 +128,20 @@ export function validateBadge(config, brand) {
       if (r.kind === 'rounded-rect' && !(r.half > 0 && r.radius >= 0)) {
         fail(`${field}[${i}] 圆角矩形需要 half > 0、radius ≥ 0`);
       }
+      if (r.segments !== undefined) {
+        const { curve, bevel, ...extraKeys } = r.segments ?? {};
+        const int = (v, lo, hi) => v === undefined || (Number.isInteger(v) && v >= lo && v <= hi);
+        if (Object.keys(extraKeys).length) fail(`${field}[${i}] 的 segments 只能有 curve、bevel`);
+        if (!int(curve, 1, 64)) fail(`${field}[${i}] 的 segments.curve 需要 1–64 的整数`);
+        if (!int(bevel, 1, 8)) fail(`${field}[${i}] 的 segments.bevel 需要 1–8 的整数`);
+        if (['text', 'text-arc', 'gem'].includes(r.kind)) fail(`${field}[${i}] 的 segments 对 ${r.kind} 不起作用`);
+      }
+      if (r.share !== undefined) {
+        if (typeof r.share !== 'boolean') fail(`${field}[${i}] 的 share 只能是 true 或 false`);
+        // 底纹按顶点的绝对位置取贴图坐标，渐变按整件的高度上色：挪到原点生成会变样
+        if (r.share && (r.pattern || r.gradient)) fail(`${field}[${i}] 带底纹或渐变的浮雕不能 share`);
+        if (r.share && r.kind === 'contour') fail(`${field}[${i}] contour 不能 share`);
+      }
     }
   }
 

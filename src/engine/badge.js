@@ -4,7 +4,7 @@ import { makeOutline, outlineSegments, reededOutline, withHole, innerRadius } fr
 import { resolveTier } from './tiers.js';
 import { BadgeUV } from './uv.js';
 import { createMaterial } from './materials.js';
-import { buildRelief } from './relief.js';
+import { buildRelief, reliefGeometry } from './relief.js';
 import { createEngraving, placeholderEngraving } from './engraving.js';
 import { patternTexture } from './textures.js';
 
@@ -225,6 +225,8 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh', engraving = 1
 
   // 浮雕：同材质同颜色的基元共用一份材质（正面背面也共用）；带动效的单独一份
   const shared = new Map();
+  // 标了 share 的浮雕：同一枚徽章里除 center 外都相同的件共用一份几何体（不标 userData.shared，随徽章释放）
+  const sharedGeo = new Map();
   const addRelief = (items, side) => {
     for (const item of items ?? []) {
       let m;
@@ -247,13 +249,27 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh', engraving = 1
         m = shared.get(key) ?? keyed(createMaterial(item.material, palette[item.color], patternOverrides(item.pattern)), item.color);
         shared.set(key, m);
       }
-      const mesh = buildRelief(item.kind === 'contour' ? { ...item, shape } : item, m, plate);
-      if (item.gradient && !locked) paintGradient(mesh.geometry, item.gradient.map((k) => palette[k]));
-      // 背面：绕 y 轴转半圈，贴到背面板上，从背面看方向正确
-      if (side === 'back') {
-        mesh.geometry.rotateY(Math.PI);
-        mesh.userData.side = 'back';
+      let mesh;
+      if (item.share) {
+        // 共用几何体：在原点生成一次，网格挪到 center；背面转半圈后 x 取反
+        const { center = [0, 0], share: _s, material: _m, color: _c, effect: _e, ...form } = item;
+        const key = side + JSON.stringify(form);
+        let geo = sharedGeo.get(key);
+        if (!geo) {
+          geo = reliefGeometry({ ...form, center: [0, 0] }).translate(0, 0, plate + (item.z ?? 0));
+          if (side === 'back') geo.rotateY(Math.PI);
+          sharedGeo.set(key, geo);
+        }
+        mesh = new Mesh(geo, m);
+        mesh.position.set(side === 'back' ? -center[0] : center[0], center[1], 0);
+        if (item.effect === 'pulse') mesh.userData.pulse = true;
+      } else {
+        mesh = buildRelief(item.kind === 'contour' ? { ...item, shape } : item, m, plate);
+        if (item.gradient && !locked) paintGradient(mesh.geometry, item.gradient.map((k) => palette[k]));
+        // 背面：绕 y 轴转半圈，贴到背面板上，从背面看方向正确
+        if (side === 'back') mesh.geometry.rotateY(Math.PI);
       }
+      if (side === 'back') mesh.userData.side = 'back';
       group.add(mesh);
     }
   };
@@ -266,6 +282,8 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh', engraving = 1
     locked,
     masked,
     tier: config.tier ?? null,
+    // 正面板表面的高度：浮雕的底面在这里（swapRelief 用）
+    plate,
     pulses: locked ? [] : group.children.filter((c) => c.userData.pulse).map((c) => c.material),
   };
   return group;
@@ -276,14 +294,34 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh', engraving = 1
  * 多枚徽章共用的（userData.shared：机身几何体、拉丝和底纹贴图、占位刻字贴图）和场景的环境贴图不动。
  */
 export function disposeBadge(badge) {
+  // 几何体和材质可能被多个网格共用（share、同色浮雕），各释放一次
+  const geometries = new Set();
+  const materials = new Set();
   badge.traverse((o) => {
     if (!o.isMesh) return;
-    if (!o.geometry.userData.shared) o.geometry.dispose();
-    for (const [key, v] of Object.entries(o.material)) {
-      if (v?.isTexture && key !== 'envMap' && !v.userData.shared) v.dispose();
-    }
-    o.material.dispose();
+    if (!o.geometry.userData.shared) geometries.add(o.geometry);
+    materials.add(o.material);
   });
+  geometries.forEach((g) => g.dispose());
+  materials.forEach(disposeMaterial);
+}
+
+/** 释放材质和它独占的贴图（共用的贴图、环境贴图不动）。 */
+export function disposeMaterial(m) {
+  for (const [key, v] of Object.entries(m)) {
+    if (v?.isTexture && key !== 'envMap' && !v.userData.shared) v.dispose();
+  }
+  m.dispose();
+}
+
+/**
+ * 换掉一块浮雕的几何体（比如逐个换下弧的数字）：按 item 重新生成，底面放回正面板上，旧的释放。
+ * 只用于正面、不带 share 的浮雕。
+ */
+export function swapRelief(badge, mesh, item) {
+  const geo = reliefGeometry(item).translate(0, 0, badge.userData.plate + (item.z ?? 0));
+  mesh.geometry.dispose();
+  mesh.geometry = geo;
 }
 
 /**

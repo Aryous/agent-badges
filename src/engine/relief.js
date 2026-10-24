@@ -21,6 +21,12 @@ import { makeOutline, outlineSegments, withHole } from './shapes.js';
 //   contour   沿徽章外形内缩的描边线（外形是什么形状，描边就是什么形状）；inset 为离外缘的距离
 //
 // 每个基元都可以带 z：在正面板之上再抬高多少（用于叠在圆盘上的图案）。
+// segments：{ curve, bevel } 曲线和倒角的分段数，默认 30 和 4。很小的件（小珠、马赛克）可以写少一点，
+// 省下大量顶点；只对上面这些挤出的基元生效（text、text-arc、gem 有自己的分段）。
+// share：除 center 外都相同的件共用一份几何体（见 badge.js）。
+
+/** 挤出基元默认的分段数：陈列墙上的徽章都按这个画。 */
+export const DEFAULT_SEGMENTS = { curve: 30, bevel: 4 };
 
 function capsule({ from, to, width }) {
   const [ax, ay] = from;
@@ -129,8 +135,8 @@ export function reliefGeometry(item) {
     bevelThickness: bevel,
     bevelSize: bevel * 0.8,
     bevelOffset: -bevel * 0.8,
-    bevelSegments: 4,
-    curveSegments: 30,
+    bevelSegments: item.segments?.bevel ?? DEFAULT_SEGMENTS.bevel,
+    curveSegments: item.segments?.curve ?? DEFAULT_SEGMENTS.curve,
     UVGenerator: BadgeUV,
   });
   // 平滑倒角上的逐面法线，顶面保持纯平
