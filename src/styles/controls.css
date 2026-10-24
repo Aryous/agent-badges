@@ -87,6 +87,8 @@
 
 .seg::before {
   content: '';
+  /* 伪元素不吃全局的 border-box，金边会让滑块比选中项宽 2px */
+  box-sizing: border-box;
   position: absolute;
   z-index: -1;
   top: 3px;
@@ -245,7 +247,7 @@
   display: block;
   height: 3px;
   border-radius: 3px;
-  background: var(--bg-sunk);
+  background: var(--track);
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.04);
   overflow: hidden;
 }
