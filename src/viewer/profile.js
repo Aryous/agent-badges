@@ -1,4 +1,4 @@
-// 成就档案：一块铭牌。左栏是进度铸币（兜底刻度环）和三个关键数字，旁边是「最近获得」和「即将解锁」。
+// 成就档案：一块铭牌。左栏是进度铸币（兜底刻度环，下方写「已解锁徽章」）和三个关键数字，旁边是「最近获得」和「即将解锁」。
 import { highlights } from '../data/highlights.js';
 import { dailyStats } from '../data/daily.js';
 import { lang, t } from './i18n.js';
@@ -42,10 +42,10 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
         <figure class="profile-coin" data-coin>
           ${tickRing(total ? h.unlocked.length / total : 0)}
           <img alt="" draggable="false" hidden />
-          <figcaption class="profile-count"><b>${h.unlocked.length}</b><span>/ ${total}</span></figcaption>
+          <div class="profile-count"><b>${h.unlocked.length}</b><span>/ ${total}</span></div>
+          <figcaption class="profile-caption label">${t('profile.unlocked')}</figcaption>
         </figure>
         <div class="profile-facts">
-          <p class="profile-caption label">${t('profile.unlocked')}</p>
           <dl class="profile-stats">
             <div><dt class="label">${t('profile.tokens')}</dt><dd>${formatCount(stats.tokens)}</dd></div>
             <div><dt class="label">${t('profile.activeDays')}</dt><dd>${stats.activeDays}</dd></div>
@@ -108,13 +108,14 @@ export function createProfile({ root, items, daily, onSelect, onShare, onShelf }
     setThumbnail(id, src) {
       el.querySelectorAll(`.profile-item[data-id="${id}"] img`).forEach((img) => (img.src = src));
     },
-    /** 铸币画好后换掉兜底的刻度环。 */
+    /** 铸币画好后换掉兜底的刻度环。币面已经写着解锁数：下方的数字只留给检查脚本，读屏只读图片的替代文字。 */
     setCoin(src) {
       const fig = el.querySelector('[data-coin]');
       const img = fig.querySelector('img');
       img.src = src;
       img.alt = t('profile.coinAlt', { n: h.unlocked.length, total });
       img.hidden = false;
+      fig.querySelector('.profile-count').setAttribute('aria-hidden', 'true');
       fig.classList.add('has-coin');
     },
   };

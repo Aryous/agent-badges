@@ -45,6 +45,19 @@ describe('进度铸币', () => {
     expect(b.relief.filter((r) => r.kind === 'text').map((r) => r.text)).toEqual(['0', '/ 0']);
   });
 
+  it('深色精制币：镜面黑币面不带纹理，外圈和凸起为金，未解锁点是暗色金属', () => {
+    const c = coinConfig({ unlocked: 27, total: 32 });
+    const face = c.layers.find((l) => l.kind === 'face');
+    expect(face).toMatchObject({ material: 'polished-metal', color: 'onyx' });
+    expect(face.pattern).toBeUndefined();
+    expect(c.layers.find((l) => l.kind === 'rim').color).toBe('gold');
+    const raised = c.relief.filter((r) => r.role !== 'dim');
+    expect(raised.every((r) => r.color === 'gold' && r.material !== 'polished-metal')).toBe(true); // 磨砂，不和镜面抢
+    const dim = dots(c).filter((d) => d.role === 'dim');
+    expect(dim.every((d) => d.color !== 'gold')).toBe(true);
+    expect(Math.max(...dim.map((d) => d.height))).toBeLessThan(Math.min(...dots(c).filter((d) => d.role === 'lit').map((d) => d.height)));
+  });
+
   for (const { brand } of BRANDS) {
     it(`能用徽章引擎组装（${brand.id}）：外圈、滚花、正面、背面加上全部浮雕`, () => {
       const c = coinConfig({ unlocked: 27, total: 32 });

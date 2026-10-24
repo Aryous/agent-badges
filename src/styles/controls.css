@@ -30,22 +30,26 @@
   width: 100%;
 }
 
+/* 控件照搬徽章的三层构造：锡灰外框（外圈）→ 低一层的凹槽（正面板）→ 立在上面的珐琅小徽章（滑块、主按钮）。
+   不用渐变、镜面高光和厚投影：凸起只靠 --relief 的三道细线索，凹陷只靠 --sunk。 */
+
+/* 次按钮：只有外框和凹槽，没有珐琅 */
 .btn {
   height: 34px;
   padding: 0 16px;
-  border: 1px solid var(--gold-line);
+  border: 1px solid var(--pewter-line);
   border-radius: 999px;
-  background: transparent;
+  background: var(--track);
+  box-shadow: var(--sunk);
   font-size: 13px;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .btn:hover {
-  border-color: var(--gold);
-  background: rgba(201, 164, 92, 0.08);
+  border-color: var(--pewter);
 }
 
 .btn:disabled {
@@ -53,31 +57,31 @@
   cursor: default;
 }
 
+/* 主按钮：一枚单独的胶囊小徽章：珐琅面 + 细金边 + 微凸，外面再留一道缝、套一圈锡灰外框 */
 .btn-primary {
-  border-color: transparent;
-  background: var(--metal-gold);
-  box-shadow: var(--metal-edge), 0 2px 6px rgba(0, 0, 0, 0.35);
-  color: var(--ink-on-metal);
+  border-color: var(--gold-rim);
+  background: var(--enamel);
+  box-shadow: var(--relief), 0 0 0 2px var(--bg), 0 0 0 3px var(--pewter-line);
+  color: var(--text);
   font-weight: 700;
 }
 
 .btn-primary:hover {
-  border-color: transparent;
-  background: var(--metal-gold);
-  filter: brightness(1.07);
+  border-color: var(--gold-rim);
+  background: var(--enamel-lift);
 }
 
-/* 胶囊：刻在面板上的一道槽，当前项下面垫一块金属滑块（位置由 seg.js 写入） */
+/* 胶囊：锡灰外框里一道凹槽（外框和槽之间隔一道底色细缝），当前项上立一枚珐琅小徽章（位置由 seg.js 写入） */
 .seg {
   position: relative;
   isolation: isolate;
   display: inline-flex;
   height: 32px;
   padding: 3px;
-  border: 1px solid var(--gold-line);
+  border: 1px solid var(--pewter-line);
   border-radius: 999px;
-  background: var(--bg-sunk);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  background: var(--track);
+  box-shadow: inset 0 0 0 1px var(--bg), var(--sunk);
   pointer-events: auto;
 }
 
@@ -89,9 +93,10 @@
   bottom: 3px;
   left: var(--thumb-x, 3px);
   width: var(--thumb-w, 0px);
+  border: 1px solid var(--gold-rim);
   border-radius: 999px;
-  background: var(--metal-gold);
-  box-shadow: var(--metal-edge), 0 1px 3px rgba(0, 0, 0, 0.4);
+  background: var(--enamel);
+  box-shadow: var(--relief);
   opacity: var(--thumb-on, 0);
 }
 
@@ -104,8 +109,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 12px;
-  border: 0;
+  padding: 0 11px;
+  border: 1px solid transparent; /* 给没接滑块的胶囊留出金边的位置，选中前后不跳 */
   border-radius: 999px;
   background: none;
   font-size: 12px;
@@ -124,19 +129,20 @@
 
 .seg button[aria-checked='true'],
 .seg a[aria-current] {
-  color: var(--ink-on-metal);
+  color: var(--text);
   font-weight: 700;
 }
 
 .seg button[aria-checked='true'] .seg-count {
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
-/* 没接入滑块的胶囊（例如导出面板的背景选择）：选中项自己垫金属，不滑动 */
+/* 没接入滑块的胶囊（例如导出面板的背景选择）：选中项自己立成珐琅小徽章，不滑动 */
 .seg:not(.is-tracked) button[aria-checked='true'] {
-  background: var(--metal-gold);
-  box-shadow: var(--metal-edge);
-  color: var(--ink-on-metal); /* 压过落地页 .gallery-tabs 的浅色字，金属上保持深色 */
+  border-color: var(--gold-rim);
+  background: var(--enamel);
+  box-shadow: var(--relief);
+  color: var(--text); /* 压过落地页 .gallery-tabs 的选中样式 */
 }
 
 /* 按钮里的小色块：棋盘格 = 透明，墨色方块 = 墨色 */
@@ -161,6 +167,11 @@
 .btn-back:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* 主按钮外面套着锡灰外框，焦点环再往外让一圈 */
+.btn-primary:focus-visible {
+  outline-offset: 5px;
 }
 
 /* ---------- 区块标题 ---------- */
@@ -196,15 +207,15 @@
   letter-spacing: var(--label-track-zh);
 }
 
-/* ---------- 细双线（徽章的金属双圈）；.has-star 在正中留出四角星的位置 ---------- */
+/* ---------- 细双线（徽章的金属双圈，锡灰；只有四角星是金）；.has-star 在正中留出四角星的位置 ---------- */
 
 .rule {
   --rule-gap: 0px;
   position: relative;
   height: 4px;
   background:
-    linear-gradient(90deg, var(--gold-line) calc(50% - var(--rule-gap)), transparent calc(50% - var(--rule-gap)) calc(50% + var(--rule-gap)), var(--gold-line) calc(50% + var(--rule-gap))) top / 100% 1px no-repeat,
-    linear-gradient(90deg, var(--gold-line) calc(50% - var(--rule-gap)), transparent calc(50% - var(--rule-gap)) calc(50% + var(--rule-gap)), var(--gold-line) calc(50% + var(--rule-gap))) bottom / 100% 1px no-repeat;
+    linear-gradient(90deg, var(--pewter-line) calc(50% - var(--rule-gap)), transparent calc(50% - var(--rule-gap)) calc(50% + var(--rule-gap)), var(--pewter-line) calc(50% + var(--rule-gap))) top / 100% 1px no-repeat,
+    linear-gradient(90deg, var(--pewter-line) calc(50% - var(--rule-gap)), transparent calc(50% - var(--rule-gap)) calc(50% + var(--rule-gap)), var(--pewter-line) calc(50% + var(--rule-gap))) bottom / 100% 1px no-repeat;
 }
 
 .rule.has-star {

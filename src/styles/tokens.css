@@ -26,14 +26,20 @@
   --muted: #a39e94;
   --dim: #87827a; /* 可读的次级文字：未选中的标签等，对比度 4.86:1 */
   --faint: #66625b; /* 只用于不承载信息的装饰 */
-  /* 金：界面唯一的强调色。比金级徽章的 #f2c46b 更沉，不和徽章抢 */
-  --gold: #c9a45c;
-  --gold-bright: #e6c887;
-  --gold-line: rgba(201, 164, 92, 0.35);
-  /* 金属滑块和主按钮：很轻的拉丝渐变 + 顶边一像素高光，只用于小面积 */
-  --metal-gold: linear-gradient(180deg, #e8cd90 0%, #cfaa63 45%, #b38e48 55%, #c9a45c 100%);
-  --metal-edge: inset 0 1px 0 rgba(255, 245, 220, 0.55), inset 0 -1px 0 rgba(0, 0, 0, 0.22);
-  --ink-on-metal: #1c1710;
+  /* 金：只做点睛（四角星、细金边、焦点环、铸币浮雕），全页不到 2%。低饱和香槟金，不和徽章的金抢 */
+  --gold: #bfa274;
+  --gold-rim: rgba(191, 162, 116, 0.7); /* 滑块、主按钮那一圈细金边 */
+  /* 锡：中性结构色，控件外框、细双线、分隔线 */
+  --pewter: #8c867b;
+  --pewter-line: rgba(160, 152, 138, 0.32);
+  /* 珐琅：主题色，深午夜蓝，平涂哑光；只用在滑块和主按钮的面上 */
+  --enamel: #18224a;
+  --enamel-lift: #223066; /* 主按钮悬停：珐琅略亮一档 */
+  /* 槽：比底色更深、向内凹的轨道 */
+  --track: #0c0b0a;
+  /* 凸起只靠三个线索：顶边一像素淡亮线、底边一像素淡暗线、很小很软的投影；凹陷是一道淡内阴影 */
+  --relief: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.5);
+  --sunk: inset 0 1px 2px rgba(0, 0, 0, 0.6);
   --accent: var(--gold);
   --line: rgba(239, 236, 228, 0.1);
   --font: 'Outfit', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', sans-serif;

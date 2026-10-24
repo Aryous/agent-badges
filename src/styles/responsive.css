@@ -40,7 +40,8 @@
   }
 }
 
-@media (max-width: 960px) {
+/* 第一栏放不下三列数字和一行按钮时，铸币栏单独占一行 */
+@media (max-width: 1100px) {
   .profile-plate {
     grid-template-columns: 1fr 1fr;
     row-gap: 24px;
@@ -49,7 +50,7 @@
   .profile-plate > :first-child {
     grid-column: 1 / -1;
     padding: 0 4px 24px;
-    border-bottom: 1px solid var(--gold-line);
+    border-bottom: 1px solid var(--pewter-line);
   }
 
   .profile-plate > :nth-child(2) {
@@ -70,7 +71,7 @@
   }
 
   .profile-plate > * + * {
-    border-top: 1px solid var(--gold-line);
+    border-top: 1px solid var(--pewter-line);
     margin-top: 20px;
   }
 
@@ -80,22 +81,25 @@
     border-bottom: 0;
   }
 
+  /* 手机：铸币、三个数字、两个按钮居中成一列，币的右边不留空 */
   .profile-main {
-    flex-wrap: wrap;
-    gap: 18px;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
   }
 
-  .profile-coin,
-  .profile-coin img,
-  .profile-ticks,
-  .profile-coin:not(.has-coin) .profile-count {
-    width: 120px;
+  .profile-coin {
+    --coin: 140px;
   }
 
-  .profile-coin img,
-  .profile-ticks,
-  .profile-coin:not(.has-coin) .profile-count {
-    height: 120px;
+  .profile-facts {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .profile-stats {
+    text-align: center;
   }
 
   .profile-stats dd {

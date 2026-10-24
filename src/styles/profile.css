@@ -6,7 +6,8 @@
 
 .profile-plate {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+  /* 第一栏按内容定宽（铸币 + 三个不折行的数字 + 一行按钮），两栏列表平分剩下的 */
+  grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1fr);
   padding: 28px 0;
 }
 
@@ -20,7 +21,7 @@
 }
 
 .profile-plate > * + * {
-  border-left: 1px solid var(--gold-line);
+  border-left: 1px solid var(--pewter-line);
 }
 
 .profile-main {
@@ -29,27 +30,28 @@
   gap: 28px;
 }
 
-/* 铸币：画好前显示兜底刻度环，数字叠在环中间；画好后数字作为币下方的小字 */
+/* 铸币：画好前显示兜底刻度环，数字叠在环中间；画好后币面自己写着数字，下方只留「已解锁徽章」的说明 */
 .profile-coin {
+  --coin: 184px;
   position: relative;
   flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  width: 152px;
+  gap: 10px;
+  width: var(--coin);
   margin: 0;
 }
 
 .profile-coin img,
 .profile-ticks {
   display: block;
-  width: 152px;
-  height: 152px;
+  width: var(--coin);
+  height: var(--coin);
 }
 
 .profile-coin img {
-  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.55));
 }
 
 .profile-coin.has-coin .profile-ticks {
@@ -66,16 +68,29 @@
   stroke: var(--gold);
 }
 
+.profile-caption {
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* 兜底状态：数字叠在刻度环正中 */
 .profile-count {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 4px;
+  width: var(--coin);
+  height: var(--coin);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .profile-count b {
-  font-size: 14px;
+  font-size: 44px;
   font-weight: 700;
 }
 
@@ -84,34 +99,34 @@
   color: var(--muted);
 }
 
-.profile-coin:not(.has-coin) .profile-count {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 152px;
-  height: 152px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.profile-coin:not(.has-coin) .profile-count b {
-  font-size: 40px;
+/* 铸币画好后：数字只留在页面里给检查脚本读，视觉上隐藏（不用 display: none） */
+.profile-coin.has-coin .profile-count {
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .profile-facts {
   min-width: 0;
 }
 
-.profile-caption {
-  margin: 0;
+/* 三个数字固定三列，英文也不折行 */
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: start;
+  gap: 14px 28px;
+  margin: 0 0 22px;
 }
 
-.profile-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px 28px;
-  margin: 14px 0 22px;
+.profile-stats dt,
+.profile-stats dd {
+  white-space: nowrap;
 }
 
 .profile-stats dd {
@@ -148,7 +163,7 @@
 }
 
 .profile-item:hover {
-  background: rgba(201, 164, 92, 0.06);
+  background: rgba(239, 236, 228, 0.05);
 }
 
 .profile-item:focus-visible {
@@ -208,8 +223,15 @@
   color: var(--muted);
 }
 
+/* 两个按钮保持一行；主按钮外面套着锡灰外框，间距留宽一点 */
 .profile-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 14px;
+  padding-left: 3px;
+}
+
+.profile-actions .btn {
+  flex: none;
+  white-space: nowrap;
 }

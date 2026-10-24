@@ -204,7 +204,7 @@ To manage the repository yourself, `npx agent-badges profile path/to/<you>` only
 npx agent-badges shelf --out path/to/<you>/agent-badges-shelf.png
 ```
 
-The 3D badges need WebGL, so this opens a browser tab, draws every badge you've unlocked and saves the result as PNGs. You get two: one for GitHub's dark theme and one for the light theme (`agent-badges-shelf-light.png`). Both have transparent backgrounds; only the text color differs. The image shows unlocked badges with their names and tiers, and no dates or usage numbers. The **GitHub profile image** button on your badge wall makes the same thing.
+The 3D badges need WebGL, so this opens a browser tab, draws every badge you've unlocked and saves the result as PNGs. You get two: one for GitHub's dark theme and one for the light theme (`agent-badges-shelf-light.png`). Both have transparent backgrounds; only the text color differs. The image shows unlocked badges with their names and tiers, and no dates or usage numbers. The **GitHub image** button on your badge wall makes the same thing.
 
 Reference it like this so visitors see the version that matches their theme:
 
