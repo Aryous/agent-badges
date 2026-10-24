@@ -32,6 +32,12 @@
   .seg.is-ready::before {
     transition: none;
   }
+
+  .btn,
+  .seg button,
+  .seg a {
+    transition: none;
+  }
 }
 
 @media (max-width: 960px) {

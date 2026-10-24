@@ -39,7 +39,7 @@
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.01em;
-  color: var(--faint);
+  color: var(--dim);
   text-decoration: none;
   transition: color 0.2s ease;
 }
@@ -80,7 +80,7 @@
 }
 
 .source {
-  color: var(--faint);
+  color: var(--muted);
 }
 
 /* 页面里的语言切换已换成 .lang-seg 胶囊；这两条留给落地页（landing.html）的语言链接 */

@@ -228,7 +228,6 @@
   mask: var(--star-mask) center / contain no-repeat;
 }
 
-
 /* ---------- 进度：刻进去的细槽，已完成部分填金 ---------- */
 
 .meter-track {
