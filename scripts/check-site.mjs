@@ -1,6 +1,8 @@
 // 检查构建好的 GitHub Pages 站点（先运行 npm run build:site）：
 // 落地页、画廊、热力图、演示页都能正常显示，手机上不横向溢出，演示页只有示例数据。
 import { launchChrome } from './browser.mjs';
+// 软件渲染（CI）下页面的 load 事件可能超过 Playwright 默认的 30 秒，和后面的就绪等待一样放宽到 3 分钟
+const NAV_TIMEOUT = 180000;
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
@@ -38,7 +40,7 @@ async function visit(path, viewport, ready) {
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('requestfailed', (r) => errors.push(`请求失败 ${r.url()}`));
   page.on('response', (r) => r.status() >= 400 && errors.push(`${r.status()} ${r.url()}`));
-  await page.goto(base + path);
+  await page.goto(base + path, { timeout: NAV_TIMEOUT });
   await page.waitForFunction(ready, null, { timeout: 180000 });
   return { page, errors };
 }

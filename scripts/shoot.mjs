@@ -1,6 +1,8 @@
 // 浏览器实测：截图陈列墙、每枚徽章正反面，检查拖动吸附和 PNG 导出。
 // 用法：node scripts/shoot.mjs [url] [outDir]
 import { launchChrome } from './browser.mjs';
+// 软件渲染（CI）下页面的 load 事件可能超过 Playwright 默认的 30 秒，和后面的就绪等待一样放宽到 3 分钟
+const NAV_TIMEOUT = 180000;
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { SHELF } from '../src/data/shelf.js';
 
@@ -93,7 +95,7 @@ async function session(viewport, tag) {
   const errors = [];
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto(url);
+  await page.goto(url, { timeout: NAV_TIMEOUT });
   await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${out}/${tag}-wall.png`, fullPage: true });
@@ -275,7 +277,7 @@ async function session(viewport, tag) {
   const errors = [];
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto(url);
+  await page.goto(url, { timeout: NAV_TIMEOUT });
   await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
 
   const ringCount = Number(await page.locator('.profile-count b').textContent());
@@ -390,7 +392,7 @@ async function session(viewport, tag) {
   const errors = [];
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto(codexUrl);
+  await page.goto(codexUrl, { timeout: NAV_TIMEOUT });
   await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
   await page.screenshot({ path: `${out}/codex-wall.png`, fullPage: true });
   const ids = await page.evaluate(() => window.__badgeApp.ids);
