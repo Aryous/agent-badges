@@ -19,7 +19,7 @@ function patternOverrides(pattern) {
 // 结构（侧视）：
 //   ┌── 外圈 rim：带倒角的环，厚度 depth
 //   │  ┌ 正面板 face：内缩 inset，表面比外圈低 recess，上面放浮雕
-//   │  └ 背面板 back：同尺寸，表面带刻字贴图
+//   │  └ 背面板 back：同尺寸，表面带刻字贴图（back.engraving: false 时不带），背面浮雕放在它上面
 //   └──
 
 const SMOOTH_ANGLE = Math.PI / 6;
@@ -146,6 +146,7 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh', engraving = 1
       ...config,
       title: '???',
       relief: [{ kind: 'pixels', rows: QUESTION, cell: 0.075, center: [0, 0], material: 'enamel', color: 'graphite', height: 0.06 }],
+      backRelief: undefined,
     };
   }
   const shape = config.shape;
@@ -156,8 +157,15 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh', engraving = 1
 
   const lockedColor = palette.graphite;
   const reliefLocked = '#' + new Color(palette.graphite).multiplyScalar(1.45).getHexString();
+  // 材质记下自己的色板键，动画里按键找材质改色
+  const keyed = (m, colorKey) => {
+    m.userData.colorKey = colorKey;
+    return m;
+  };
   const mat = (type, colorKey, overrides) =>
-    locked ? createMaterial('locked', lockedColor, overrides) : createMaterial(type, palette[colorKey], overrides);
+    locked
+      ? keyed(createMaterial('locked', lockedColor, overrides), 'graphite')
+      : keyed(createMaterial(type, palette[colorKey], overrides), colorKey);
 
   const group = new Group();
   group.name = config.id;
@@ -180,59 +188,78 @@ export function buildBadge(rawConfig, brand, state, { lang = 'zh', engraving = 1
   front.name = 'face';
   group.add(front);
 
-  // 背面板 + 刻字
-  const lines = brand.engraving.lines({
-    brandName: brand.name,
-    config,
-    lang,
-    title: config.title,
-    earnedAt: formatDate(state.earnedAt),
-    unlocked: state.unlocked,
-    progress: state.progress,
-    tier: config.tier,
-    hidden: masked,
-  });
+  // 背面板 + 刻字；back.engraving: false 时只是一块素板
   const backType = config.back.material;
-  const engravingOpts = {
-    lines,
-    fontFamily: brand.engraving.fontFamily,
-    safeRadius: config.back.safeRadius ?? safeRadius(shape, inset),
-    brushed: !locked && backType === 'brushed-metal',
-    ink: locked ? 1 : backType === 'ceramic' ? 0.62 : 0.5,
-    base: locked ? 0.55 : 1,
-  };
-  const engravingTex = typeof document === 'undefined' ? {} : engraving ? createEngraving({ ...engravingOpts, size: engraving }) : placeholderEngraving();
-  const back = new Mesh(body.back, mat(backType, config.back.color, { ...engravingTex, bumpScale: 1.2, roughness: locked ? 0.85 : 0.62 }));
-  back.name = 'back';
-  // 近看时用 setEngravingSize 换成更清晰的版本；陈列墙先挂占位贴图，打开时才生成
-  back.userData.engraving = engravingOpts;
-  back.userData.engravingSize = engraving;
-  group.add(back);
-
-  // 浮雕：同材质同颜色的基元共用一份材质；带动效的单独一份
-  const shared = new Map();
-  for (const item of config.relief ?? []) {
-    let m;
-    if (locked) {
-      const key = `locked:${item.pattern ?? ''}`;
-      m = shared.get(key) ?? createMaterial('locked', reliefLocked, patternOverrides(item.pattern));
-      shared.set(key, m);
-    } else if (item.gradient) {
-      m = createMaterial(item.material, '#ffffff', { vertexColors: true });
-    } else if (item.effect) {
-      m = createMaterial(item.material, palette[item.color], {
-        emissive: new Color(palette[item.color]),
-        emissiveIntensity: 0,
-      });
-    } else {
-      const key = `${item.material}:${item.color}:${item.pattern ?? ''}`;
-      m = shared.get(key) ?? createMaterial(item.material, palette[item.color], patternOverrides(item.pattern));
-      shared.set(key, m);
-    }
-    const mesh = buildRelief(item.kind === 'contour' ? { ...item, shape } : item, m, plate);
-    if (item.gradient && !locked) paintGradient(mesh.geometry, item.gradient.map((k) => palette[k]));
-    group.add(mesh);
+  if (config.back.engraving === false) {
+    const back = new Mesh(body.back, mat(backType, config.back.color));
+    back.name = 'back';
+    group.add(back);
+  } else {
+    const lines = brand.engraving.lines({
+      brandName: brand.name,
+      config,
+      lang,
+      title: config.title,
+      earnedAt: formatDate(state.earnedAt),
+      unlocked: state.unlocked,
+      progress: state.progress,
+      tier: config.tier,
+      hidden: masked,
+    });
+    const engravingOpts = {
+      lines,
+      fontFamily: brand.engraving.fontFamily,
+      safeRadius: config.back.safeRadius ?? safeRadius(shape, inset),
+      brushed: !locked && backType === 'brushed-metal',
+      ink: locked ? 1 : backType === 'ceramic' ? 0.62 : 0.5,
+      base: locked ? 0.55 : 1,
+    };
+    const engravingTex = typeof document === 'undefined' ? {} : engraving ? createEngraving({ ...engravingOpts, size: engraving }) : placeholderEngraving();
+    const back = new Mesh(body.back, mat(backType, config.back.color, { ...engravingTex, bumpScale: 1.2, roughness: locked ? 0.85 : 0.62 }));
+    back.name = 'back';
+    // 近看时用 setEngravingSize 换成更清晰的版本；陈列墙先挂占位贴图，打开时才生成
+    back.userData.engraving = engravingOpts;
+    back.userData.engravingSize = engraving;
+    group.add(back);
   }
+
+  // 浮雕：同材质同颜色的基元共用一份材质（正面背面也共用）；带动效的单独一份
+  const shared = new Map();
+  const addRelief = (items, side) => {
+    for (const item of items ?? []) {
+      let m;
+      if (locked) {
+        const key = `locked:${item.pattern ?? ''}`;
+        m = shared.get(key) ?? createMaterial('locked', reliefLocked, patternOverrides(item.pattern));
+        shared.set(key, m);
+      } else if (item.gradient) {
+        m = createMaterial(item.material, '#ffffff', { vertexColors: true });
+      } else if (item.effect) {
+        m = keyed(
+          createMaterial(item.material, palette[item.color], {
+            emissive: new Color(palette[item.color]),
+            emissiveIntensity: 0,
+          }),
+          item.color,
+        );
+      } else {
+        const key = `${item.material}:${item.color}:${item.pattern ?? ''}`;
+        m = shared.get(key) ?? keyed(createMaterial(item.material, palette[item.color], patternOverrides(item.pattern)), item.color);
+        shared.set(key, m);
+      }
+      const mesh = buildRelief(item.kind === 'contour' ? { ...item, shape } : item, m, plate);
+      if (item.gradient && !locked) paintGradient(mesh.geometry, item.gradient.map((k) => palette[k]));
+      // 背面：绕 y 轴转半圈，贴到背面板上，从背面看方向正确
+      if (side === 'back') {
+        mesh.geometry.rotateY(Math.PI);
+        mesh.userData.side = 'back';
+      }
+      group.add(mesh);
+    }
+  };
+  // 先装背面，正面浮雕仍是最后几个子节点
+  addRelief(config.backRelief, 'back');
+  addRelief(config.relief, 'front');
 
   group.userData = {
     id: config.id,

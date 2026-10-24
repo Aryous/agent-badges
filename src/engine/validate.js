@@ -98,39 +98,43 @@ export function validateBadge(config, brand) {
   const bevel = config.shape.bevel ?? 0.04;
   if (face[0].inset < bevel * 2 + 0.01 - 1e-9) fail(`face.inset（${face[0].inset}）至少要等于 shape.bevel × 2 + 0.01（${(bevel * 2 + 0.01).toFixed(3)}）`);
 
-  for (const [i, r] of (config.relief ?? []).entries()) {
-    if (!RELIEF_KINDS.includes(r.kind)) fail(`relief[${i}] 的类型「${r.kind}」未注册`);
-    checkMaterial(`relief[${i}]`, r.material);
-    checkColor(`relief[${i}]`, r.color);
-    if (r.gradient) {
-      if (!Array.isArray(r.gradient) || r.gradient.length < 2) fail(`relief[${i}] 的 gradient 至少需要两个颜色`);
-      r.gradient.forEach((k) => checkColor(`relief[${i}].gradient`, k));
-    }
-    if (r.pattern && !PATTERNS.includes(r.pattern)) fail(`relief[${i}] 的底纹「${r.pattern}」未注册`);
-    if (r.effect && !RELIEF_EFFECTS.includes(r.effect)) fail(`relief[${i}] 的效果「${r.effect}」未注册`);
-    if (r.kind === 'text') {
-      const missing = [...new Set([...(r.text ?? '')].filter((ch) => !hasGlyph(ch)))];
-      if (!r.text) fail(`relief[${i}] 文字缺少 text`);
-      if (missing.length) fail(`relief[${i}] 文字字体不支持：${missing.join(' ')}`);
-    }
-    if (r.kind === 'text-arc') {
-      const missing = [...new Set([...(r.text ?? '')].filter((ch) => !hasGlyph(ch)))];
-      if (!r.text) fail(`relief[${i}] 文字环缺少 text`);
-      if (missing.length) fail(`relief[${i}] 文字环字体不支持：${missing.join(' ')}（可在 scripts/build-font.mjs 中补充）`);
-      if (!['top', 'bottom'].includes(r.arc ?? 'top')) fail(`relief[${i}] 的 arc 只能是 top 或 bottom`);
-    }
-    if (r.kind === 'pixels' && !(Array.isArray(r.rows) && r.rows.some((row) => row.includes('#')))) {
-      fail(`relief[${i}] 像素图 rows 为空`);
-    }
-    if (r.kind === 'contour' && !(r.inset >= 0 && r.width > 0)) fail(`relief[${i}] 轮廓描边需要 inset ≥ 0、width > 0`);
-    if (r.kind === 'rounded-rect' && !(r.half > 0 && r.radius >= 0)) {
-      fail(`relief[${i}] 圆角矩形需要 half > 0、radius ≥ 0`);
+  // 正面和背面的浮雕用同一套规则
+  for (const [field, items] of [['relief', config.relief], ['backRelief', config.backRelief]]) {
+    for (const [i, r] of (items ?? []).entries()) {
+      if (!RELIEF_KINDS.includes(r.kind)) fail(`${field}[${i}] 的类型「${r.kind}」未注册`);
+      checkMaterial(`${field}[${i}]`, r.material);
+      checkColor(`${field}[${i}]`, r.color);
+      if (r.gradient) {
+        if (!Array.isArray(r.gradient) || r.gradient.length < 2) fail(`${field}[${i}] 的 gradient 至少需要两个颜色`);
+        r.gradient.forEach((k) => checkColor(`${field}[${i}].gradient`, k));
+      }
+      if (r.pattern && !PATTERNS.includes(r.pattern)) fail(`${field}[${i}] 的底纹「${r.pattern}」未注册`);
+      if (r.effect && !RELIEF_EFFECTS.includes(r.effect)) fail(`${field}[${i}] 的效果「${r.effect}」未注册`);
+      if (r.kind === 'text') {
+        const missing = [...new Set([...(r.text ?? '')].filter((ch) => !hasGlyph(ch)))];
+        if (!r.text) fail(`${field}[${i}] 文字缺少 text`);
+        if (missing.length) fail(`${field}[${i}] 文字字体不支持：${missing.join(' ')}`);
+      }
+      if (r.kind === 'text-arc') {
+        const missing = [...new Set([...(r.text ?? '')].filter((ch) => !hasGlyph(ch)))];
+        if (!r.text) fail(`${field}[${i}] 文字环缺少 text`);
+        if (missing.length) fail(`${field}[${i}] 文字环字体不支持：${missing.join(' ')}（可在 scripts/build-font.mjs 中补充）`);
+        if (!['top', 'bottom'].includes(r.arc ?? 'top')) fail(`${field}[${i}] 的 arc 只能是 top 或 bottom`);
+      }
+      if (r.kind === 'pixels' && !(Array.isArray(r.rows) && r.rows.some((row) => row.includes('#')))) {
+        fail(`${field}[${i}] 像素图 rows 为空`);
+      }
+      if (r.kind === 'contour' && !(r.inset >= 0 && r.width > 0)) fail(`${field}[${i}] 轮廓描边需要 inset ≥ 0、width > 0`);
+      if (r.kind === 'rounded-rect' && !(r.half > 0 && r.radius >= 0)) {
+        fail(`${field}[${i}] 圆角矩形需要 half > 0、radius ≥ 0`);
+      }
     }
   }
 
   if (!config.back) fail('缺少 back');
   checkMaterial('back', config.back.material);
   checkColor('back', config.back.color);
+  if (config.back.engraving !== undefined && config.back.engraving !== false) fail('back.engraving 只能是 false（不带刻字）或不写');
   return true;
 }
 
