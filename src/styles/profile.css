@@ -30,7 +30,7 @@
   gap: 28px;
 }
 
-/* 全解锁徽章：实时 3D 画布。画好前（或拿不到 WebGL）显示兜底刻度环，数字叠在环中间；画好后币面自己写着进度，下方只留「已解锁徽章」的说明 */
+/* 全解锁徽章：实时 3D 画布。画好前位置空着，拿不到 WebGL 才显示兜底刻度环，数字叠在环中间；画好后币面自己写着进度，下方只留「已解锁徽章」的说明 */
 .profile-coin {
   --coin: 184px;
   position: relative;
@@ -85,6 +85,29 @@
 
 .profile-coin.has-coin .profile-ticks {
   display: none;
+}
+
+/* 铸币组装前位置先空着（尺寸不变），不露兜底刻度环；读屏照样读 figure 的说明 */
+.profile-coin.is-pending .profile-ticks,
+.profile-coin.is-pending .profile-count {
+  visibility: hidden;
+}
+
+/* 铸币挂上时淡入，不是一下子换掉 */
+.profile-coin.has-coin canvas {
+  animation: coin-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes coin-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-coin.has-coin canvas {
+    animation: none;
+  }
 }
 
 .profile-ticks line {

@@ -412,6 +412,18 @@ async function proofCycle(page) {
   const errors = [];
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(e.message));
+  // 打开到铸币挂上这段时间，逐帧看兜底刻度环有没有露出来（露出来就是打开时闪一下）
+  await page.addInitScript(() => {
+    window.__ringSeen = false;
+    const watch = () => {
+      const fig = document.querySelector('[data-coin]');
+      if (fig?.classList.contains('has-coin')) return;
+      const ticks = fig?.querySelector('.profile-ticks');
+      if (ticks && getComputedStyle(ticks).visibility !== 'hidden' && getComputedStyle(ticks).display !== 'none') window.__ringSeen = true;
+      requestAnimationFrame(watch);
+    };
+    requestAnimationFrame(watch);
+  });
   await page.goto(url, { timeout: NAV_TIMEOUT });
   await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
 
@@ -424,6 +436,7 @@ async function proofCycle(page) {
     const canvas = fig?.querySelector('canvas');
     return { has: fig?.classList.contains('has-coin'), canvas: !!canvas && !canvas.hidden && canvas.clientWidth > 0, role: fig?.getAttribute('role'), label: fig?.getAttribute('aria-label') ?? '' };
   });
+  check('打开页面时不先露兜底刻度环，铸币直接淡入', !(await page.evaluate(() => window.__ringSeen)));
   check('概览区的全解锁徽章是实时画布，说明文字里的解锁数与陈列墙一致', coin.has && coin.canvas && coin.role === 'button' && Number(coin.label.match(/\d+/)?.[0]) === unlockedTiles, JSON.stringify(coin));
 
   // 拖动铸币不打开单枚查看；点击才打开，标题是「全解锁」，它不进陈列墙

@@ -41,7 +41,7 @@ export function createProfile({ root, items, daily, onSelect, onCoin, onShare, o
     <div class="rule has-star"><i class="star"></i></div>
     <div class="profile-plate">
       <div class="profile-main">
-        <figure class="profile-coin" data-coin${onCoin ? ' role="button" tabindex="0"' : ''}>
+        <figure class="profile-coin is-pending" data-coin${onCoin ? ' role="button" tabindex="0"' : ''}>
           ${tickRing(total ? h.unlocked.length / total : 0)}
           <canvas aria-hidden="true" hidden></canvas>
           <div class="profile-count"><b>${h.unlocked.length}</b><span>/ ${total}</span></div>
@@ -139,7 +139,7 @@ export function createProfile({ root, items, daily, onSelect, onCoin, onShare, o
       el.querySelectorAll(`.profile-item[data-id="${id}"] img`).forEach((img) => (img.src = src));
     },
     /**
-     * 挂上实时的全解锁徽章，换掉兜底的刻度环。create({ canvas, target, onLost }) 返回 { pause, resume, dispose }；
+     * 挂上实时的全解锁徽章。挂之前位置空着（is-pending），不先露刻度环，免得打开时闪一下。create({ canvas, target, onLost }) 返回 { pause, resume, dispose }；
      * 画不出来（比如拿不到 WebGL 上下文）就留着刻度环；画着画着上下文丢了（onLost）也换回刻度环。
      * 下方的数字只留给检查脚本。
      */
@@ -155,6 +155,8 @@ export function createProfile({ root, items, daily, onSelect, onCoin, onShare, o
         canvas.hidden = true;
         console.warn('全解锁徽章渲染失败，改用刻度环', err);
       }
+      // 等待结束：挂上了就是铸币，挂不上才露出刻度环
+      fig.classList.remove('is-pending');
     },
     /** 单枚查看挡住概览区时停下全解锁徽章，关上后接着画。 */
     pauseCoin() {
