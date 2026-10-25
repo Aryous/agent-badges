@@ -4,6 +4,9 @@
 //
 // 用混合而不是「攒够 N 帧就停」：有些徽章带缓慢呼吸的发光，持续混合能让它照常变化。
 // 混合在一张叠在 3D 画布上方的 2D 画布里做，3D 画布照常输出色调映射后的颜色，所以颜色和平时一致。
+//
+// 收敛后停笔：错开的位置走完两轮、这期间也没有指纹之外的变化（呼吸发光、补间动画）时，画面已经不会再变，
+// 之后每帧只算指纹，不再渲染也不再混合，显卡空闲；指纹一变、restart()、或者有人在这张画布上另画了一帧（导出），立刻接着画。
 
 /** Halton 低差异序列：错开的位置均匀铺满一个像素，比随机收敛得快。 */
 function halton(i, base) {
@@ -21,6 +24,11 @@ const JITTER = Array.from({ length: 16 }, (_, i) => [halton(i + 1, 2) - 0.5, hal
 const MIN_ALPHA = 1 / 10;
 /** 静止多少帧后开始错开相机（弹簧回正的最后几帧位移小于像素，算作静止）。 */
 const SETTLE = 2;
+/**
+ * 连续混合多少帧（期间没有指纹之外的变化）后停笔：两轮完整的错开位置，之前的残影只剩 0.9^32 ≈ 3%。
+ * 要大于 10：停稳后第 12 帧（混合到第 10 帧）渲染循环会换 2048 的清晰刻字再 restart()，得先走到那一步。
+ */
+export const CONVERGED = 2 * JITTER.length;
 
 /**
  * @param {object} stage    createStage 的结果
@@ -31,19 +39,34 @@ export function createAccumulator(stage, overlay) {
   let lastSig = '';
   let still = 0;
   let k = 0;
+  /** 最近一次「指纹之外的变化」以来已经混合了几帧，到 CONVERGED 就停笔 */
+  let calm = 0;
+  /** 自己最后一次渲染后 renderer.info.render.frame 的值：对不上说明导出等别的代码在这张画布上画过 */
+  let drawn = -1;
 
   function hide() {
+    calm = 0;
     if (k === 0 && overlay.style.visibility !== 'visible') return;
     overlay.style.visibility = 'hidden';
     k = 0;
+  }
+
+  /** 相机错开 (jx, jy) 像素渲染一帧，记下渲染器的帧号。 */
+  function draw([jx, jy], w, h) {
+    const { renderer, scene, camera } = stage;
+    camera.setViewOffset(w, h, jx, jy, w, h);
+    renderer.render(scene, camera);
+    camera.clearViewOffset();
+    drawn = renderer.info.render.frame;
   }
 
   return {
     /**
      * 代替 renderer.render。sig 是这一帧「画面会不会变」的指纹（位置、角度、灯光等），
      * 和上一帧相同就算静止。返回已经静止了多少帧。
+     * busy：这一帧有指纹看不到的变化（呼吸发光、补间里的火花），照常混合、不停笔。
      */
-    render(sig) {
+    render(sig, busy = false) {
       const { renderer, scene, camera } = stage;
       const canvas = renderer.domElement;
       const key = `${sig}|${canvas.width}x${canvas.height}`;
@@ -56,15 +79,20 @@ export function createAccumulator(stage, overlay) {
       }
       const w = canvas.width;
       const h = canvas.height;
+      // 已经收敛：叠加画布原样留着，3D 画布还是上一帧，什么都不用画。
+      // 别人画过这张画布（导出）就按上一帧的错开位置重画一遍，盖掉它留下的画面，叠加画布不动
+      if (!busy && calm >= CONVERGED) {
+        if (renderer.info.render.frame !== drawn) {
+          draw(JITTER[(k - 1) % JITTER.length], w, h);
+        }
+        return still;
+      }
       if (overlay.width !== w || overlay.height !== h) {
         overlay.width = w;
         overlay.height = h;
         k = 0;
       }
-      const [jx, jy] = JITTER[k % JITTER.length];
-      camera.setViewOffset(w, h, jx, jy, w, h);
-      renderer.render(scene, camera);
-      camera.clearViewOffset();
+      draw(JITTER[k % JITTER.length], w, h);
       // 同一个任务里取走画面：WebGL 画布默认不保留上一帧
       if (k === 0) {
         g.globalAlpha = 1;
@@ -74,12 +102,14 @@ export function createAccumulator(stage, overlay) {
       }
       g.drawImage(canvas, 0, 0);
       k++;
+      calm = busy ? 0 : calm + 1;
       overlay.style.visibility = 'visible';
       return still;
     },
     /** 画面内容变了（比如换了更清晰的贴图），从头积累。 */
     restart() {
       k = 0;
+      calm = 0;
     },
     /** 离开单枚查看时收起。 */
     reset() {

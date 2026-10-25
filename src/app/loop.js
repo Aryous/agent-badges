@@ -12,10 +12,11 @@ export function createLoop(ctx, inspector) {
     inspector.update(dt);
     const t = now / 1000;
     const current = inspector.current;
-    for (const m of current?.badge.userData.pulses ?? []) {
+    const pulses = current?.badge.userData.pulses ?? [];
+    for (const m of pulses) {
       m.emissiveIntensity = 0.06 + 0.3 * (0.5 + 0.5 * Math.sin(t * 3.4));
     }
-    // 静止时超采样；呼吸发光不算移动
+    // 静止时超采样；呼吸发光不算移动。收敛后停笔，但呼吸发光、补间（获得动画的火花）还在动时一直画
     const { camera, sweep } = stage;
     const h = current?.holder;
     const still = accum.render(
@@ -24,6 +25,7 @@ export function createLoop(ctx, inspector) {
         camera.position.x, camera.position.y, camera.position.z, camera.zoom,
         sweep.intensity, sweep.position.x, sweep.position.y,
       ]),
+      pulses.length > 0 || tweens.list.length > 0,
     );
     // 停稳一小会儿后，背面刻字换成 2048 的清晰版本。上传大贴图会卡一下，静止时看不出来
     if (still === 12 && current && setEngravingSize(current.badge, 2048)) accum.restart();
