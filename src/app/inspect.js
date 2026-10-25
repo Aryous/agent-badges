@@ -193,6 +193,13 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     if (exportPanel.isOpen) exportPanel.place();
   });
 
+  // 切到后台再回来：静止时已经停笔，而手机浏览器可能丢掉后台 2D 画布的内容，叠加画布要重新积累一遍。
+  // 2D 上下文被回收后恢复（contextrestored）同理
+  document.addEventListener('visibilitychange', () => {
+    if (mode === 'inspect' && document.visibilityState === 'visible') ctx.accum.restart();
+  });
+  $('#stage-accum').addEventListener('contextrestored', () => ctx.accum.restart());
+
   ctx.on('open', open);
   return {
     open,

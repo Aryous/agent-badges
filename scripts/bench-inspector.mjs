@@ -116,7 +116,6 @@ for (const id of ids) {
     + `主线程忙 ${busy} ms/s（其中脚本 ${script} ms/s），GPU 进程 CPU ${gpu} ms/s`,
   );
   await page.evaluate(() => window.__badgeApp.close());
-  await page.evaluate(() => window.__badgeApp.whenClosed?.());
   await page.waitForTimeout(600);
 }
 await browser.close();

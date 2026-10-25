@@ -12,7 +12,14 @@ function setup() {
       this.info.render.frame++;
     },
   };
-  const camera = { setViewOffset() {}, clearViewOffset() {} };
+  /** 每次错开渲染的偏移 [jx, jy] */
+  const camera = {
+    offsets: [],
+    setViewOffset(w, h, jx, jy) {
+      this.offsets.push([jx, jy]);
+    },
+    clearViewOffset() {},
+  };
   const g = { globalAlpha: 1, blends: 0, drawImage() { this.blends++; }, clearRect() {} };
   const overlay = { width: 0, height: 0, style: {}, getContext: () => g };
   const accum = createAccumulator({ renderer, scene: {}, camera }, overlay);
@@ -22,7 +29,7 @@ function setup() {
     for (let i = 0; i < n; i++) accum.render(sig, busy);
     return renderer.renders - before;
   };
-  return { accum, renderer, g, overlay, frames };
+  return { accum, renderer, camera, g, overlay, frames };
 }
 
 describe('静止超采样收敛后停笔', () => {
@@ -36,19 +43,25 @@ describe('静止超采样收敛后停笔', () => {
     expect(overlay.style.visibility).toBe('visible');
   });
 
-  it('收敛前就换清晰刻字（停稳第 12 帧）：CONVERGED 足够大', () => {
-    expect(CONVERGED).toBeGreaterThan(10);
+  it('停笔后静止帧数照常累加：停稳第 12 帧换清晰刻字的时机不受停笔影响', () => {
+    const { accum, renderer } = setup();
+    const n = 2 + CONVERGED + 20;
+    const stills = Array.from({ length: n }, () => accum.render('a'));
+    expect(stills).toEqual(Array.from({ length: n }, (_, i) => i));
+    // 最后 20 帧已经停笔，返回值还在往上数
+    expect(renderer.renders).toBe(2 + CONVERGED);
   });
 
-  it('指纹一变（拖动、补间、改尺寸）立刻恢复渲染，并重新积累', () => {
+  it('指纹一变（拖动、补间、改尺寸）立刻恢复渲染，重新积累到收敛后再次停笔', () => {
     const { frames, overlay, renderer } = setup();
     frames(200);
     expect(frames(1, 'b')).toBe(1);
     expect(overlay.style.visibility).toBe('hidden');
-    expect(frames(1, 'b')).toBe(1);
-    frames(200, 'b');
+    expect(frames(1 + CONVERGED, 'b')).toBe(1 + CONVERGED);
+    expect(frames(50, 'b')).toBe(0);
     renderer.domElement.width = 300;
-    expect(frames(1, 'b')).toBe(1);
+    expect(frames(2 + CONVERGED, 'b')).toBe(2 + CONVERGED);
+    expect(frames(50, 'b')).toBe(0);
   });
 
   it('restart()（换了更清晰的贴图）后重新积累到收敛', () => {
@@ -68,12 +81,18 @@ describe('静止超采样收敛后停笔', () => {
     expect(frames(50)).toBe(0);
   });
 
-  it('别人在画布上画过（导出）：按上一帧重画一次盖掉，叠加画布不动', () => {
-    const { frames, renderer, g } = setup();
+  it('别人在画布上画过（导出）：按上一帧的错开位置重画一次盖掉，叠加画布不动', () => {
+    const { frames, renderer, camera, g } = setup();
     frames(200);
+    const last = camera.offsets.at(-1); // 最后一次混合用的偏移（JITTER[k-1]）
+    const drawn = camera.offsets.length;
     renderer.render(); // 导出
     const blends = g.blends;
     expect(frames(1)).toBe(1);
+    expect(camera.offsets.length).toBe(drawn + 1);
+    expect(camera.offsets.at(-1)).toEqual(last);
+    // 不是从头的第一个偏移（k 已经转回 JITTER[0]，取错下标就会是它）
+    expect(camera.offsets.at(-1)).not.toEqual(camera.offsets[0]);
     expect(g.blends).toBe(blends);
     expect(frames(50)).toBe(0);
   });
