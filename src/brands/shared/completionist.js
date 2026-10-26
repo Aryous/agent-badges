@@ -77,7 +77,7 @@ const disc = (look) => medallion({ radius: DISC_R, color: 'sand', metal: look.ma
 // ---------- 背面 ----------
 
 /** 五角星（外半径 10、内半径 4.2，viewBox 24）。 */
-const STAR = (() => {
+export const STAR = (() => {
   const pts = Array.from({ length: 10 }, (_, i) => {
     const a = Math.PI / 2 + (i * Math.PI) / 5;
     const r = i % 2 ? 4.2 : 10;
@@ -87,8 +87,8 @@ const STAR = (() => {
 })();
 
 // 月桂直接用徽章坐标画，换算成 viewBox 2 的路径
-const P = ([x, y]) => `${(x + 1).toFixed(4)} ${(1 - y).toFixed(4)}`;
-const pathItem = (d, look) => ({ kind: 'path', d, viewBox: 2, scale: 1, center: [0, 0], ...look });
+export const P = ([x, y]) => `${(x + 1).toFixed(4)} ${(1 - y).toFixed(4)}`;
+export const pathItem = (d, look) => ({ kind: 'path', d, viewBox: 2, scale: 1, center: [0, 0], ...look });
 
 /** 杏仁形叶片：两段二次贝塞尔。 */
 function leaf(base, dir, len, w) {
@@ -104,7 +104,7 @@ function leaf(base, dir, len, w) {
  * 一枝月桂（side = −1 左，1 右）：细茎沿圆弧生长，7 对叶片越往梢头越小，梢头一片顶叶。
  * 每片叶子单独一个浮雕件，拼进同一条 evenodd 路径的话重叠处会被挖空。
  */
-function laurel(side, look) {
+export function laurel(side, look) {
   const r0 = 0.405;
   const th = (t) => -Math.PI / 2 + side * (0.2 + t * Math.PI * 0.6);
   const at = (t) => [r0 * Math.cos(th(t)), r0 * Math.sin(th(t))];
