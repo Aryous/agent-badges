@@ -707,6 +707,27 @@ async function proofCycle(page) {
   await page.locator('.proof-pull').click(); // 收起礼盒，后面的检查照旧在热力图上
   await waitUntil(page, '礼盒收起', () => !document.querySelector('.proof').classList.contains('is-shown'));
 
+  // 再拉开一次：已经是 3D 图片，落定动画照样从头播（关上时摘掉了 is-settled）。在动画开始那一刻读，不按固定时间等
+  await page.evaluate(() => {
+    const w = (window.__reopenSettle = { started: false, running: false });
+    const tray = document.querySelector('.proof-tray');
+    const on = (e) => {
+      if (e.animationName !== 'proof-settle' || !e.target.classList.contains('proof-art') || !e.target.closest('.proof-slot[data-m]')) return;
+      w.started = true;
+      w.running = e.target.getAnimations().some((a) => a.animationName === 'proof-settle' && a.playState === 'running');
+      tray.removeEventListener('animationstart', on);
+    };
+    tray.addEventListener('animationstart', on);
+  });
+  await page.locator('.proof-pull').click();
+  await waitUntil(page, '重新拉开后 3D 月章开始落定', () => window.__reopenSettle.started);
+  const reopen = await page.evaluate(() => ({ ...window.__reopenSettle, art: document.querySelector('.proof-tray').classList.contains('has-art') }));
+  check('关上再拉开：3D 月章的落定动画重新播放', reopen.art && reopen.started && reopen.running, JSON.stringify(reopen));
+  // 落定播完（也就过了拉环忙碌的那 1 秒）再关上，后面的检查照旧在热力图上
+  await waitUntil(page, '重新拉开后滑盖和托盘里的动画走完', () => ['.proof-sheet', '.proof-tray'].every((s) => document.querySelector(s).getAnimations({ subtree: true }).length === 0));
+  await page.locator('.proof-pull').click();
+  await waitUntil(page, '礼盒再次收起', () => !document.querySelector('.proof').classList.contains('is-shown'));
+
   await marker.click();
   await page.waitForTimeout(700);
   check('点击解锁标记打开对应徽章', await page.locator('#overlay').isVisible());
@@ -860,11 +881,15 @@ async function proofCycle(page) {
   const rmSlot = page.locator('.proof-slot[data-m]').first();
   await rmSlot.click();
   await waitUntil(page, '减少动态效果：月章打开', () => document.body.classList.contains('is-inspecting'));
-  const rmOpen = await page.evaluate(() => ({ tile: document.querySelector('#overlay').classList.contains('is-tile'), shown: !document.querySelector('#overlay').hidden }));
+  const rmOpen = await page.evaluate(() => ({
+    tile: document.querySelector('#overlay').classList.contains('is-tile'),
+    shown: !document.querySelector('#overlay').hidden,
+    out: document.querySelector('.proof-slot[data-m]').classList.contains('is-out'),
+  }));
   await page.keyboard.press('Escape');
   await waitUntil(page, '减少动态效果：月章关上', () => document.querySelector('#overlay').hidden);
   const rmClosed = await page.evaluate(() => ({ inspecting: document.body.classList.contains('is-inspecting'), tile: document.querySelector('#overlay').classList.contains('is-tile') }));
-  check('减少动态效果：点开月章不从原位起飞（遮罩没有 is-tile），Esc 照常关上', rmOpen.shown && !rmOpen.tile && !rmClosed.inspecting && !rmClosed.tile, JSON.stringify({ rmOpen, rmClosed }));
+  check('减少动态效果：点开月章不从原位起飞（遮罩没有 is-tile、托盘那一格不留空），Esc 照常关上', rmOpen.shown && !rmOpen.tile && !rmOpen.out && !rmClosed.inspecting && !rmClosed.tile, JSON.stringify({ rmOpen, rmClosed }));
   await page.locator('.proof-pull').click();
   await page.locator('.heat-legend .heat-brand[data-id="codex"]').click();
   await page.locator('.heat-years [data-d="-1"]').click();
@@ -875,6 +900,48 @@ async function proofCycle(page) {
   }));
   check('减少动态效果：切换工具和年份直接切换，没有淡入淡出和数字滚动', heat.anims === 0 && heat.first === '2025-01-01' && heat.year === '2025', JSON.stringify(heat));
   check('减少动态效果控制台无报错', errors.length === 0, errors.join(' | '));
+  await page.close();
+}
+
+// ---------- 3D 图片解码失败：托盘一直用 SVG ----------
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+  const errors = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(e.message));
+  // 托盘换图前解码的是还没挂进页面的新图片，只让这些解码失败（陈列墙缩略图挂在格子里，照常解码）；记下托盘有没有加过 has-art
+  await page.addInitScript(() => {
+    window.__decodeTried = 0;
+    window.__artSeen = false;
+    const decode = HTMLImageElement.prototype.decode;
+    HTMLImageElement.prototype.decode = function () {
+      if (this.isConnected) return decode.call(this);
+      window.__decodeTried++;
+      return Promise.reject(new DOMException('测试：解码失败', 'EncodingError'));
+    };
+    new MutationObserver(() => {
+      if (document.querySelector('.proof-tray.has-art')) window.__artSeen = true;
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  });
+  await page.goto(url, { timeout: NAV_TIMEOUT });
+  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
+  await page.locator('.proof-pull').click();
+  await waitProof(page, true);
+  // 解码是图片画好之后的最后一步：等它被调过、再等落定动画走完，图片要来早就来了
+  await waitUntil(page, '解码失败：托盘试过解码', () => window.__decodeTried > 0);
+  await waitUntil(page, '解码失败：托盘里的动画走完', () => document.querySelector('.proof-tray').getAnimations({ subtree: true }).length === 0);
+  const svgOnly = await page.evaluate(() => ({
+    tried: window.__decodeTried,
+    artSeen: window.__artSeen,
+    hasArt: document.querySelector('.proof-tray').classList.contains('has-art'),
+    medals: [...document.querySelectorAll('.proof-slot[data-m] .proof-medal')].map((el) => getComputedStyle(el).opacity),
+  }));
+  check(
+    '3D 图片解码失败：托盘从没换上 3D 图片，SVG 月章都看得见',
+    svgOnly.tried > 0 && !svgOnly.artSeen && !svgOnly.hasArt && svgOnly.medals.length > 0 && svgOnly.medals.every((o) => o === '1'),
+    JSON.stringify(svgOnly),
+  );
+  check('解码失败时控制台无报错', errors.length === 0, errors.join(' | '));
   await page.close();
 }
 
