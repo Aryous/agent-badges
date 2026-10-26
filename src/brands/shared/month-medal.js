@@ -88,7 +88,7 @@ export const RB = 0.755; // 珠子圆心所在的半径
 const FUT = 0.026; // 未来的日子：一个很小的暗点
 const ROUND = { curve: 16, bevel: 5 }; // 放大看也不出棱角
 const INNER_R = 0.6; // 中间文字外面的一圈细线
-const TRACK_H = 0.03; // 金属环的高度
+export const TRACK_H = 0.03; // 金属环的高度
 const TOP = { height: TRACK_H + 0.002, bevel: 0.003 }; // 珠子：从正面板一直到顶面，和金属环齐平
 
 /** 第 i 天（0 起）的位置：1 号在正上方，顺时针。 */
@@ -117,12 +117,18 @@ function bead(day, [x, y], r) {
   return [-1, 1].map((side, k) => pathItem(halfD(x, y, r, side), { material: 'fired-enamel', color: key(day.parts[k]), ...TOP }));
 }
 
-/** 解锁金边：嵌在开大了的孔里。 */
-const unlockRing = (center) => ({ kind: 'ring', radius: 0.0665, width: 0.013, center, material: 'polished-metal', color: 'medal:unlock', height: TRACK_H + 0.003, bevel: 0.004, segments: ROUND });
+const UNLOCK_HOLE = 0.079; // 解锁的日子开大的孔
+
+/** 解锁金边：嵌在开大了的孔里，k 是孔缩小的比例。 */
+const unlockRing = (center, k) => ({ kind: 'ring', radius: 0.0665 * k, width: 0.013 * k, center, material: 'polished-metal', color: 'medal:unlock', height: TRACK_H + 0.003, bevel: 0.004, segments: ROUND });
 
 /** 正面 C：金属环上每天一个孔，珠子嵌在孔里；解锁的日子孔开大一点，嵌一圈金边。 */
 function track(medal, metal) {
   const n = medal.days.length;
+  // 相邻两个解锁孔不能碰：孔叠在一起时 svgShapes 会把孔当成实心。孔放不下就连金边、珠子一起缩，中间至少留 0.008 的金属
+  const pitch = 2 * RB * Math.sin(Math.PI / n);
+  const holeR = Math.min(UNLOCK_HOLE, pitch / 2 - 0.004);
+  const k = holeR / UNLOCK_HOLE;
   let d = circleD(0, 0, 0.858) + circleD(0, 0, 0.652);
   const fills = [];
   medal.days.forEach((day, i) => {
@@ -133,8 +139,8 @@ function track(medal, metal) {
       return;
     }
     if (day.unlocks) {
-      d += circleD(at[0], at[1], 0.079);
-      fills.push(unlockRing(at), ...bead(day, at, 0.052));
+      d += circleD(at[0], at[1], holeR);
+      fills.push(unlockRing(at, k), ...bead(day, at, 0.052 * k));
     } else {
       d += circleD(at[0], at[1], 0.057);
       fills.push(...bead(day, at, 0.0555));

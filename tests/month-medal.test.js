@@ -4,7 +4,8 @@ import { BRANDS } from '../src/brands/index.js';
 import { validateBadge } from '../src/engine/validate.js';
 import { buildBadge, disposeBadge } from '../src/engine/badge.js';
 import { SUNK } from '../src/viewer/heatmap.js';
-import { RB, beadAt, gemHex, gemKey, medalPalette, monthMedalConfig, monthMedalData } from '../src/brands/shared/month-medal.js';
+import { svgShapes } from '../src/engine/svgpath.js';
+import { RB, TRACK_H, beadAt, gemHex, gemKey, medalPalette, monthMedalConfig, monthMedalData } from '../src/brands/shared/month-medal.js';
 
 const series = [
   { id: 'claude-code', color: '#D97757' },
@@ -113,8 +114,42 @@ describe('月章配置', () => {
   });
 
   it('珠子顶面和金属环齐平，没有衬片', () => {
-    for (const b of beadsOf(config.relief)) expect(b.z ?? 0).toBe(0);
-    expect(config.relief.some((r) => r.material === 'polished-metal' && r.color === 'silver' && r.kind === 'circle')).toBe(false);
+    for (const b of beadsOf(config.relief)) {
+      expect(b.z ?? 0).toBe(0);
+      expect(b.height).toBeCloseTo(TRACK_H + 0.002, 9);
+    }
+    // 任何外圈金属下都不垫金属圆片
+    for (const tier of [0, 1, 2, 3]) {
+      expect(monthMedalConfig(april, { tier }).relief.some((r) => r.material === 'polished-metal' && r.kind === 'circle')).toBe(false);
+    }
+  });
+
+  // 连续几天都解锁时，相邻的大孔不能叠在一起：叠了的话 svgShapes 会把孔当成实心，盖住珠子
+  const trackShapes = (month, unlocked) => {
+    const n = new Date(2026, month + 1, 0).getDate();
+    const medal = monthMedalData({
+      year: 2026,
+      month,
+      tokens: 1,
+      activeDays: 1,
+      series,
+      partsOf: (d) => (unlocked(d) ? [{ id: 'claude-code', level: 2 }] : []),
+      markersOn: (d) => (unlocked(d) ? [{}] : []),
+      now: '2026-12-31',
+    });
+    return { n, shapes: svgShapes(monthMedalConfig(medal, { tier: 2 }).relief[0].d, { viewBox: 2, scale: 1 }) };
+  };
+
+  it('31 天每天都解锁：金属环仍是一整块，每天一个孔（加中间一个大孔）', () => {
+    const { n, shapes } = trackShapes(0, () => true);
+    expect(shapes).toHaveLength(1);
+    expect(shapes[0].holes).toHaveLength(n + 1);
+  });
+
+  it('31 天里 15–17 号连续解锁：孔不丢', () => {
+    const { n, shapes } = trackShapes(0, (d) => ['2026-01-15', '2026-01-16', '2026-01-17'].includes(d));
+    expect(shapes).toHaveLength(1);
+    expect(shapes[0].holes).toHaveLength(n + 1);
   });
 
   it('背面 B3：上弧月份全名、下弧年份，月桂，中间月份数字；两个工具时结是金边色', () => {
