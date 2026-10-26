@@ -52,9 +52,9 @@
 
 不再像实验页那样组装完再改材质。原有的预设一个都不改，所以徽章导出图保持不变。
 
-### 配置：`src/brands/shared/month-medal.js`
+### 配置：`src/viewer/month-medal.js`
 
-和 `completionist.js` 同级，继续用 `buildBadge` 和 `mountBadge`，不进徽章注册表。
+放在 viewer 层：brands 层只能引用 brands，而它要用 engine 的字体和 data 的数字格式。和 `viewer/completionist.js` 一样，继续用 `buildBadge` 和 `mountBadge`，不进徽章注册表。
 
 - `monthMedalConfig(medal, { tier })`：返回引擎配置。正面、背面就是上面定的那一套。
 - `medal` 是纯数据：`{ year, month, tokens, days: [{ date, future, parts: [{ seriesIndex, level }], unlocks }] }`。

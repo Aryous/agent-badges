@@ -6,7 +6,7 @@
 
 **Architecture:**
 - 引擎加两个材质预设：哑光珐琅、火珐琅。
-- `brands/shared/month-medal.js` 负责纯数据和配置：月章数据、宝石色板、正面 C 加背面 B3 的引擎配置。
+- `viewer/month-medal.js` 负责纯数据和配置（放在 viewer：brands 层只能引用 brands，而它要用 engine 的字体和 data 的数字格式）：月章数据、宝石色板、正面 C 加背面 B3 的引擎配置。
 - `viewer/proof-set.js` 在 SVG 上面叠一层 3D 图片和透明的悬停命中区，槽位变成按钮。
 - `app/medals.js` 负责两件事：
   - 借陈列墙缩略图的舞台截图，并按年份和工具缓存；
@@ -168,12 +168,12 @@ git commit -m "feat: matte enamel and fired-enamel material presets for month me
 
 **Files:**
 - Modify: `src/brands/shared/completionist.js`（把 `P`、`pathItem`、`laurel`、`STAR` 改成 `export`，内容不动）
-- Create: `src/brands/shared/month-medal.js`
+- Create: `src/viewer/month-medal.js`
 - Test: `tests/month-medal.test.js`（新建）
 
 **Interfaces:**
 - Consumes：Task 1 的 `'enamel-matte'`、`'fired-enamel'`。
-- Produces（`src/brands/shared/month-medal.js`）：
+- Produces（`src/viewer/month-medal.js`）：
   - `gemHex(hex: string, level: 1|2|3|4): string`；
   - `gemKey(series: number, level: number): string`：返回 `'medal:<series>:<level>'`；
   - `medalPalette(series: { color: string }[]): Record<string, string>`；
@@ -203,7 +203,7 @@ import { BRANDS } from '../src/brands/index.js';
 import { validateBadge } from '../src/engine/validate.js';
 import { buildBadge, disposeBadge } from '../src/engine/badge.js';
 import { SUNK } from '../src/viewer/heatmap.js';
-import { RB, beadAt, gemHex, gemKey, medalPalette, monthMedalConfig, monthMedalData } from '../src/brands/shared/month-medal.js';
+import { RB, beadAt, gemHex, gemKey, medalPalette, monthMedalConfig, monthMedalData } from '../src/viewer/month-medal.js';
 
 const series = [
   { id: 'claude-code', color: '#D97757' },
@@ -340,7 +340,7 @@ describe('月章配置', () => {
 Run: `npx vitest run tests/month-medal.test.js`
 Expected: FAIL（找不到 `month-medal.js`）
 
-- [ ] **Step 4: 实现** `src/brands/shared/month-medal.js`
+- [ ] **Step 4: 实现** `src/viewer/month-medal.js`
 
 ```js
 // 月章：年度铸币套装里每个月一枚，全解锁徽章的「小兄弟」。不进徽章注册表，配置按当月数据生成。
@@ -591,7 +591,7 @@ Expected: PASS
 - [ ] **Step 6: 提交**
 
 ```bash
-git add src/brands/shared/completionist.js src/brands/shared/month-medal.js tests/month-medal.test.js
+git add src/brands/shared/completionist.js src/viewer/month-medal.js tests/month-medal.test.js
 git commit -m "feat: month medal data, gem palette and engine config (front C fired enamel, back B3)"
 ```
 
@@ -617,7 +617,7 @@ git commit -m "feat: month medal data, gem palette and engine config (front C fi
 
 ```js
 import { artKey, medalHitSvg } from '../src/viewer/proof-set.js';
-import { beadAt } from '../src/brands/shared/month-medal.js';
+import { beadAt } from '../src/viewer/month-medal.js';
 
 describe('月章 3D 图片', () => {
   it('缓存键：年份加排好序的工具，顺序不同也是同一个键', () => {
@@ -657,7 +657,7 @@ Expected: FAIL（`artKey` 不是函数）
 在 import 区加：
 
 ```js
-import { beadAt, monthMedalData } from '../brands/shared/month-medal.js';
+import { beadAt, monthMedalData } from './month-medal.js';
 ```
 
 在 `medalSvg` 后面加：
@@ -954,7 +954,7 @@ git commit -m "feat: proof set tray can show 3D medal art with a hover hit layer
 ```js
 import { describe, expect, it } from 'vitest';
 import { medalInfo } from '../src/app/medals.js';
-import { gemKey, medalPalette } from '../src/brands/shared/month-medal.js';
+import { gemKey, medalPalette } from '../src/viewer/month-medal.js';
 
 const series = [
   { id: 'claude-code', name: 'Claude Code', color: '#D97757' },
@@ -1001,7 +1001,7 @@ import { createBadgeRenderer } from '../viewer/badge-renderer.js';
 import { mountBadge } from '../viewer/mount-badge.js';
 import { forEachFrame } from '../viewer/frame.js';
 import { CASE, MEDAL_FILL } from '../viewer/proof-set.js';
-import { gemKey, medalPalette, monthMedalConfig } from '../brands/shared/month-medal.js';
+import { gemKey, medalPalette, monthMedalConfig } from '../viewer/month-medal.js';
 
 // 年度铸币套装的月章：画托盘里的 3D 图片，点开时组装一枚交给单枚查看。
 // 截图借陈列墙缩略图的那个舞台（整页仍只有一个 WebGL 上下文），一帧画一枚，单枚查看打开时暂停。
