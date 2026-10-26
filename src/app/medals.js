@@ -89,7 +89,8 @@ export function createMedals(ctx, { series, start, pause }) {
     try {
       const fly = art && !reduced();
       if (fly) {
-        slot.classList.add('is-lifting');
+        // 落定动画还没播完就点开：直接算落定，免得去掉 is-lifting 后从透明重播
+        slot.classList.add('is-lifting', 'is-settled');
         await new Promise((r) => setTimeout(r, LIFT_MS));
         // 抬起途中托盘重画了、或者抽屉关上了：不打开
         if (!slot.isConnected || !drawerOpen(slot)) return;
