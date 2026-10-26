@@ -424,6 +424,18 @@ async function proofCycle(page) {
     };
     requestAnimationFrame(watch);
   });
+  // 月章换成 3D 图片的每一次：记下当时有几张图、是不是都解码好了（要求 12 枚一起换，不逐枚跳）
+  await page.addInitScript(() => {
+    window.__artSwaps = [];
+    new MutationObserver((list) => {
+      for (const m of list) {
+        const el = m.target;
+        if (!el.classList?.contains('proof-tray') || !el.classList.contains('has-art') || (m.oldValue ?? '').includes('has-art')) continue;
+        const imgs = [...el.querySelectorAll('.proof-art img')];
+        window.__artSwaps.push({ imgs: imgs.length, ready: imgs.every((i) => i.complete && i.naturalWidth > 0), slots: el.querySelectorAll('.proof-slot[data-m]').length });
+      }
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['class'], attributeOldValue: true });
+  });
   await page.goto(url, { timeout: NAV_TIMEOUT });
   await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
 
@@ -553,6 +565,129 @@ async function proofCycle(page) {
     `中途 ${proofMid.boxH} / ${proofMid.plateH}（${proofMid.sliding ? `滑到 ${proofMid.ty.toFixed(0)}px` : '没赶上过渡'}）· ${proofOpen.cols} × ${proofOpen.rows} · 拉环下 ${proofOpen.clearance?.toFixed(1)}px`,
   );
   check('再点一下原路关上，板子上的控件又能用', proofBack.expanded === 'false' && !proofBack.plateInert && proofBack.caseInert && proofBack.boxH === proofBack.plateH, JSON.stringify(proofBack));
+
+  // 年度铸币套装：3D 月章、悬停、点开飞出、Esc 飞回
+  await page.locator('.proof-pull').click();
+  await waitUntil(page, '月章换成 3D 图片', () => document.querySelector('.proof-tray').classList.contains('has-art'));
+  const swaps = await page.evaluate(() => window.__artSwaps);
+  check('月章换成 3D 图片：每个铸好的月份一张，换上时全部已经解码（一起换，不逐枚跳）', swaps.length > 0 && swaps.every((w) => w.imgs === w.slots && w.imgs > 0 && w.ready), JSON.stringify(swaps));
+
+  // 落定还没播完就点开：抬起会停掉落定动画，交给单枚查看以后不能再从头播一遍（不然飞回来时凹槽里是透明的）。
+  // 挑最后一枚（落定最晚），等滑盖让开、它还在落定时点它的正中
+  const lastM = await page.evaluate(() => [...document.querySelectorAll('.proof-slot[data-m]')].at(-1).dataset.m);
+  await waitUntil(page, '滑盖让开、最后一枚还在落定', (m) => {
+    const art = document.querySelector(`.proof-slot[data-m="${m}"] .proof-art`);
+    const r = art.getBoundingClientRect();
+    const reachable = art.closest('.proof-slot').contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
+    return reachable && art.getAnimations().some((a) => a.animationName === 'proof-settle');
+  }, lastM);
+  const early = await page.evaluate((m) => {
+    const slot = document.querySelector(`.proof-slot[data-m="${m}"]`);
+    const art = slot.querySelector('.proof-art');
+    const r = art.getBoundingClientRect();
+    const w = (window.__earlyWatch = { during: art.getAnimations().some((a) => a.animationName === 'proof-settle'), lifted: false, replayed: false, done: false, opacity: '' });
+    const tick = () => {
+      if (slot.classList.contains('is-lifting')) w.lifted = true;
+      // 抬起时停掉落定动画是对的；抬起结束以后又出现，就是重播了
+      else if (w.lifted && art.getAnimations().some((a) => a.animationName === 'proof-settle')) w.replayed = true;
+      if (!window.__escAt || performance.now() - window.__escAt < 1200) return requestAnimationFrame(tick);
+      w.opacity = getComputedStyle(art).opacity;
+      w.done = true;
+    };
+    requestAnimationFrame(tick);
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }, lastM);
+  await page.mouse.click(early.x, early.y);
+  await waitUntil(page, '落定中点开的月章打开', () => document.body.classList.contains('is-inspecting'));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => (window.__escAt = performance.now()));
+  await page.keyboard.press('Escape');
+  await waitUntil(page, '落定中点开的月章关上', () => document.querySelector('#overlay').hidden);
+  await waitUntil(page, '飞回后 1.2 秒', () => window.__earlyWatch.done);
+  const earlyWatch = await page.evaluate(() => window.__earlyWatch);
+  check('落定还没播完就点开月章：落定动画不从头重播，飞回后不透明', earlyWatch.during && earlyWatch.lifted && !earlyWatch.replayed && earlyWatch.opacity === '1', JSON.stringify(earlyWatch));
+
+  // 等滑盖和落定动画都走完（软件渲染一帧要一两秒，不能按固定时间等）
+  await waitUntil(page, '礼盒里的动画走完', () => document.querySelector('.proof').getAnimations({ subtree: true }).length === 0);
+
+  const bead = await page.evaluate(() => {
+    const c = document.querySelector('.proof-slot[data-m] .proof-hit circle[data-date]');
+    const r = c.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, date: c.dataset.date };
+  });
+  await page.mouse.move(bead.x, bead.y);
+  await page.waitForTimeout(200);
+  const tipShown = await page.evaluate(() => !document.querySelector('.heat-tip').hidden);
+  check('悬停 3D 月章上的珠子，显示当天的详情', tipShown, bead.date);
+  await page.mouse.move(5, 5);
+
+  const slotM = await page.evaluate(() => document.querySelector('.proof-slot[data-m]').dataset.m);
+  await page.locator(`.proof-slot[data-m="${slotM}"]`).click();
+  await waitUntil(page, '月章打开', () => document.body.classList.contains('is-inspecting'));
+  await page.waitForTimeout(700);
+  const medalOpen = await page.evaluate((m) => ({
+    title: document.querySelector('[data-title]').textContent,
+    facts: document.querySelectorAll('[data-medal-facts] div').length,
+    factsShown: !document.querySelector('[data-medal-facts]').hidden,
+    descHidden: document.querySelector('[data-desc]').hidden,
+    replayHidden: document.querySelector('[data-replay]').hidden,
+    hash: location.hash,
+    out: document.querySelector(`.proof-slot[data-m="${m}"]`).classList.contains('is-out'),
+  }), slotM);
+  check(
+    '点开月章：单枚查看显示月份和三行数字，没有说明和重播，地址栏不写 hash，托盘里留空凹槽',
+    medalOpen.title === `${Number(slotM) + 1} 月` && medalOpen.facts === 3 && medalOpen.factsShown && medalOpen.descHidden && medalOpen.replayHidden && medalOpen.hash === '' && medalOpen.out,
+    JSON.stringify(medalOpen),
+  );
+
+  // 从按下 Esc 起逐帧看 1.2 秒（飞回 + 落定）：那一格的 3D 图片不能重播落定动画
+  await page.evaluate((m) => {
+    const art = document.querySelector(`.proof-slot[data-m="${m}"] .proof-art`);
+    const w = (window.__settleWatch = { replayed: false, done: false, opacity: '' });
+    const t0 = performance.now();
+    const tick = () => {
+      if (art.getAnimations().some((a) => a.animationName === 'proof-settle')) w.replayed = true;
+      if (performance.now() - t0 < 1200) return requestAnimationFrame(tick);
+      w.opacity = getComputedStyle(art).opacity;
+      w.done = true;
+    };
+    requestAnimationFrame(tick);
+  }, slotM);
+  await page.keyboard.press('Escape');
+  await waitUntil(page, '月章关上', () => document.querySelector('#overlay').hidden);
+  const medalBack = await page.evaluate((m) => {
+    const slot = document.querySelector(`.proof-slot[data-m="${m}"]`);
+    return { focused: document.activeElement === slot, out: slot.classList.contains('is-out'), tile: document.querySelector('#overlay').classList.contains('is-tile') };
+  }, slotM);
+  check('Esc 关上：焦点回到那一格，凹槽里的月章回来了', medalBack.focused && !medalBack.out && !medalBack.tile, JSON.stringify(medalBack));
+  await waitUntil(page, '飞回后 1.2 秒', () => window.__settleWatch.done);
+  const settle = await page.evaluate(() => window.__settleWatch);
+  check('飞回落定后月章不透明，落定动画没有重播', !settle.replayed && settle.opacity === '1', JSON.stringify(settle));
+
+  await page.locator(`.proof-slot[data-m="${slotM}"]`).focus();
+  await page.keyboard.press('Enter');
+  await waitUntil(page, '键盘打开月章', () => document.body.classList.contains('is-inspecting'));
+  check('月章可以用键盘打开', await page.evaluate(() => document.body.classList.contains('is-inspecting')));
+  await page.keyboard.press('Escape');
+  await waitUntil(page, '键盘打开的月章关上', () => document.querySelector('#overlay').hidden);
+
+  // 月章关上后马上点开陈列墙上的徽章：照旧写 hash、显示说明，不带月章的样式和信息
+  await page.locator('.tile:not(.is-locked)').first().click();
+  await waitUntil(page, '陈列墙徽章打开', () => document.body.classList.contains('is-inspecting'));
+  await page.waitForTimeout(700);
+  const wallAfter = await page.evaluate(() => ({
+    hash: location.hash,
+    tile: document.querySelector('#overlay').classList.contains('is-tile'),
+    desc: !document.querySelector('[data-desc]').hidden,
+    facts: document.querySelector('[data-medal-facts]').hidden,
+    legend: document.querySelector('[data-medal-legend]').hidden,
+  }));
+  check('月章关上后点开陈列墙徽章：写 hash、显示说明，月章的数字和图例都藏起来', wallAfter.hash.length > 1 && !wallAfter.tile && wallAfter.desc && wallAfter.facts && wallAfter.legend, JSON.stringify(wallAfter));
+  await page.keyboard.press('Escape');
+  await waitUntil(page, '陈列墙徽章关上', () => document.querySelector('#overlay').hidden);
+
+  await page.locator('.proof-pull').click(); // 收起礼盒，后面的检查照旧在热力图上
+  await waitUntil(page, '礼盒收起', () => !document.querySelector('.proof').classList.contains('is-shown'));
 
   await marker.click();
   await page.waitForTimeout(700);
@@ -702,6 +837,16 @@ async function proofCycle(page) {
     };
   });
   check('减少动态效果：铸币套装直接打开，盒子高度没有过渡、等于板子', opened.anims.length === 0 && opened.slid && opened.boxH === opened.plateH && !opened.heightTransition, JSON.stringify(opened));
+  // 点开月章：不抬起、不从原位起飞，遮罩照常整体淡入；Esc 照常关上
+  await waitUntil(page, '减少动态效果：月章换成 3D 图片', () => document.querySelector('.proof-tray').classList.contains('has-art'));
+  const rmSlot = page.locator('.proof-slot[data-m]').first();
+  await rmSlot.click();
+  await waitUntil(page, '减少动态效果：月章打开', () => document.body.classList.contains('is-inspecting'));
+  const rmOpen = await page.evaluate(() => ({ tile: document.querySelector('#overlay').classList.contains('is-tile'), shown: !document.querySelector('#overlay').hidden }));
+  await page.keyboard.press('Escape');
+  await waitUntil(page, '减少动态效果：月章关上', () => document.querySelector('#overlay').hidden);
+  const rmClosed = await page.evaluate(() => ({ inspecting: document.body.classList.contains('is-inspecting'), tile: document.querySelector('#overlay').classList.contains('is-tile') }));
+  check('减少动态效果：点开月章不从原位起飞（遮罩没有 is-tile），Esc 照常关上', rmOpen.shown && !rmOpen.tile && !rmClosed.inspecting && !rmClosed.tile, JSON.stringify({ rmOpen, rmClosed }));
   await page.locator('.proof-pull').click();
   await page.locator('.heat-legend .heat-brand[data-id="codex"]').click();
   await page.locator('.heat-years [data-d="-1"]').click();
