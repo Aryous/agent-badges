@@ -3,9 +3,9 @@
 // 没活动是暗色珐琅，未来的日子一个小暗点，解锁了徽章的日子嵌一圈金边；中间写月份和 Token。
 // 背面：环带 + 月桂环抱月份数字（和全解锁徽章背面同一套月桂）。
 // 颜色用 medal: 前缀的色板键，由 medalPalette 按热力图的系列生成，组装时并进品牌色板。
-import { BEAD_R, HAIR_R, P, SMALL, STAGE_METALS, STAR, TEXT_R, laurel, pathItem } from './completionist.js';
-import { RING_FONT, hasGlyph } from '../../engine/text.js';
-import { formatCount } from '../../data/format.js';
+import { BEAD_R, HAIR_R, P, SMALL, STAGE_METALS, STAR, TEXT_R, laurel, pathItem } from '../brands/shared/completionist.js';
+import { RING_FONT, hasGlyph } from '../engine/text.js';
+import { formatCount } from '../data/format.js';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 const MONTHS_LONG = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];

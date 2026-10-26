@@ -5,7 +5,7 @@ import { validateBadge } from '../src/engine/validate.js';
 import { buildBadge, disposeBadge } from '../src/engine/badge.js';
 import { SUNK } from '../src/viewer/heatmap.js';
 import { svgShapes } from '../src/engine/svgpath.js';
-import { RB, TRACK_H, beadAt, gemHex, gemKey, medalPalette, monthMedalConfig, monthMedalData } from '../src/brands/shared/month-medal.js';
+import { RB, TRACK_H, beadAt, gemHex, gemKey, medalPalette, monthMedalConfig, monthMedalData } from '../src/viewer/month-medal.js';
 
 const series = [
   { id: 'claude-code', color: '#D97757' },
