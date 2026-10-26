@@ -83,6 +83,31 @@ const PRESETS = {
     specularIntensity: 1,
   }),
 
+  // 月章上的珐琅：比 enamel 哑。满清漆在月章这种小件上会映出整片灯箱、把颜色冲白
+  'enamel-matte': (c) => ({
+    color: c,
+    metalness: 0,
+    roughness: 0.68,
+    clearcoat: 0.25,
+    clearcoatRoughness: 0.35,
+    envMapIntensity: 0.12,
+    specularIntensity: 0.35,
+  }),
+
+  // 火珐琅珠（月章上每天一颗）：高光泽的彩色金属，不透光；自身带一点同色的光，暗处也看得出颜色
+  'fired-enamel': (c) => ({
+    color: c,
+    metalness: 0.9,
+    roughness: 0.03,
+    clearcoat: 1,
+    clearcoatRoughness: 0.02,
+    envMapIntensity: 2.2,
+    ior: 1.77,
+    specularIntensity: 1,
+    emissive: c,
+    emissiveIntensity: 0.08,
+  }),
+
   locked: (c) => ({
     color: c,
     metalness: 0.35,

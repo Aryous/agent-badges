@@ -10,6 +10,8 @@ export const MATERIAL_TYPES = [
   'holographic',     // 全息镭射
   'anodized',        // 阳极氧化铝
   'crystal',         // 水晶宝石
+  'enamel-matte',    // 哑光珐琅（月章）
+  'fired-enamel',    // 火珐琅珠（月章）：高光泽彩色金属
   'locked',          // 未解锁剪影
 ];
 
