@@ -585,11 +585,19 @@ async function proofCycle(page) {
     const slot = document.querySelector(`.proof-slot[data-m="${m}"]`);
     const art = slot.querySelector('.proof-art');
     const r = art.getBoundingClientRect();
-    const w = (window.__earlyWatch = { during: art.getAnimations().some((a) => a.animationName === 'proof-settle'), lifted: false, replayed: false, done: false, opacity: '' });
+    const w = (window.__earlyWatch = { during: false, lifted: false, replayed: false, done: false, opacity: '' });
+    // 抬起只有 0.19 秒，慢的一帧会错过：用 class 变动来记。加上 is-lifting 那一刻，旧的 class 里还没有 is-settled，才算落定中点开的
+    new MutationObserver((list, obs) => {
+      for (const r of list) {
+        if (w.lifted || (r.oldValue ?? '').includes('is-lifting') || !slot.classList.contains('is-lifting')) continue;
+        w.lifted = true;
+        w.during = !(r.oldValue ?? '').includes('is-settled');
+        obs.disconnect();
+      }
+    }).observe(slot, { attributes: true, attributeFilter: ['class'], attributeOldValue: true });
     const tick = () => {
-      if (slot.classList.contains('is-lifting')) w.lifted = true;
       // 抬起时停掉落定动画是对的；抬起结束以后又出现，就是重播了
-      else if (w.lifted && art.getAnimations().some((a) => a.animationName === 'proof-settle')) w.replayed = true;
+      if (w.lifted && !slot.classList.contains('is-lifting') && art.getAnimations().some((a) => a.animationName === 'proof-settle')) w.replayed = true;
       if (!window.__escAt || performance.now() - window.__escAt < 1200) return requestAnimationFrame(tick);
       w.opacity = getComputedStyle(art).opacity;
       w.done = true;
@@ -603,12 +611,12 @@ async function proofCycle(page) {
   await page.evaluate(() => (window.__escAt = performance.now()));
   await page.keyboard.press('Escape');
   await waitUntil(page, '落定中点开的月章关上', () => document.querySelector('#overlay').hidden);
-  await waitUntil(page, '飞回后 1.2 秒', () => window.__earlyWatch.done);
+  await waitUntil(page, '落定中点开的月章：Esc 后 1.2 秒', () => window.__earlyWatch.done);
   const earlyWatch = await page.evaluate(() => window.__earlyWatch);
   check('落定还没播完就点开月章：落定动画不从头重播，飞回后不透明', earlyWatch.during && earlyWatch.lifted && !earlyWatch.replayed && earlyWatch.opacity === '1', JSON.stringify(earlyWatch));
 
   // 等滑盖和落定动画都走完（软件渲染一帧要一两秒，不能按固定时间等）
-  await waitUntil(page, '礼盒里的动画走完', () => document.querySelector('.proof').getAnimations({ subtree: true }).length === 0);
+  await waitUntil(page, '滑盖和托盘里的动画走完', () => ['.proof-sheet', '.proof-tray'].every((s) => document.querySelector(s).getAnimations({ subtree: true }).length === 0));
 
   const bead = await page.evaluate(() => {
     const c = document.querySelector('.proof-slot[data-m] .proof-hit circle[data-date]');
@@ -640,14 +648,24 @@ async function proofCycle(page) {
     JSON.stringify(medalOpen),
   );
 
-  // 从按下 Esc 起逐帧看 1.2 秒（飞回 + 落定）：那一格的 3D 图片不能重播落定动画
+  // 从按下 Esc 起逐帧看，直到那一格去掉 is-out（月章落回凹槽）后再看 0.4 秒：3D 图片不能重播落定动画
   await page.evaluate((m) => {
-    const art = document.querySelector(`.proof-slot[data-m="${m}"] .proof-art`);
-    const w = (window.__settleWatch = { replayed: false, done: false, opacity: '' });
+    const slot = document.querySelector(`.proof-slot[data-m="${m}"]`);
+    const art = slot.querySelector('.proof-art');
+    const w = (window.__settleWatch = { back: false, replayed: false, done: false, opacity: '' });
+    let backAt = 0;
     const t0 = performance.now();
+    new MutationObserver((list, obs) => {
+      if (!list.some((r) => (r.oldValue ?? '').includes('is-out')) || slot.classList.contains('is-out')) return;
+      w.back = true;
+      backAt = performance.now();
+      obs.disconnect();
+    }).observe(slot, { attributes: true, attributeFilter: ['class'], attributeOldValue: true });
     const tick = () => {
       if (art.getAnimations().some((a) => a.animationName === 'proof-settle')) w.replayed = true;
-      if (performance.now() - t0 < 1200) return requestAnimationFrame(tick);
+      // 一直没落回来也不无限等：20 秒后收尾，back 是 false，检查照常失败
+      const over = w.back ? performance.now() - backAt >= 400 : performance.now() - t0 >= 20000;
+      if (!over) return requestAnimationFrame(tick);
       w.opacity = getComputedStyle(art).opacity;
       w.done = true;
     };
@@ -660,9 +678,9 @@ async function proofCycle(page) {
     return { focused: document.activeElement === slot, out: slot.classList.contains('is-out'), tile: document.querySelector('#overlay').classList.contains('is-tile') };
   }, slotM);
   check('Esc 关上：焦点回到那一格，凹槽里的月章回来了', medalBack.focused && !medalBack.out && !medalBack.tile, JSON.stringify(medalBack));
-  await waitUntil(page, '飞回后 1.2 秒', () => window.__settleWatch.done);
+  await waitUntil(page, '月章落回凹槽后 0.4 秒', () => window.__settleWatch.done);
   const settle = await page.evaluate(() => window.__settleWatch);
-  check('飞回落定后月章不透明，落定动画没有重播', !settle.replayed && settle.opacity === '1', JSON.stringify(settle));
+  check('飞回落定后月章不透明，落定动画没有重播', settle.back && !settle.replayed && settle.opacity === '1', JSON.stringify(settle));
 
   await page.locator(`.proof-slot[data-m="${slotM}"]`).focus();
   await page.keyboard.press('Enter');
