@@ -211,3 +211,79 @@
 .inspector.is-exporting .info > :not(.actions) {
   opacity: 0;
 }
+
+/* ---------- 月章：从托盘飞出、飞回时，画布不跟着遮罩淡入淡出，只有背景淡 ---------- */
+
+.overlay.is-tile {
+  opacity: 1;
+  transition: none;
+  background: none;
+}
+
+.overlay.is-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 70% at 50% 42%, var(--bg-lift) 0%, var(--bg) 70%);
+  background-color: var(--bg);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.overlay.is-tile.is-open::before {
+  opacity: 1;
+}
+
+/* ---------- 月章的数字和图例 ---------- */
+
+.medal-facts {
+  margin: 14px 0 0;
+  width: 100%;
+  max-width: 360px;
+}
+
+.medal-facts div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.medal-facts dt {
+  color: var(--dim);
+}
+
+.medal-facts dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.medal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.medal-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.medal-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* 金边和热力图的 --plate-ring 同色；那个变量只在热力图里定义，遮罩里用不到，这里直接写色值 */
+.medal-legend i.is-ring {
+  box-sizing: border-box;
+  border: 1.5px solid #d9bf86;
+  background: #141f4d;
+}

@@ -30,6 +30,20 @@ export function computeFocusLayout(view, reserve = {}) {
   return { x: 0, y, r, scale: r / 1.06 };
 }
 
+/**
+ * 屏幕上的一个矩形（比如托盘里月章的图片）换算成舞台坐标：holder 摆在 (x, y, 0)、缩放 scale 时，
+ * 徽章正好盖住这个矩形。fill 是那张图片截图时的 fill（徽章含 1.06 余量的直径占边长的比例）。
+ * 舞台画布铺满窗口，矩形用视口坐标。
+ */
+export function rectToWorld(view, rect, fill) {
+  const ppu = view.height / 2 / view.halfH;
+  return {
+    x: (rect.left + rect.width / 2 - view.width / 2) / ppu,
+    y: (view.height / 2 - (rect.top + rect.height / 2)) / ppu,
+    scale: (rect.width * fill) / 2 / 1.06 / ppu,
+  };
+}
+
 export function createInspector({ stage }) {
   const { renderer, view } = stage;
   const el = renderer.domElement;

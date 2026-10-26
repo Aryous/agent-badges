@@ -1,10 +1,13 @@
 import { setEngravingSize } from '../engine/badge.js';
 import { badgeDescription, tierKey, tierLabel, upperTitle } from '../brands/shared/text.js';
 import { describeCompletionist, describeState, fmtDate } from '../viewer/describe.js';
-import { COMPLETIONIST_ID } from '../brands/shared/completionist.js';
+import { COMPLETIONIST_ID, STAGE_METALS } from '../brands/shared/completionist.js';
 import { playAward } from '../viewer/award-animation.js';
 import { t } from '../viewer/i18n.js';
 import { formatCount } from '../data/format.js';
+import { lerp, ease } from '../viewer/anim.js';
+import { rectToWorld } from '../viewer/inspector.js';
+import { splitBackground } from '../viewer/heatmap.js';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -37,7 +40,60 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     }
   }
 
+  const MONTHS_EN = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+
+  /** 月章：年份 · 金属，月份，三行数字和图例；没有等级阶梯、进度条和获得动画。 */
+  function fillMedalInfo({ info }) {
+    const kicker = $('[data-kicker]');
+    kicker.textContent = t('medal.metal', { year: info.year, metal: t(`completionist.${STAGE_METALS[info.tier]}`) });
+    kicker.style.color = '';
+    $('[data-title]').textContent = t('proof.months')[info.month];
+    const subtitle = $('[data-title-en]');
+    subtitle.hidden = lang !== 'zh';
+    subtitle.textContent = `${MONTHS_EN[info.month]} ${info.year}`;
+    $('[data-desc]').hidden = true;
+    $('[data-tiers]').hidden = true;
+    $('[data-meter]').hidden = true;
+    $('[data-replay]').hidden = true;
+    $('[data-hint]').textContent = t('inspect.hintMedal');
+    const facts = $('[data-medal-facts]');
+    facts.hidden = false;
+    facts.innerHTML = '';
+    for (const [k, v] of [
+      [t('medal.tokens'), formatCount(info.tokens)],
+      [t('medal.days'), t('medal.daysValue', { n: info.active })],
+      [t('medal.unlocks'), t('medal.unlocksValue', { n: info.unlocks })],
+    ]) {
+      const row = document.createElement('div');
+      const dt = document.createElement('dt');
+      const dd = document.createElement('dd');
+      dt.textContent = k;
+      dd.textContent = v;
+      row.append(dt, dd);
+      facts.append(row);
+    }
+    const legend = $('[data-medal-legend]');
+    legend.hidden = false;
+    legend.innerHTML = '';
+    const swatch = (background, text, cls = '') => {
+      const span = document.createElement('span');
+      const i = document.createElement('i');
+      if (cls) i.className = cls;
+      if (background) i.style.background = background;
+      span.append(i, text);
+      legend.append(span);
+    };
+    for (const s of info.legend) swatch(s.color, s.name);
+    if (info.both) swatch(splitBackground(info.both[0], info.both[1]), t('heat.both'));
+    swatch(null, t('heat.unlock'), 'is-ring');
+  }
+
   function fillInfo(item) {
+    const medal = item.kind === 'medal';
+    $('[data-medal-facts]').hidden = !medal;
+    $('[data-medal-legend]').hidden = !medal;
+    $('[data-desc]').hidden = medal;
+    if (medal) return fillMedalInfo(item);
     const { config, state } = item;
     const d = describeState(config, state);
     // 全解锁徽章：副标题写阶段或完成日期，进度条后面写下一阶段
@@ -99,19 +155,22 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     return { top: back.bottom + 16, bottom: window.innerHeight - info.top + 20 };
   }
 
-  function open(item, { award = true, viaKeyboard = false } = {}) {
+  /** 一枚徽章离开单枚查看：移出场景、释放刻字；月章还要让托盘里的那一格露出来，并释放它自己的显卡资源。 */
+  function release(item) {
+    stage.scene.remove(item.holder);
+    setEngravingSize(item.badge, 0);
+    item.away?.(false);
+    item.dispose?.();
+  }
+
+  function open(item, { award = true, viaKeyboard = false, from = null } = {}) {
     if (mode === 'inspect' && inspector.current === item) return;
     clearTimeout(closeTimer);
+    tweens.cancel('home');
     // 关闭动画没播完就打开了另一枚：上一枚的收尾被取消了，现在补上
-    if (closing && closing !== item) {
-      stage.scene.remove(closing.holder);
-      setEngravingSize(closing.badge, 0);
-    }
+    if (closing && closing !== item) release(closing);
     closing = null;
-    if (inspector.current && inspector.current !== item) {
-      stage.scene.remove(inspector.current.holder);
-      setEngravingSize(inspector.current.badge, 0);
-    }
+    if (inspector.current && inspector.current !== item) release(inspector.current);
     ensureBuilt(item);
     // 打开时才生成刻字，停稳后渲染循环再换成 2048；关闭动画里又打开同一枚时它还留着刻字，不用重做
     if (!item.badge.getObjectByName('back').userData.engravingSize) setEngravingSize(item.badge, 1024);
@@ -125,9 +184,21 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
 
     item.pivot.rotation.set(0, 0, 0);
     const { layout } = inspector;
-    item.holder.position.set(layout.x, layout.y, 0);
-    item.holder.scale.setScalar(layout.scale * 0.6);
+    // 月章从托盘里的原位置起飞；其他徽章照旧从中央、略小的位置放大
+    const start = from ? rectToWorld(stage.view, from, item.fill) : null;
+    if (start) {
+      item.holder.position.set(start.x, start.y, 0);
+      item.holder.scale.setScalar(start.scale);
+    } else {
+      item.holder.position.set(layout.x, layout.y, 0);
+      item.holder.scale.setScalar(layout.scale * 0.6);
+    }
+    // 从原位置起飞时，画布不跟着遮罩淡入，只有背景淡入：月章一直看得见
+    overlay.classList.toggle('is-tile', Boolean(start));
+    item.away?.(true);
     stage.scene.add(item.holder);
+    // 托盘里那一格这一刻已经藏起来了：马上画一帧，不等渲染循环的下一帧，免得空一帧
+    if (start) stage.renderer.render(stage.scene, stage.camera);
     inspector.open(item);
     exportPanel.set(false);
     loop.start();
@@ -135,7 +206,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
       overlay.classList.add('is-open');
       inspectorEl.classList.add('is-open');
     });
-    history.replaceState(null, '', `#${item.config.id}`);
+    if (item.kind !== 'medal') history.replaceState(null, '', `#${item.config.id}`);
     // 只有用键盘打开时才把焦点移进来，避免鼠标用户看到焦点框
     if (viaKeyboard) $('[data-close]').focus({ preventScroll: true });
     if (award && awardable(item)) runAward();
@@ -154,21 +225,43 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     exportPanel.set(false, { keepTextFaded: true }); // 文字跟着信息区淡出，关完再复原
     document.body.classList.remove('is-inspecting');
     history.replaceState(null, '', location.pathname + location.search);
+    // 月章：托盘里那一格看得见就飞回去（背景同时淡出），看不见就和其他徽章一样整体淡出
+    const home = item?.home?.();
+    if (home) flyHome(item, rectToWorld(stage.view, home, item.fill));
+    else overlay.classList.remove('is-tile');
     closing = item;
     closeTimer = setTimeout(() => {
       closing = null;
       overlay.hidden = true;
+      overlay.classList.remove('is-tile');
       exportPanel.set(false); // 遮罩已藏起来，这时复原说明文字不会被看到
-      if (item) {
-        stage.scene.remove(item.holder);
-        setEngravingSize(item.badge, 0); // 关上后释放刻字，换回共用的占位贴图
-      }
+      if (item) release(item); // 关上后释放刻字，换回共用的占位贴图
       loop.stop();
       ctx.emit('inspecting', false);
       onClosed.forEach((resolve) => resolve());
       onClosed = [];
     }, 320);
     item?.tile.focus({ preventScroll: true });
+  }
+
+  /** 飞回托盘：翻回正面、回正，落到原位置。0.3 秒，在 320 毫秒的收尾之前落定。 */
+  function flyHome(item, to) {
+    const h = item.holder;
+    const p = item.pivot;
+    const from = { x: h.position.x, y: h.position.y, z: h.position.z, s: h.scale.x, ry: p.rotation.y, rx: p.rotation.x };
+    tweens.add({
+      key: 'home',
+      duration: 0.3,
+      easing: ease.inOutCubic,
+      update: (t) => {
+        h.position.set(lerp(from.x, to.x, t), lerp(from.y, to.y, t), lerp(from.z, 0, t));
+        h.scale.setScalar(lerp(from.s, to.scale, t));
+        p.rotation.y = lerp(from.ry, 0, t);
+        p.rotation.x = lerp(from.rx, 0, t);
+        // 关闭后渲染循环的指纹里没有这一枚，看不出它在动；每帧从头画，免得超采样把飞行轨迹叠成残影
+        ctx.accum.reset();
+      },
+    });
   }
 
   $('[data-close]').addEventListener('click', close);
