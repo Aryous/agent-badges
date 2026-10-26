@@ -197,7 +197,8 @@
 }
 
 /* 铸币一枚枚落定：从上方 14px、略小、透明，回弹到位，依次错开 45ms */
-.proof.is-revealing .proof-medal {
+.proof.is-revealing .proof-medal,
+.proof.is-revealing .proof-art {
   animation: proof-settle 0.7s cubic-bezier(0.3, 1.3, 0.5, 1) both;
   animation-delay: calc(var(--i) * 45ms + 250ms);
 }
@@ -323,4 +324,90 @@
 
 .proof.is-narrow .proof-brass em {
   display: none;
+}
+
+/* ---------- 3D 月章：叠在 SVG 上，12 枚画好后一起换上 ---------- */
+
+/* SVG 和 3D 图片叠在同一格 */
+.proof-slot > .proof-medal,
+.proof-slot > .proof-art {
+  grid-area: 1 / 1;
+}
+
+.proof-art {
+  width: 96%;
+  aspect-ratio: 1;
+  position: relative;
+  visibility: hidden;
+  opacity: 0;
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.55));
+}
+
+.proof-art img,
+.proof-art .proof-hit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.proof-tray.has-art .proof-art {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.proof-tray.has-art .proof-medal {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.proof-tray.has-art.is-instant .proof-art,
+.proof-tray.has-art.is-instant .proof-medal {
+  transition: none;
+}
+
+/* 透明命中区：悬停时描一圈，和 SVG 珠子的悬停一样 */
+.proof-hit circle {
+  fill: transparent;
+}
+
+.proof-hit circle:hover {
+  stroke: rgba(243, 234, 214, 0.85);
+  stroke-width: 0.014;
+}
+
+/* 能点开的月章 */
+.proof-slot[role='button'] {
+  cursor: pointer;
+}
+
+.proof-slot[role='button']:focus {
+  outline: none;
+}
+
+.proof-slot[role='button']:focus-visible {
+  outline: 2px solid var(--plate-ring);
+  outline-offset: 3px;
+}
+
+/* 点开前在原位抬起一下 */
+.proof-slot.is-lifting .proof-art {
+  transform: translateY(-4px) scale(1.04);
+  transition: transform 0.19s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* 飞出去以后托盘里留一个空凹槽 */
+.proof-slot.is-out .proof-art,
+.proof-slot.is-out .proof-medal {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proof-tray.has-art .proof-art,
+  .proof-tray.has-art .proof-medal {
+    transition: none;
+  }
 }

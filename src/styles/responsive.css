@@ -75,7 +75,8 @@
     transition: none;
   }
 
-  .proof.is-revealing .proof-medal {
+  .proof.is-revealing .proof-medal,
+  .proof.is-revealing .proof-art {
     animation: none;
   }
 }

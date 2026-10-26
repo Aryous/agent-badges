@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { PLATE_MIN, caseLayout, isSealed, mintedMonths, monthStats, monthSums, monthTier, plaqueStatus } from '../src/viewer/proof-set.js';
+import { PLATE_MIN, artKey, caseLayout, isSealed, medalHitSvg, mintedMonths, monthStats, monthSums, monthTier, plaqueStatus } from '../src/viewer/proof-set.js';
+import { beadAt } from '../src/viewer/month-medal.js';
 import { t } from '../src/viewer/i18n.js';
 
 // 两个工具的按天用量：[Token, 对话轮数]
@@ -118,5 +119,32 @@ describe('礼盒的版式和铸币直径', () => {
     expect(caseLayout({ width: 700, plateHeight: PLATE_MIN }).narrow).toBe(false);
     expect(caseLayout({ width: 699, plateHeight: PLATE_MIN }).narrow).toBe(true);
     expect(caseLayout({ width: 358, plateHeight: PLATE_MIN }).narrow).toBe(true);
+  });
+});
+
+describe('月章 3D 图片', () => {
+  it('缓存键：年份加排好序的工具，顺序不同也是同一个键', () => {
+    expect(artKey(2026, ['codex', 'claude-code'])).toBe('2026|claude-code,codex');
+    expect(artKey(2026, ['claude-code', 'codex'])).toBe(artKey(2026, ['codex', 'claude-code']));
+    expect(artKey(2025, ['codex'])).toBe('2025|codex');
+  });
+
+  it('悬停命中区：每个不是未来的日子一个透明圆，位置和 3D 珠子对齐', () => {
+    const medal = {
+      days: [
+        { date: '2026-04-01', future: false, parts: [], unlocks: 0 },
+        { date: '2026-04-02', future: false, parts: [{ series: 0, level: 1 }], unlocks: 0 },
+        { date: '2026-04-03', future: true, parts: [], unlocks: 0 },
+      ],
+    };
+    const svg = medalHitSvg(medal, 0.94);
+    const dates = [...svg.matchAll(/data-date="([^"]+)"/g)].map((m) => m[1]);
+    expect(dates).toEqual(['2026-04-01', '2026-04-02']);
+    // 视口：徽章半径是 1，图片边长对应 2 × 1.06 / fill
+    const half = 1.06 / 0.94;
+    expect(svg).toContain(`viewBox="${(-half).toFixed(4)} ${(-half).toFixed(4)} ${(2 * half).toFixed(4)} ${(2 * half).toFixed(4)}"`);
+    // SVG 的 y 朝下
+    const [x, y] = beadAt(1, 3);
+    expect(svg).toContain(`cx="${x.toFixed(4)}" cy="${(-y).toFixed(4)}"`);
   });
 });

@@ -6,6 +6,7 @@ import { today } from '../data/calendar.js';
 import { formatCount } from '../data/format.js';
 import { STAGE_METALS } from '../brands/shared/completionist.js';
 import { t } from './i18n.js';
+import { beadAt, monthMedalData } from './month-medal.js';
 
 /**
  * 礼盒的尺寸（px）。托盘永远 6 × 2；礼盒永远和板子一样高，放不下 6 枚时托盘横向滑动。
@@ -151,6 +152,31 @@ export function medalSvg({ year, month, rim, label, tokens, partsOf, markersOn, 
   </svg>`;
 }
 
+/** 月章截图时，徽章（含 1.06 的余量）占画布的比例。托盘图片、命中区、飞出飞回都按它对齐。 */
+export const MEDAL_FILL = 0.94;
+
+/** 3D 图片的缓存键：年份 + 开着的工具（排序后）。 */
+export const artKey = (year, enabled) => `${year}|${[...enabled].sort().join(',')}`;
+
+/**
+ * 盖在 3D 图片上的透明命中区：每个不是未来的日子一个圆，带 data-date，接热力图的悬停浮层。
+ * 坐标和 3D 珠子同一套（beadAt）；徽章半径是 1，图片边长对应 2 × 1.06 / fill（截图时的余量）。
+ */
+export function medalHitSvg(medal, fill) {
+  const half = 1.06 / fill;
+  const n = medal.days.length;
+  const dots = medal.days
+    .map((d, i) => {
+      if (d.future) return '';
+      const [x, y] = beadAt(i, n);
+      return `<circle cx="${x.toFixed(4)}" cy="${(-y).toFixed(4)}" r="0.062" data-date="${d.date}"/>`;
+    })
+    .join('');
+  const v = (-half).toFixed(4);
+  const s = (2 * half).toFixed(4);
+  return `<svg class="proof-hit" viewBox="${v} ${v} ${s} ${s}" aria-hidden="true" focusable="false">${dots}</svg>`;
+}
+
 // ---------- 礼盒和滑盖 ----------
 
 let uid = 0;
@@ -162,8 +188,12 @@ let uid = 0;
  * @param {ReturnType<import('./heatmap.js').createHeatmap>} opts.heatmap
  * @param {Record<string, string>} opts.palette  品牌色板：取阶段金属（锡、铜、银、金）
  * @param {boolean} [opts.reducedMotion]
+ * @param {{ request: (key: string, medals: { month: number, tier: number, data: object }[]) => Promise<(string|null)[] | null>, hurry: () => void }} [opts.art]
+ *   3D 图片：request 按缓存键要一组图片地址，和 medals（按月份从小到大）一一对应，画不出来给 null；hurry 是抽屉打开时催一下
+ * @param {(o: { slot: HTMLElement, medal: { month: number, tier: number, data: object }, viaKeyboard: boolean, art: boolean }) => void} [opts.onOpen]
+ *   点开一枚月章（单枚查看）。art 表示当时托盘显示的是不是 3D 图片。不给时月章只是图片，不能点开
  */
-export function createProofSet({ heatmap, palette, reducedMotion = false }) {
+export function createProofSet({ heatmap, palette, reducedMotion = false, art = null, onOpen = null }) {
   const id = `proof-set-${++uid}`;
   const rims = STAGE_METALS.map((k) => palette[k]);
   const plate = heatmap.plate;
@@ -209,6 +239,7 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
   let year = heatmap.year;
   const timers = [];
   const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+  const still = () => reducedMotion || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
   let spoken = ''; // 读屏名字里的状态：铭牌上写英文，这里按界面语言写
   function labels() {
@@ -218,6 +249,9 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
   }
 
   // ---------- 内容：跟着热力图的年份和工具开关 ----------
+  let medals = []; // 当前年份和工具下铸好的月章：{ month, tier, data }，按月份排
+  let artToken = 0;
+
   function render({ year: y, enabled }) {
     year = y;
     const now = today();
@@ -229,6 +263,14 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
     const minted = new Set(mintedMonths(stats, year, now));
     const max = Math.max(0, ...[...minted].map((m) => stats[m].tokens));
     const months = t('months');
+    medals = [...minted]
+      .sort((a, b) => a - b)
+      .map((m) => ({
+        month: m,
+        tier: monthTier(stats[m].tokens, max),
+        data: monthMedalData({ year, month: m, tokens: stats[m].tokens, activeDays: stats[m].days, series: heatmap.series, partsOf: heatmap.partsOf, markersOn: heatmap.markersOn, now }),
+      }));
+    tray.classList.remove('has-art');
     tray.innerHTML = stats
       .map((s, m) => {
         if (!minted.has(m)) {
@@ -238,13 +280,44 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
         const metal = t(`completionist.${STAGE_METALS[tier]}`);
         const label = t('proof.medal', { month: monthName(m), tokens: formatCount(s.tokens), days: s.days, metal });
         const svg = medalSvg({ year, month: m, rim: rims[tier], label: months[m], tokens: s.tokens, partsOf: heatmap.partsOf, markersOn: heatmap.markersOn, now });
-        return `<div class="proof-slot" role="img" aria-label="${escape(label)}" style="--i:${m}"><div class="proof-medal" data-tier="${tier}">${svg}</div></div>`;
+        // 能点开时是按钮（Enter、Space 打开）；落地页这类不能点开的地方仍是图片
+        const role = onOpen ? 'role="button" tabindex="0"' : 'role="img"';
+        return `<div class="proof-slot" ${role} aria-label="${escape(label)}" data-m="${m}" style="--i:${m}"><div class="proof-medal" data-tier="${tier}">${svg}</div><div class="proof-art" aria-hidden="true"></div></div>`;
       })
       .join('');
     box.querySelector('[data-year]').textContent = year;
     box.querySelector('[data-status]').textContent = plaqueStatus(year, minted.size, now);
     spoken = isSealed(year, now) ? t('proof.sealed') : t('proof.minting', { n: minted.size });
     labels();
+    requestArt(enabled);
+  }
+
+  /** 要 3D 图片：全部画好、解码好以后一次换上；中途换了年份或工具就作废。画不出来就一直用 SVG。 */
+  async function requestArt(enabled) {
+    if (!art || !medals.length) return;
+    const token = ++artToken;
+    const list = medals;
+    const urls = await art.request(artKey(year, enabled), list);
+    if (token !== artToken || !urls) return;
+    const imgs = urls.map((src) => {
+      if (!src) return null;
+      const img = new Image();
+      img.alt = '';
+      img.draggable = false;
+      img.src = src;
+      return img;
+    });
+    await Promise.all(imgs.filter(Boolean).map((img) => img.decode().catch(() => {})));
+    if (token !== artToken) return;
+    list.forEach((md, i) => {
+      const host = tray.querySelector(`.proof-slot[data-m="${md.month}"] .proof-art`);
+      if (!host || !imgs[i]) return;
+      host.replaceChildren(imgs[i]);
+      host.insertAdjacentHTML('beforeend', medalHitSvg(md.data, MEDAL_FILL));
+    });
+    // 抽屉关着、或者不要动画时直接换；开着时淡入（12 枚一起）
+    tray.classList.toggle('is-instant', !open || still());
+    tray.classList.add('has-art');
   }
 
   // ---------- 尺寸：礼盒就是板子的高度，铸币按它排；宽度只决定铭牌栏是不是竖条 ----------
@@ -280,8 +353,6 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
   new ResizeObserver(fit).observe(plate);
 
   // ---------- 滑盖：打开是 抬起 → 滑上去 → 铸币落定；关上倒过来，先滑回来再放下 ----------
-  const still = () => reducedMotion || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
   function settle() {
     box.classList.remove('is-revealing');
     void tray.offsetWidth; // 重新触发落定动画
@@ -298,6 +369,7 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
     // 打开时板子上的控件被盖住：不能再用 Tab 走进去；礼盒关着时读屏也读不到里面
     plate.inert = open;
     if (open) {
+      art?.hurry();
       caseEl.inert = false;
       scrollToMonth();
       box.classList.add('is-shown');
@@ -359,6 +431,25 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
     toggle();
   });
 
+  // 点开一枚月章：交给 onOpen（单枚查看）。托盘横向滑动时的点击不受影响：滑动不会触发 click
+  function openSlot(slot, viaKeyboard) {
+    const medal = medals.find((md) => md.month === Number(slot.dataset.m));
+    if (!onOpen || !medal) return;
+    heatmap.hideTip();
+    onOpen({ slot, medal, viaKeyboard, art: tray.classList.contains('has-art') });
+  }
+  tray.addEventListener('click', (e) => {
+    const slot = e.target.closest('.proof-slot[data-m]');
+    if (slot) openSlot(slot, e.detail === 0);
+  });
+  tray.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const slot = e.target.closest?.('.proof-slot[data-m]');
+    if (!slot) return;
+    e.preventDefault(); // 空格不滚动页面
+    openSlot(slot, true);
+  });
+
   // 悬停珠子：和热力图一样显示当天详情
   tray.addEventListener('pointerover', (e) => {
     const bead = e.target.closest?.('[data-date]');
@@ -377,6 +468,9 @@ export function createProofSet({ heatmap, palette, reducedMotion = false }) {
       return open;
     },
     toggle,
+    get medals() {
+      return medals;
+    },
   };
 }
 
