@@ -364,6 +364,17 @@
   transition: opacity 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
+/* 换上 3D 图片后，SVG 不再受落定动画控制，才能淡出 */
+.proof-tray.has-art .proof-medal {
+  animation: none;
+}
+
+/* 抽屉开着时换上：不重播落定动画，只淡入。SVG 先停在不透明，再淡出，和图片交叉淡化 */
+.proof-tray.is-fading .proof-medal,
+.proof-tray.is-fading .proof-art {
+  animation: none;
+}
+
 .proof-tray.has-art.is-instant .proof-art,
 .proof-tray.has-art.is-instant .proof-medal {
   transition: none;

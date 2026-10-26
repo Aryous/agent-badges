@@ -315,8 +315,12 @@ export function createProofSet({ heatmap, palette, reducedMotion = false, art = 
       host.replaceChildren(imgs[i]);
       host.insertAdjacentHTML('beforeend', medalHitSvg(md.data, MEDAL_FILL));
     });
-    // 抽屉关着、或者不要动画时直接换；开着时淡入（12 枚一起）
-    tray.classList.toggle('is-instant', !open || still());
+    // 抽屉关着、或者不要动画时直接换；开着时淡入（12 枚一起），不重播落定动画
+    const fade = open && !still();
+    tray.classList.toggle('is-instant', !fade);
+    tray.classList.toggle('is-fading', fade);
+    // 先停掉落定动画（SVG 停在不透明、图片停在透明），再换上，交叉淡化才有起点
+    if (fade) void tray.offsetWidth;
     tray.classList.add('has-art');
   }
 
@@ -386,7 +390,11 @@ export function createProofSet({ heatmap, palette, reducedMotion = false, art = 
       later(() => (busy = false), 1000);
     } else {
       caseEl.inert = true;
-      const done = () => box.classList.remove('is-shown', 'is-revealing');
+      // 下次打开时 3D 图片也跟着落定
+      const done = () => {
+        box.classList.remove('is-shown', 'is-revealing');
+        tray.classList.remove('is-fading');
+      };
       if (still()) {
         box.classList.remove('is-open', 'is-lifted');
         done();
@@ -443,7 +451,7 @@ export function createProofSet({ heatmap, palette, reducedMotion = false, art = 
     if (slot) openSlot(slot, e.detail === 0);
   });
   tray.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (!onOpen || (e.key !== 'Enter' && e.key !== ' ')) return;
     const slot = e.target.closest?.('.proof-slot[data-m]');
     if (!slot) return;
     e.preventDefault(); // 空格不滚动页面
