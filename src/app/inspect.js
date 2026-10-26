@@ -8,6 +8,7 @@ import { formatCount } from '../data/format.js';
 import { lerp, ease } from '../viewer/anim.js';
 import { rectToWorld } from '../viewer/inspector.js';
 import { splitBackground } from '../viewer/heatmap.js';
+import { MONTHS_LONG } from '../viewer/month-medal.js';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -27,6 +28,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
   let closeTimer = null;
   let closing = null; // 正在播关闭动画的那一枚，动画结束后移出场景
   let onClosed = []; // whenClosed 的等待者，完全关上（徽章移出场景）时放行
+  let landHome = null; // 飞回托盘的补间：收尾时还没落定就直接落到终点
 
   async function runAward() {
     if (awardRunning || !awardable(inspector.current)) return;
@@ -40,8 +42,6 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     }
   }
 
-  const MONTHS_EN = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
-
   /** 月章：年份 · 金属，月份，三行数字和图例；没有等级阶梯、进度条和获得动画。 */
   function fillMedalInfo({ info }) {
     const kicker = $('[data-kicker]');
@@ -50,7 +50,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     $('[data-title]').textContent = t('proof.months')[info.month];
     const subtitle = $('[data-title-en]');
     subtitle.hidden = lang !== 'zh';
-    subtitle.textContent = `${MONTHS_EN[info.month]} ${info.year}`;
+    subtitle.textContent = `${MONTHS_LONG[info.month]} ${info.year}`;
     $('[data-desc]').hidden = true;
     $('[data-tiers]').hidden = true;
     $('[data-meter]').hidden = true;
@@ -167,6 +167,7 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     if (mode === 'inspect' && inspector.current === item) return;
     clearTimeout(closeTimer);
     tweens.cancel('home');
+    landHome = null;
     // 关闭动画没播完就打开了另一枚：上一枚的收尾被取消了，现在补上
     if (closing && closing !== item) release(closing);
     closing = null;
@@ -195,7 +196,8 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     }
     // 从原位置起飞时，画布不跟着遮罩淡入，只有背景淡入：月章一直看得见
     overlay.classList.toggle('is-tile', Boolean(start));
-    item.away?.(true);
+    // 飞出去时托盘里才留空凹槽；不飞（减少动态效果、SVG）时那一格一直在，遮罩淡入盖住它
+    if (start) item.away?.(true);
     stage.scene.add(item.holder);
     // 托盘里那一格这一刻已经藏起来了：马上画一帧，不等渲染循环的下一帧，免得空一帧
     if (start) stage.renderer.render(stage.scene, stage.camera);
@@ -235,6 +237,9 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
       overlay.hidden = true;
       overlay.classList.remove('is-tile');
       exportPanel.set(false); // 遮罩已藏起来，这时复原说明文字不会被看到
+      // 补间按帧走、这里按墙钟：慢的时候飞回还没走完，先落到终点再交还托盘
+      if (tweens.has('home')) landHome?.();
+      landHome = null;
       if (item) release(item); // 关上后释放刻字，换回共用的占位贴图
       loop.stop();
       ctx.emit('inspecting', false);
@@ -249,19 +254,20 @@ export function mount(ctx, { inspector, exportPanel, loop }) {
     const h = item.holder;
     const p = item.pivot;
     const from = { x: h.position.x, y: h.position.y, z: h.position.z, s: h.scale.x, ry: p.rotation.y, rx: p.rotation.x };
-    tweens.add({
-      key: 'home',
-      duration: 0.3,
-      easing: ease.inOutCubic,
-      update: (t) => {
-        h.position.set(lerp(from.x, to.x, t), lerp(from.y, to.y, t), lerp(from.z, 0, t));
-        h.scale.setScalar(lerp(from.s, to.scale, t));
-        p.rotation.y = lerp(from.ry, 0, t);
-        p.rotation.x = lerp(from.rx, 0, t);
-        // 关闭后渲染循环的指纹里没有这一枚，看不出它在动；每帧从头画，免得超采样把飞行轨迹叠成残影
-        ctx.accum.reset();
-      },
-    });
+    const update = (t) => {
+      h.position.set(lerp(from.x, to.x, t), lerp(from.y, to.y, t), lerp(from.z, 0, t));
+      h.scale.setScalar(lerp(from.s, to.scale, t));
+      p.rotation.y = lerp(from.ry, 0, t);
+      p.rotation.x = lerp(from.rx, 0, t);
+      // 关闭后渲染循环的指纹里没有这一枚，看不出它在动；每帧从头画，免得超采样把飞行轨迹叠成残影
+      ctx.accum.reset();
+    };
+    tweens.add({ key: 'home', duration: 0.3, easing: ease.inOutCubic, update });
+    // 直接落到终点：停掉补间，摆到 t = 1
+    landHome = () => {
+      tweens.cancel('home');
+      update(1);
+    };
   }
 
   $('[data-close]').addEventListener('click', close);

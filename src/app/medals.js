@@ -9,6 +9,7 @@ import { gemKey, medalPalette, monthMedalConfig } from '../viewer/month-medal.js
 // 截图借陈列墙缩略图的那个舞台（整页仍只有一个 WebGL 上下文），一帧画一枚，单枚查看打开时暂停。
 // 什么时候开始画：陈列墙缩略图画完、浏览器空闲后（start），或者用户先拉开了抽屉（hurry）。
 // 结果按「年份 | 工具」缓存在内存里；画不出来（拿不到 WebGL 等）就返回 null，托盘一直用 SVG。
+// 托盘上的类名（is-lifting、is-settled、is-out 等）各由谁加、谁摘，见 styles/proof-set.css 的 3D 月章一节开头。
 
 const STATE = { unlocked: true, earnedAt: null, tier: null, progress: { current: 1, target: 1 } };
 const LIFT_MS = 190; // 托盘里原位抬起的时长，和 CSS 的 .is-lifting 一致
@@ -25,6 +26,7 @@ export function medalInfo(data, tier, series, palette) {
     active: data.active,
     unlocks: data.unlocks,
     legend,
+    // 按最多两个工具设计：只取前两个拼半色块
     both: data.tools.length > 1 ? [color(data.tools[0]), color(data.tools[1])] : null,
   };
 }
@@ -40,6 +42,8 @@ export function createMedals(ctx, { series, start, pause }) {
   let renderer = null;
   let hurry;
   const gate = Promise.race([start, new Promise((resolve) => (hurry = resolve))]);
+  // 缩略图画失败时 start 会拒绝；从没调过 request() 就没人接这个拒绝，这里先接住，免得报未处理
+  gate.catch(() => {});
 
   const mount = (data, tier) => {
     const config = monthMedalConfig(data, { tier });

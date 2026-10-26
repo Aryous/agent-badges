@@ -328,6 +328,19 @@
 
 /* ---------- 3D 月章：叠在 SVG 上，12 枚画好后一起换上 ---------- */
 
+/*
+ * 类名状态（app/medals.js 也读写其中几个，改名要两边一起改）：
+ * .proof-tray.has-art     已换上 3D 图片。requestArt 加，render 重画时摘；下面的显隐、淡入、抬起都以它为前提
+ * .proof-tray.is-fading   抽屉开着时换上：停掉落定动画，只交叉淡入。requestArt 加，render 摘，抽屉关完的 done() 也摘
+ * .proof-tray.is-instant  抽屉关着或不要动画时换上：关掉过渡。requestArt 加，render 摘
+ * .proof-slot.is-settled  这一格的落定动画播完了，摘掉动画免得重播。animationend 加；medals.js 抬起时连同 is-lifting 提前加；
+ *                         抽屉关完的 done() 摘，下次打开重新落定
+ * .proof-slot.is-lifting  点开前原位抬起。medals.js 加，open() 的 finally 里一定摘
+ * .proof-slot.is-out      飞出去后留空凹槽。item.away(true) 加（只在飞出时），inspect.js 的 release 里 away(false) 摘
+ * .overlay.is-tile        遮罩不整体淡入、只淡背景，月章从原位起飞时一直看得见。inspect.js 加和摘（样式在 inspector.css）
+ * 落定动画本身挂在 .proof.is-revealing 上，由 settle() 加、done() 摘
+ */
+
 /* SVG 和 3D 图片叠在同一格 */
 .proof-slot > .proof-medal,
 .proof-slot > .proof-art {
@@ -415,8 +428,9 @@
   outline-offset: 3px;
 }
 
-/* 点开前在原位抬起一下（停掉落定动画，不然它会把 transform 按住；比 is-instant 那条更具体，过渡才不被关掉） */
-.proof-tray .proof-slot.is-lifting .proof-art {
+/* 点开前在原位抬起一下（停掉落定动画，不然它会把 transform 按住）。
+   5 个类，比 is-instant 那条（4 个）更具体，过渡才不被关掉；只有 has-art 时才会抬起 */
+.proof-tray.has-art .proof-slot.is-lifting .proof-art {
   animation: none;
   transform: translateY(-4px) scale(1.04);
   transition: transform 0.19s cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -434,7 +448,7 @@
     transition: none;
   }
 
-  .proof-tray .proof-slot.is-lifting .proof-art {
+  .proof-tray.has-art .proof-slot.is-lifting .proof-art {
     transform: none;
     transition: none;
   }

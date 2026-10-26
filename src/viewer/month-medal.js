@@ -8,7 +8,7 @@ import { RING_FONT, hasGlyph } from '../engine/text.js';
 import { formatCount } from '../data/format.js';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-const MONTHS_LONG = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+export const MONTHS_LONG = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
 const pad2 = (n) => String(n).padStart(2, '0');
 
 // ---------- 颜色 ----------
@@ -109,7 +109,7 @@ function circleD(cx, cy, r, parts = r > 0.3 ? 8 : 2) {
 /** 半圆：side −1 左半，1 右半（左边是第一个工具，和热力图一样）。 */
 const halfD = (cx, cy, r, side) => `M${P([cx, cy + r])}A${r.toFixed(4)} ${r.toFixed(4)} 0 0 ${side < 0 ? 0 : 1} ${P([cx, cy - r])}Z`;
 
-/** 一颗珠子：没活动是暗色珐琅；一个工具一整颗火珐琅；两个工具左右各半。 */
+/** 一颗珠子：没活动是暗色珐琅；一个工具一整颗火珐琅；两个工具左右各半（按最多两个工具设计，第三个不会出现在珠子上）。 */
 function bead(day, [x, y], r) {
   if (!day.parts.length) return [{ kind: 'circle', radius: r, center: [x, y], material: 'enamel-matte', color: 'medal:sunk', ...TOP, segments: ROUND }];
   const key = (p) => gemKey(p.series, p.level);
