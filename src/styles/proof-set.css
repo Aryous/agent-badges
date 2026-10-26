@@ -364,6 +364,11 @@
   transition: opacity 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
+/* 3D 图片落定完就放手（最后一帧和平时一样），之后抬起的过渡才从静止处开始 */
+.proof.is-revealing .proof-art {
+  animation-fill-mode: backwards;
+}
+
 /* 换上 3D 图片后，SVG 不再受落定动画控制，才能淡出 */
 .proof-tray.has-art .proof-medal {
   animation: none;
@@ -404,8 +409,9 @@
   outline-offset: 3px;
 }
 
-/* 点开前在原位抬起一下 */
-.proof-slot.is-lifting .proof-art {
+/* 点开前在原位抬起一下（停掉落定动画，不然它会把 transform 按住；比 is-instant 那条更具体，过渡才不被关掉） */
+.proof-tray .proof-slot.is-lifting .proof-art {
+  animation: none;
   transform: translateY(-4px) scale(1.04);
   transition: transform 0.19s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
@@ -419,6 +425,11 @@
 @media (prefers-reduced-motion: reduce) {
   .proof-tray.has-art .proof-art,
   .proof-tray.has-art .proof-medal {
+    transition: none;
+  }
+
+  .proof-tray .proof-slot.is-lifting .proof-art {
+    transform: none;
     transition: none;
   }
 }

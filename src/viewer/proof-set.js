@@ -251,6 +251,7 @@ export function createProofSet({ heatmap, palette, reducedMotion = false, art = 
   // ---------- 内容：跟着热力图的年份和工具开关 ----------
   let medals = []; // 当前年份和工具下铸好的月章：{ month, tier, data }，按月份排
   let artToken = 0;
+  let artWarned = false; // 画不出来只提示一次
 
   function render({ year: y, enabled }) {
     year = y;
@@ -270,7 +271,7 @@ export function createProofSet({ heatmap, palette, reducedMotion = false, art = 
         tier: monthTier(stats[m].tokens, max),
         data: monthMedalData({ year, month: m, tokens: stats[m].tokens, activeDays: stats[m].days, series: heatmap.series, partsOf: heatmap.partsOf, markersOn: heatmap.markersOn, now }),
       }));
-    tray.classList.remove('has-art');
+    tray.classList.remove('has-art', 'is-fading', 'is-instant');
     tray.innerHTML = stats
       .map((s, m) => {
         if (!minted.has(m)) {
@@ -294,24 +295,32 @@ export function createProofSet({ heatmap, palette, reducedMotion = false, art = 
 
   /** 要 3D 图片：全部画好、解码好以后一次换上；中途换了年份或工具就作废。画不出来就一直用 SVG。 */
   async function requestArt(enabled) {
+    const token = ++artToken; // 先作废旧的请求，哪怕这次不要图片
     if (!art || !medals.length) return;
-    const token = ++artToken;
     const list = medals;
-    const urls = await art.request(artKey(year, enabled), list);
-    if (token !== artToken || !urls) return;
-    const imgs = urls.map((src) => {
-      if (!src) return null;
-      const img = new Image();
-      img.alt = '';
-      img.draggable = false;
-      img.src = src;
-      return img;
-    });
-    await Promise.all(imgs.filter(Boolean).map((img) => img.decode().catch(() => {})));
+    let imgs;
+    try {
+      const urls = await art.request(artKey(year, enabled), list);
+      if (token !== artToken) return;
+      // 缺一张就整盘不换：12 枚要么一起是 3D，要么一起是 SVG
+      if (!urls || urls.length !== list.length || urls.some((src) => !src)) return;
+      imgs = urls.map((src) => {
+        const img = new Image();
+        img.alt = '';
+        img.draggable = false;
+        img.src = src;
+        return img;
+      });
+      await Promise.all(imgs.map((img) => img.decode()));
+    } catch (err) {
+      if (!artWarned) console.warn('月章 3D 图片不可用，继续用 SVG', err);
+      artWarned = true;
+      return;
+    }
     if (token !== artToken) return;
     list.forEach((md, i) => {
       const host = tray.querySelector(`.proof-slot[data-m="${md.month}"] .proof-art`);
-      if (!host || !imgs[i]) return;
+      if (!host) return;
       host.replaceChildren(imgs[i]);
       host.insertAdjacentHTML('beforeend', medalHitSvg(md.data, MEDAL_FILL));
     });
@@ -451,7 +460,7 @@ export function createProofSet({ heatmap, palette, reducedMotion = false, art = 
     if (slot) openSlot(slot, e.detail === 0);
   });
   tray.addEventListener('keydown', (e) => {
-    if (!onOpen || (e.key !== 'Enter' && e.key !== ' ')) return;
+    if (!onOpen || e.repeat || (e.key !== 'Enter' && e.key !== ' ')) return;
     const slot = e.target.closest?.('.proof-slot[data-m]');
     if (!slot) return;
     e.preventDefault(); // 空格不滚动页面
