@@ -11,7 +11,7 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matc
  * 之前先显示刻度环。切换工具是整页跳转，新页面按新工具重新组装；WebGL 上下文丢了时 profile.disposeCoin() 换回刻度环。
  * 点开它时用一个临时 item 打开单枚查看：不在 ctx.items 里，陈列墙、总数、海报都不算它。
  */
-export function mount(ctx, { heatSeries, markers, currentDaily }) {
+export function mount(ctx, { heatSeries, markers, currentDaily, medals }) {
   const { $, items, PUBLIC } = ctx;
   // 3D 模型第一次打开时才组装（ensureBuilt），之后留着复用
   const coinItem = items.length ? completionistItem(ctx.completionist, items) : null;
@@ -45,6 +45,6 @@ export function mount(ctx, { heatSeries, markers, currentDaily }) {
     reducedMotion,
   });
   // 年度铸币套装藏在热力图板子下面（落地页不挂）
-  const proofSet = createProofSet({ heatmap, palette: ctx.brand.palette, reducedMotion });
+  const proofSet = createProofSet({ heatmap, palette: ctx.brand.palette, reducedMotion, art: medals ?? null, onOpen: medals?.open ?? null });
   return { profile, heatmap, coinItem, proofSet };
 }

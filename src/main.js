@@ -16,6 +16,8 @@ import * as exportPanel from './app/export-panel.js';
 import { createLoop } from './app/loop.js';
 import * as inspect from './app/inspect.js';
 import { expose } from './app/automation.js';
+import { createMedals } from './app/medals.js';
+import { idle } from './viewer/frame.js';
 
 // 页面入口：按顺序挂好各面板。面板之间不互相引用，通过 ctx 的事件通信。
 async function main() {
@@ -33,20 +35,27 @@ async function main() {
   topbar.showSource();
   createItems(ctx, data.valid, data.progress);
 
-  const { profile, heatmap, coinItem } = overview.mount(ctx, data);
-  const { grid, setFilter } = wall.mount(ctx);
   // 海报要等缩略图：先建好这个承诺交给海报，真正开始渲染放在所有面板挂好之后
   let startThumbs;
   const thumbsDone = new Promise((resolve, reject) => {
     startThumbs = (deps) => renderThumbnails(ctx, deps).then(resolve, reject);
   });
+  // 月章的 3D 图片：缩略图画完、浏览器空闲时再画（拉开抽屉会提前）；单枚查看打开时暂停
+  let inspectPanel = null;
+  const medals = createMedals(ctx, {
+    series: data.heatSeries,
+    start: thumbsDone.then(() => idle()),
+    pause: () => inspectPanel?.whenClosed() ?? Promise.resolve(),
+  });
+  const { profile, heatmap, coinItem } = overview.mount(ctx, { ...data, medals });
+  const { grid, setFilter } = wall.mount(ctx);
   const posterPanel = poster.mount(ctx, { thumbsDone, profile, heatmap, ...data });
   const shelfPanel = shelf.mount(ctx);
   // 窗口 keydown 的注册顺序：海报、主页图、单枚查看
   const inspector = createInspector({ stage: ctx.stage });
   const exporter = exportPanel.mount(ctx, inspector);
   const loop = createLoop(ctx, inspector);
-  const inspectPanel = inspect.mount(ctx, { inspector, exportPanel: exporter, loop });
+  inspectPanel = inspect.mount(ctx, { inspector, exportPanel: exporter, loop });
 
   const app = expose(ctx, { inspector, inspect: inspectPanel, exportPanel: exporter, poster: posterPanel, shelf: shelfPanel, wall: { setFilter }, heatmap, coinItem });
 
