@@ -78,41 +78,58 @@ export function createMedals(ctx, { series, start, pause }) {
     return cache.get(key);
   }
 
+  // 抬起途中再点（双击、点另一枚）不算：一次只打开一枚
+  let opening = false;
+  const drawerOpen = (slot) => !!slot.closest('.proof')?.classList.contains('is-open');
+
   /** 点开一枚：组装好交给单枚查看；托盘显示的是 3D 图片时先原位抬起，再从这个位置飞出去。 */
   async function open({ slot, medal, viaKeyboard, art }) {
-    const fly = art && !reduced();
-    if (fly) {
-      slot.classList.add('is-lifting');
-      await new Promise((r) => setTimeout(r, LIFT_MS));
+    if (opening) return;
+    opening = true;
+    try {
+      const fly = art && !reduced();
+      if (fly) {
+        slot.classList.add('is-lifting');
+        await new Promise((r) => setTimeout(r, LIFT_MS));
+        // 抬起途中托盘重画了、或者抽屉关上了：不打开
+        if (!slot.isConnected || !drawerOpen(slot)) return;
+      }
+      // 从这里到交出去都是同步的：量好抬起时的位置 → 放下 → 组装 → 交给单枚查看
+      const img = slot.querySelector('.proof-art img');
+      const from = fly && img ? img.getBoundingClientRect() : null;
+      slot.classList.remove('is-lifting');
+      const item = {
+        kind: 'medal',
+        ...mount(medal.data, medal.tier),
+        state: STATE,
+        award: false,
+        tile: slot,
+        fill: MEDAL_FILL,
+        info: medalInfo(medal.data, medal.tier, series, brand.palette),
+        /** 飞出去时托盘里留空凹槽，落回来再显示 */
+        away: (on) => slot.classList.toggle('is-out', on),
+        /** 飞回的落点：托盘里那张图片的位置；看不到（滑出了托盘、礼盒关上、不在屏幕里）就不飞回 */
+        home() {
+          const pic = slot.querySelector('.proof-art img');
+          if (!fly || !pic || !slot.isConnected || !drawerOpen(slot)) return null;
+          const r = pic.getBoundingClientRect();
+          const tray = slot.closest('.proof-tray')?.getBoundingClientRect();
+          const inTray = tray && r.left >= tray.left - 1 && r.right <= tray.right + 1;
+          const onScreen = r.bottom > 0 && r.top < window.innerHeight && r.width > 0;
+          return inTray && onScreen ? r : null;
+        },
+        dispose() {
+          disposeBadge(item.badge);
+        },
+      };
+      ctx.emit('open', item, { viaKeyboard, from });
+    } catch (err) {
+      // 比如 WebGL 上下文丢了，组装失败：留在托盘里，不抛出去
+      console.warn('月章打不开', err);
+    } finally {
+      slot.classList.remove('is-lifting');
+      opening = false;
     }
-    const img = slot.querySelector('.proof-art img');
-    const from = fly && img ? img.getBoundingClientRect() : null;
-    slot.classList.remove('is-lifting');
-    const item = {
-      kind: 'medal',
-      ...mount(medal.data, medal.tier),
-      state: STATE,
-      award: false,
-      tile: slot,
-      fill: MEDAL_FILL,
-      info: medalInfo(medal.data, medal.tier, series, brand.palette),
-      /** 飞出去时托盘里留空凹槽，落回来再显示 */
-      away: (on) => slot.classList.toggle('is-out', on),
-      /** 飞回的落点：托盘里那张图片的位置；看不到（滑出了托盘、礼盒关上、不在屏幕里）就不飞回 */
-      home() {
-        const pic = slot.querySelector('.proof-art img');
-        if (!fly || !pic || !slot.isConnected) return null;
-        const r = pic.getBoundingClientRect();
-        const tray = slot.closest('.proof-tray')?.getBoundingClientRect();
-        const inTray = tray && r.left >= tray.left - 1 && r.right <= tray.right + 1;
-        const onScreen = r.bottom > 0 && r.top < window.innerHeight && r.width > 0;
-        return inTray && onScreen ? r : null;
-      },
-      dispose() {
-        disposeBadge(item.badge);
-      },
-    };
-    ctx.emit('open', item, { viaKeyboard, from });
   }
 
   return { request, hurry: () => hurry(), open };
