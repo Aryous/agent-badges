@@ -369,6 +369,12 @@
   animation-fill-mode: backwards;
 }
 
+/* 落定播完就摘掉（最后一帧和平时一样，摘掉看不出来），之后去掉 is-lifting、is-out 也不会重播 */
+.proof-slot.is-settled .proof-art,
+.proof-slot.is-settled .proof-medal {
+  animation: none;
+}
+
 /* 换上 3D 图片后，SVG 不再受落定动画控制，才能淡出 */
 .proof-tray.has-art .proof-medal {
   animation: none;

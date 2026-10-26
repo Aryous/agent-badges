@@ -313,8 +313,11 @@ export function createProofSet({ heatmap, palette, reducedMotion = false, art = 
       });
       await Promise.all(imgs.map((img) => img.decode()));
     } catch (err) {
-      if (!artWarned) console.warn('月章 3D 图片不可用，继续用 SVG', err);
-      artWarned = true;
+      // 已经作废的请求失败了不算数
+      if (token === artToken && !artWarned) {
+        console.warn('月章 3D 图片不可用，继续用 SVG', err);
+        artWarned = true;
+      }
       return;
     }
     if (token !== artToken) return;
@@ -403,6 +406,7 @@ export function createProofSet({ heatmap, palette, reducedMotion = false, art = 
       const done = () => {
         box.classList.remove('is-shown', 'is-revealing');
         tray.classList.remove('is-fading');
+        for (const slot of tray.querySelectorAll('.proof-slot.is-settled')) slot.classList.remove('is-settled');
       };
       if (still()) {
         box.classList.remove('is-open', 'is-lifted');
@@ -465,6 +469,11 @@ export function createProofSet({ heatmap, palette, reducedMotion = false, art = 
     if (!slot) return;
     e.preventDefault(); // 空格不滚动页面
     openSlot(slot, true);
+  });
+
+  // 落定动画播完就摘掉：之后抬起、飞回再去掉类名时，不会把它重新播一遍
+  tray.addEventListener('animationend', (e) => {
+    if (e.animationName === 'proof-settle') e.target.closest('.proof-slot')?.classList.add('is-settled');
   });
 
   // 悬停珠子：和热力图一样显示当天详情
