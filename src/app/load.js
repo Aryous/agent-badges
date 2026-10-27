@@ -38,5 +38,7 @@ export async function loadAll(ctx) {
   const heatSeries = all
     .filter((o) => Object.keys(o.daily).length || o.brand.id === brand.id)
     .map((o) => ({ id: o.brand.id, name: o.brand.name, color: o.brand.ui.accent, daily: o.daily }));
-  return { valid, progress, heatSeries, markers, currentDaily: mine.daily, notices };
+  // 分享海报的「两个一起」要用另一个工具的徽章和进度
+  const tools = all.map(({ brand: b, badges, progress: p, daily }) => ({ brand: b, badges, progress: p, daily }));
+  return { valid, progress, heatSeries, markers, currentDaily: mine.daily, notices, tools };
 }

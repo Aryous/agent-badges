@@ -1,213 +1,98 @@
-// 分享海报：一张竖版 PNG，徽章墙 + 三个关键数字 + 当年热力图。
-// 全部用 2D Canvas 画：徽章直接用陈列墙已经渲染好的缩略图，不再走 3D。
-import { levelOf, levelThresholds, today, yearWeeks } from '../data/calendar.js';
+// 分享海报：一张竖版 PNG，整张是一块午夜蓝珐琅板，和主页热力图同一套颜色和画法。
+// 单个工具：板头（头像、名字、年份）、点阵、铸币和累计数字、徽章墙。
+// 两个工具：板头和点阵之后左右分栏，每栏一个工具（铸币、数字、它自己的徽章墙）。
+// 全部用 2D Canvas：徽章和铸币用已经截好的图，不再走 3D。版面数字在 poster-layout.js，绘制在 poster-draw.js。
 import { t } from './i18n.js';
-import { formatCount } from '../data/format.js';
+import { PLATE } from './heatmap.js';
+import { DUO_L, IW, IX, MARGIN, SCALE, SINGLE, W, duoLayout, singleLayout } from './poster-layout.js';
+import { F, PAGE_BG, avatar, badgeGrid, caps, coin, fitSize, footer, heatGrid, legend, plateBackground, rule, stats, summary, text, trackOf } from './poster-draw.js';
 
-const W = 1080;
-const PAD = 72;
-const SCALE = 2; // 输出 2160 像素宽
-const SERIF = `'Iowan Old Style', 'Palatino Linotype', 'Songti SC', Georgia, serif`;
-const SANS = `system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', sans-serif`;
-const ALPHA = [0, 0.3, 0.5, 0.74, 1];
+const unlockedOf = (tool) => tool.items.filter((it) => it.state?.unlocked).length;
+const badgeCount = (n, total) => t('poster.badges', { n, total });
 
-const rgba = (hex, a) => {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
-};
+/** 名字一行：有身份（用户同意后的 GitHub 登录名）就写 @登录名，否则写工具名。副标题是工具名和徽章数。 */
+function names(tools, identity) {
+  const n = tools.reduce((s, x) => s + unlockedOf(x), 0);
+  const total = tools.reduce((s, x) => s + x.items.length, 0);
+  const tool = tools.map((x) => x.brand.name).join(' + ');
+  const count = badgeCount(n, total);
+  return identity ? { title: `@${identity.login}`, sub: `${tool} · ${count}` } : { title: tool, sub: count };
+}
 
-const loadImage = (src) =>
-  new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = src;
+function drawHead(g, L, tools, heat, identity) {
+  const ar = 52;
+  avatar(g, IX + ar, L.head + ar, ar, identity?.avatar ?? null);
+  const { title, sub } = names(tools, identity);
+  const nx = IX + ar * 2 + 30;
+  // 右边留给大号年份；名字太长就缩小字号
+  const size = fitSize(g, title, 700, 40, W - IX - 280 - nx);
+  text(g, title, nx, L.head + 48, { font: F(700, size), color: PLATE.ink });
+  text(g, sub, nx, L.head + 84, { font: F(500, 19), color: PLATE.sub });
+  text(g, caps(t('poster.year')), W - IX, L.head + 14, { font: F(500, 14), color: PLATE.month, align: 'right', track: 3 });
+  text(g, String(heat.year), W - IX, L.head + 86, { font: F(700, 72), color: PLATE.ink, align: 'right', track: 1 });
+  summary(g, heat.yearStats, { x: IX, y: L.summary });
+  heatGrid(g, heat.cal, { x: IX, y: L.heat, w: IW });
+  legend(g, heat.series, { x: IX, y: L.legend, w: IW });
+  rule(g, IX, L.rule, IW);
+}
+
+function drawSingle(g, L, tool) {
+  const s = SINGLE.coin;
+  coin(g, tool.coin, IX + s / 2, L.mid + s / 2, s);
+  const sx = IX + s + 56;
+  text(g, caps(t('poster.allTime', { badges: badgeCount(unlockedOf(tool), tool.items.length) })), sx, L.mid + 74, { font: F(500, 15), color: PLATE.month, track: trackOf(15) });
+  stats(g, tool.all, { x: sx, y: L.mid + 112, w: W - IX - sx, size: 42 });
+  rule(g, IX, L.rule2, IW);
+  badgeGrid(g, tool.items, { x: IX, y: L.grid, w: IW, cols: SINGLE.cols });
+}
+
+/** 一栏的小卡：铸币、工具名、徽章数、三个数字，全部居中。 */
+function toolCard(g, x, y, w, tool) {
+  const s = DUO_L.coin;
+  coin(g, tool.coin, x + w / 2, y + s / 2, s);
+  let cy = y + s + 44;
+  text(g, tool.brand.name, x + w / 2, cy, { font: F(700, 28), color: PLATE.ink, align: 'center' });
+  cy += 32;
+  text(g, badgeCount(unlockedOf(tool), tool.items.length), x + w / 2, cy, { font: F(500, 18), color: PLATE.sub, align: 'center' });
+  cy += 30;
+  stats(g, tool.all, { x, y: cy, w, align: 'center', size: DUO_L.value, labelSize: 13 });
+}
+
+function drawDuo(g, L, tools) {
+  tools.forEach((tool, i) => {
+    const x = IX + i * (L.cw + DUO_L.gap);
+    toolCard(g, x, L.top, L.cw, tool);
+    badgeGrid(g, tool.items, { x, y: L.grid, w: L.cw, cols: DUO_L.cols });
   });
-
-/** 徽章网格的列数：让行数尽量少、每枚又不至于太小。 */
-const columnsFor = (n) => (n <= 12 ? 4 : 5);
+  // 两栏中间一道竖细线
+  g.fillStyle = PLATE.frameInner;
+  g.fillRect(IX + L.cw + DUO_L.gap / 2, L.top + 10, 1, L.grid + L.gridH - L.top - 10);
+}
 
 /**
  * @param {object} o
- * @param {object} o.brand
- * @param {{ config, state, thumb }[]} o.items   thumb 是缩略图 data URL
- * @param {{ tokens, activeDays, longestStreak }} o.stats
- * @param {{ year: number, series: { id, color, daily }[], markers: object }} o.heat
- * @returns {Promise<HTMLCanvasElement>}
+ * @param {'single' | 'duo'} o.mode
+ * @param {{ brand, coin: HTMLImageElement | null, items: { state, img: HTMLImageElement | null }[], all: { tokens, activeDays, longestStreak } }[]} o.tools
+ *   单个工具时只有一个；两个工具时顺序同热力图（第一个在左）
+ * @param {{ year: number, cal: object, series: { id, name, color }[], yearStats: { tokens, activeDays, longestStreak } }} o.heat
+ *   cal 是 data/calendar.js 的 yearCells 结果
+ * @param {{ login: string, avatar: HTMLImageElement | null } | null} o.identity
+ * @returns {HTMLCanvasElement}
  */
-export async function renderPoster({ brand, items, stats, heat }) {
-  const cols = columnsFor(items.length);
-  const rows = Math.ceil(items.length / cols);
-  const cell = (W - PAD * 2) / cols;
-  const gridTop = 300;
-  const gridH = rows * cell;
-  const statsTop = gridTop + gridH + 40;
-  const heatTop = statsTop + 150;
-  const { weeks } = yearWeeks(heat.year, 1);
-  const step = (W - PAD * 2) / weeks.length;
-  const heatH = step * 7;
-  const H = Math.round(heatTop + 48 + heatH + 120);
-
+export function renderPoster({ mode, tools, heat, identity }) {
+  const weeks = heat.cal.weeks.length;
+  const L = mode === 'duo' ? duoLayout({ weeks, counts: tools.map((x) => x.items.length) }) : singleLayout({ weeks, count: tools[0].items.length });
   const canvas = document.createElement('canvas');
   canvas.width = W * SCALE;
-  canvas.height = H * SCALE;
+  canvas.height = Math.round(L.H * SCALE);
   const g = canvas.getContext('2d');
   g.scale(SCALE, SCALE);
-  const accent = brand.ui.accent;
-
-  // 背景：墨色 + 顶部一团品牌色光晕
-  g.fillStyle = brand.palette.background;
-  g.fillRect(0, 0, W, H);
-  const glow = g.createRadialGradient(W / 2, 120, 0, W / 2, 120, W * 0.9);
-  glow.addColorStop(0, rgba(accent, 0.22));
-  glow.addColorStop(1, rgba(accent, 0));
-  g.fillStyle = glow;
-  g.fillRect(0, 0, W, H);
-
-  // 标题
-  const unlocked = items.filter((it) => it.state.unlocked).length;
-  g.fillStyle = '#F0EEE6';
-  g.textBaseline = 'alphabetic';
-  g.font = `500 68px ${SERIF}`;
-  g.fillText(brand.name, PAD, 150);
-  g.fillStyle = '#8F8B82';
-  g.font = `400 26px ${SANS}`;
-  g.fillText(t('poster.badges', { n: unlocked, total: items.length }), PAD, 200);
-
-  // 右上角：解锁进度环
-  const cx = W - PAD - 70;
-  const cy = 140;
-  g.lineWidth = 14;
-  g.lineCap = 'round';
-  g.strokeStyle = 'rgba(240, 238, 230, 0.1)';
-  g.beginPath();
-  g.arc(cx, cy, 64, 0, Math.PI * 2);
-  g.stroke();
-  g.strokeStyle = accent;
-  g.beginPath();
-  g.arc(cx, cy, 64, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (unlocked / Math.max(1, items.length)));
-  g.stroke();
-  g.fillStyle = '#F0EEE6';
-  g.textAlign = 'center';
-  g.font = `600 40px ${SANS}`;
-  g.fillText(String(unlocked), cx, cy + 8);
-  g.fillStyle = '#8F8B82';
-  g.font = `400 18px ${SANS}`;
-  g.fillText(`/ ${items.length}`, cx, cy + 34);
-  g.textAlign = 'left';
-
-  // 徽章网格：未解锁的压暗
-  const images = await Promise.all(items.map((it) => (it.thumb ? loadImage(it.thumb) : null)));
-  items.forEach((it, i) => {
-    const img = images[i];
-    if (!img) return;
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    // 最后一行不满时居中
-    const inRow = row === rows - 1 ? items.length - row * cols : cols;
-    const offset = ((cols - inRow) * cell) / 2;
-    const size = cell * 0.9;
-    const x = PAD + offset + col * cell + (cell - size) / 2;
-    const y = gridTop + row * cell + (cell - size) / 2;
-    g.globalAlpha = it.state.unlocked ? 1 : 0.32;
-    g.drawImage(img, x, y, size, size);
-  });
-  g.globalAlpha = 1;
-
-  // 三个数字
-  const facts = [
-    [formatCount(stats.tokens), t('profile.tokens')],
-    [String(stats.activeDays), t('profile.activeDays')],
-    [t('profile.days', { n: stats.longestStreak }), t('profile.streak')],
-  ];
-  g.strokeStyle = 'rgba(240, 238, 230, 0.12)';
-  g.lineWidth = 1;
-  g.beginPath();
-  g.moveTo(PAD, statsTop);
-  g.lineTo(W - PAD, statsTop);
-  g.stroke();
-  const colW = (W - PAD * 2) / 3;
-  facts.forEach(([value, label], i) => {
-    const x = PAD + i * colW;
-    g.fillStyle = '#F0EEE6';
-    g.font = `600 46px ${SANS}`;
-    g.fillText(value, x, statsTop + 76);
-    g.fillStyle = '#8F8B82';
-    g.font = `400 22px ${SANS}`;
-    g.fillText(label, x, statsTop + 112);
-  });
-
-  // 当年热力图
-  g.fillStyle = '#8F8B82';
-  g.font = `500 22px ${SANS}`;
-  g.fillText(`${heat.year}`, PAD, heatTop + 24);
-  const th = Object.fromEntries(heat.series.map((s) => [s.id, levelThresholds(s.daily)]));
-  const now = today();
-  const size = step * 0.8;
-  const top = heatTop + 48;
-  weeks.forEach((col, c) => {
-    col.forEach((date, r) => {
-      if (!date) return;
-      const x = PAD + c * step;
-      const y = top + r * step;
-      if (date > now) {
-        // 今年还没到的日子：只留一个很淡的格子，让一整年的形状完整
-        roundRect(g, x, y, size, size, 2.5);
-        g.fillStyle = 'rgba(240, 238, 230, 0.025)';
-        g.fill();
-        return;
-      }
-      const parts = heat.series
-        .map((s) => ({ color: s.color, level: levelOf(s.daily?.[date], th[s.id]) }))
-        .filter((p) => p.level);
-      roundRect(g, x, y, size, size, 2.5);
-      g.save();
-      g.clip();
-      if (!parts.length) {
-        g.fillStyle = 'rgba(240, 238, 230, 0.06)';
-        g.fillRect(x, y, size, size);
-      } else {
-        g.fillStyle = rgba(parts[0].color, ALPHA[parts[0].level]);
-        g.fillRect(x, y, size, size);
-        if (parts[1]) {
-          // 两个工具同一天都用了：右下半边换成第二个颜色
-          g.fillStyle = rgba(parts[1].color, ALPHA[parts[1].level]);
-          g.beginPath();
-          g.moveTo(x + size, y);
-          g.lineTo(x + size, y + size);
-          g.lineTo(x, y + size);
-          g.closePath();
-          g.fill();
-        }
-      }
-      g.restore();
-      if (heat.markers[date]?.length) {
-        g.fillStyle = '#F7F6F2';
-        g.beginPath();
-        g.arc(x + size / 2, y + size / 2, size * 0.17, 0, Math.PI * 2);
-        g.fill();
-      }
-    });
-  });
-
-  // 页脚
-  g.fillStyle = '#5D5A54';
-  g.font = `400 20px ${SANS}`;
-  g.fillText(t('poster.footer'), PAD, H - 56);
-  g.textAlign = 'right';
-  g.font = `600 20px ${SANS}`;
-  g.fillStyle = '#8F8B82';
-  g.fillText('agent-badges', W - PAD, H - 56);
-  g.textAlign = 'left';
+  g.fillStyle = PAGE_BG;
+  g.fillRect(0, 0, W, L.H);
+  plateBackground(g, MARGIN, MARGIN, W - MARGIN * 2, L.H - MARGIN * 2, { radius: 34 });
+  drawHead(g, L, tools, heat, identity);
+  if (mode === 'duo') drawDuo(g, L, tools);
+  else drawSingle(g, L, tools[0]);
+  footer(g, L.foot, { x: IX, w: IW });
   return canvas;
-}
-
-function roundRect(g, x, y, w, h, r) {
-  g.beginPath();
-  g.moveTo(x + r, y);
-  g.arcTo(x + w, y, x + w, y + h, r);
-  g.arcTo(x + w, y + h, x, y + h, r);
-  g.arcTo(x, y + h, x, y, r);
-  g.arcTo(x, y, x + w, y, r);
-  g.closePath();
 }

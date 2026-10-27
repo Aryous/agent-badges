@@ -32,6 +32,10 @@ export function createContext() {
     lang,
     // 公开版（npx agent-badges profile 生成、放在 GitHub Pages 上给别人看）：文字改成「某某的徽章」
     PUBLIC: window.__AGENT_BADGES_PUBLIC__ ?? null,
+    // 用户同意后命令行注入的 GitHub 登录名和头像（data URL）；没同意、开发服务器、演示站都是 null
+    identity: window.__AGENT_BADGES_IDENTITY__ ?? null,
+    // 页面带着本机数据（命令行打开的或开发服务器）：海报弹窗才提示可以加头像
+    localData: Boolean(window.__AGENT_BADGES_DATA__) && params.get('source') !== 'mock',
     forceMock: params.get('source') === 'mock',
     ...selectBrand(params, window.__AGENT_BADGES_DATA__),
     task: shelfTask(params),

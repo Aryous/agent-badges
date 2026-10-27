@@ -109,3 +109,22 @@ body.is-modal {
   text-align: center;
   color: var(--muted);
 }
+
+/* 分享海报：选分享哪个（胶囊切换，和陈列墙的筛选同一个控件），底部一行加头像的提示 */
+.poster-modes {
+  align-self: flex-start;
+  margin: 0 20px 14px;
+}
+
+.poster-foot {
+  gap: 16px;
+}
+
+.poster-hint {
+  flex: 1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}

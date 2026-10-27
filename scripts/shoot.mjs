@@ -745,13 +745,27 @@ async function proofCycle(page) {
   check('筛选：已获得 + 未解锁 = 全部，且互不混入', nUnlocked + nLocked === total && nUnlocked === unlockedTiles && lockedShown === 0, `${nUnlocked} + ${nLocked} / ${total}`);
 
   await page.locator('[data-share]').click();
-  await page.waitForFunction(() => window.__badgeApp.posterURL, null, { timeout: 30000 });
+  await page.waitForFunction(() => window.__badgeApp.posterReady && window.__badgeApp.posterURL, null, { timeout: 60000 });
   await page.waitForTimeout(300);
   await page.screenshot({ path: `${out}/desktop-poster.png` });
-  const poster = await page.evaluate(() => window.__badgeApp.posterURL);
-  const buf = Buffer.from(poster.split(',')[1], 'base64');
+  const posterPNG = async () => Buffer.from((await page.evaluate(() => window.__badgeApp.posterURL)).split(',')[1], 'base64');
+  const buf = await posterPNG();
   writeFileSync(`${out}/poster.png`, buf);
   check('分享海报是 2160 像素宽的 PNG', buf.readUInt32BE(16) === 2160, `${buf.readUInt32BE(16)}×${buf.readUInt32BE(20)}`);
+  const pm = await page.evaluate(() => ({ modes: window.__badgeApp.posterModes, mode: window.__badgeApp.posterMode, buttons: document.querySelectorAll('[data-poster-modes] button').length }));
+  check('两个工具都有数据：弹窗里有三段切换，默认是当前工具', pm.modes.length === 3 && pm.buttons === 3 && pm.mode === pm.modes[0], JSON.stringify(pm));
+  const previewW = await page.evaluate(() => document.querySelector('[data-poster-preview] img')?.naturalWidth);
+  check('预览是缩小的图（720 宽），下载才用原尺寸', previewW === 720, String(previewW));
+  await page.locator('[data-poster-modes] [data-mode="duo"]').click();
+  await page.waitForFunction(() => window.__badgeApp.posterMode === 'duo' && window.__badgeApp.posterReady, null, { timeout: 180000 });
+  await page.waitForFunction(() => window.__badgeApp.posterURL, null, { timeout: 30000 });
+  const duo = await posterPNG();
+  writeFileSync(`${out}/poster-duo.png`, duo);
+  check('两个一起：新海报同样 2160 宽，高度和单个工具不同', duo.readUInt32BE(16) === 2160 && duo.readUInt32BE(20) !== buf.readUInt32BE(20), `${duo.readUInt32BE(16)}×${duo.readUInt32BE(20)}`);
+  const rendersBefore = await page.evaluate(() => window.__badgeApp.posterRenders);
+  await page.locator(`[data-poster-modes] [data-mode="${pm.modes[0]}"]`).click();
+  await page.waitForFunction((m) => window.__badgeApp.posterMode === m && window.__badgeApp.posterReady, pm.modes[0], { timeout: 30000 });
+  check('切回画过的形式直接用缓存，不重画', (await page.evaluate(() => window.__badgeApp.posterRenders)) === rendersBefore);
   await page.keyboard.press('Escape');
   check('Esc 关闭海报', !(await page.locator('#poster').isVisible()));
 

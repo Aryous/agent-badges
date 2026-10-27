@@ -2,7 +2,7 @@ import { COMPLETIONIST_ID } from '../brands/shared/completionist.js';
 
 /**
  * 供自动化验证使用的小接口 window.__badgeApp（scripts/shoot.mjs、peek.mjs、check-shelf.mjs、assets.mjs、check-site.mjs 在用）。
- * face、spin、posterURL、shelfURL 是 getter，每次读都取最新值。ready 由调用方在缩略图完成后置为 true。
+ * face、spin、posterURL、posterMode、posterReady、posterRenders、shelfURL 是 getter，每次读都取最新值。ready 由调用方在缩略图完成后置为 true。
  * ids 只有陈列墙的徽章；open('completionist') 打开概览区的全解锁徽章，和点它一样（它不在 ctx.items 里）。
  */
 export function expose(ctx, { inspector, inspect, exportPanel, poster, shelf, wall, heatmap, coinItem }) {
@@ -35,6 +35,17 @@ export function expose(ctx, { inspector, inspect, exportPanel, poster, shelf, wa
     get posterURL() {
       return poster.url;
     },
+    posterModes: poster.modes,
+    get posterMode() {
+      return poster.mode;
+    },
+    get posterReady() {
+      return poster.ready;
+    },
+    get posterRenders() {
+      return poster.renders;
+    },
+    setPosterMode: (m) => poster.setMode(m),
     openShelf: shelf.open,
     get shelfURL() {
       return shelf.url;
