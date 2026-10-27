@@ -60,7 +60,7 @@ export async function writePublish(data, opts) {
     };
     const { live } = await executePublish(plan, {
       gh,
-      pageHtml: await publicPage(data, opts.name || plan.login),
+      pageHtml: await publicPage(data, opts.name || plan.login, (await import('../../share/identity.js')).pageIdentity(dataHome())),
       renderShelf: (file) => writeShelf(data, { ...opts, out: file }, { snippet: false }),
       log: (step) => console.log(steps[step] ?? step),
     });

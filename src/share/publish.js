@@ -47,12 +47,12 @@ export function createGitHub(exec = run) {
     async available() {
       return (await exec('gh', ['--version'])).code === 0;
     },
-    /** 已登录返回 { login, id }，没登录返回 null。 */
+    /** 已登录返回 { login, id, avatarUrl }，没登录返回 null。 */
     async user() {
       const r = await exec('gh', ['api', 'user']);
       if (r.code !== 0) return null;
       const u = JSON.parse(r.stdout);
-      return { login: u.login, id: u.id };
+      return { login: u.login, id: u.id, avatarUrl: u.avatar_url ?? null };
     },
     async repo(owner, name) {
       const r = await api(`repos/${owner}/${name}`);

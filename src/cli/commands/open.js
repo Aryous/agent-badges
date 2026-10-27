@@ -5,8 +5,14 @@ import { t } from '../i18n.js';
 import { openBrowser, serve } from '../server.js';
 import { appHtml } from '../page.js';
 
+async function identity() {
+  const { dataHome } = await import('../../collect/common.js');
+  const { pageIdentity } = await import('../../share/identity.js');
+  return pageIdentity(dataHome());
+}
+
 export async function exportPage(opts, data) {
-  const html = await appHtml(data);
+  const html = await appHtml(data, await identity());
   const dir = resolve(opts.dir);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'index.html'), html);
@@ -14,7 +20,9 @@ export async function exportPage(opts, data) {
 }
 
 export async function open(opts, data) {
-  const html = await appHtml(data);
+  // 第一次在终端里打开时问一次要不要头像（非终端不问）
+  await (await import('./avatar.js')).maybeAskAvatar();
+  const html = await appHtml(data, await identity());
   const { port } = await serve(html, opts.port);
   const query = opts.brand ? `?brand=${opts.brand}` : '';
   const url = `http://127.0.0.1:${port}/${query}`;

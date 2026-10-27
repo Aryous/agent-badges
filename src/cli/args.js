@@ -17,6 +17,7 @@ export const HELP = t(
   npx agent-badges shelf           在浏览器里渲染已解锁徽章，保存为 PNG（可放进 GitHub 个人主页）
   npx agent-badges publish         一条命令部署到 GitHub 主页：徽章图 + 公开版徽章墙（需要 gh）
   npx agent-badges profile <目录>  只往主页仓库目录写入徽章图和公开版徽章墙，不提交
+  npx agent-badges avatar          在分享海报上显示你的 GitHub 头像（先问你同意；需要 gh）
 
 选项
   --brand <${BRAND_IDS.join('|')}>      只采集 / 只看某个工具
@@ -26,7 +27,8 @@ export const HELP = t(
   --out <文件>                     保存位置（默认 agent-badges-card.svg / agent-badges-shelf.png）
   --theme <dark|light>             卡片配色（默认 dark）
   --name <名字>                    卡片和公开版徽章墙上的名字
-  --yes                            publish：确认执行（不带时只检查并列出计划）
+  --yes                            publish / avatar：确认执行（不带时只检查或询问）
+  --remove                         avatar：删除已存的头像
   --lang <en|zh>                   输出语言（卡片和陈列图默认 en，汇总默认跟随系统）
   -v, --version / -h, --help
 
@@ -41,6 +43,7 @@ Usage
   npx agent-badges shelf           render your unlocked badges in the browser and save a PNG for your profile
   npx agent-badges publish         put your badges on your GitHub profile, with a public badge wall (needs gh)
   npx agent-badges profile <dir>   only write the badge image and public badge wall into a profile repo folder
+  npx agent-badges avatar          show your GitHub avatar on the share poster (asks first; needs gh)
 
 Options
   --brand <${BRAND_IDS.join('|')}>      only one tool
@@ -50,7 +53,8 @@ Options
   --out <file>                     where to save it (default agent-badges-card.svg / agent-badges-shelf.png)
   --theme <dark|light>             card colors (default dark)
   --name <name>                    name shown on the card and the public badge wall
-  --yes                            publish: go ahead (without it, publish only checks and shows the plan)
+  --yes                            publish / avatar: go ahead (without it, only checks or asks)
+  --remove                         avatar: delete the saved avatar
   --lang <en|zh>                   output language (card and shelf default to en, summary to your system)
   -v, --version / -h, --help
 
@@ -59,7 +63,7 @@ Everything stays on this machine: data is read locally and stored in ~/.agent-ba
 );
 
 export function parseArgs(argv) {
-  const opts = { command: 'open', dir: null, brand: null, port: 4747, open: true, json: false, out: null, theme: 'dark', name: '', cardLang: 'en', outLang: null, yes: false };
+  const opts = { command: 'open', dir: null, brand: null, port: 4747, open: true, json: false, out: null, theme: 'dark', name: '', cardLang: 'en', outLang: null, yes: false, remove: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '-h' || a === '--help') opts.command = 'help';
@@ -69,11 +73,12 @@ export function parseArgs(argv) {
     else if (a === '--no-open') opts.open = false;
     else if (a === '--json') opts.json = true;
     else if (a === '--yes' || a === '-y') opts.yes = true;
+    else if (a === '--remove') opts.remove = true;
     else if (a === '--out') opts.out = argv[++i];
     else if (a === '--theme') opts.theme = argv[++i];
     else if (a === '--name') opts.name = argv[++i] ?? '';
     else if (a === '--lang') opts.cardLang = opts.outLang = argv[++i];
-    else if (a === 'collect' || a === 'export' || a === 'open' || a === 'card' || a === 'shelf' || a === 'profile' || a === 'publish') opts.command = a;
+    else if (a === 'collect' || a === 'export' || a === 'open' || a === 'card' || a === 'shelf' || a === 'profile' || a === 'publish' || a === 'avatar') opts.command = a;
     else if ((opts.command === 'export' || opts.command === 'profile') && !opts.dir) opts.dir = a;
     else throw new Error(t(`不认识的参数：${a}`, `Unknown argument: ${a}`));
   }

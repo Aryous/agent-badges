@@ -13,6 +13,7 @@ export async function main(argv = process.argv.slice(2)) {
   if (opts.command === 'help') return console.log(HELP);
   if (opts.command === 'version') return console.log(pkg.version);
   await checkRuntime();
+  if (opts.command === 'avatar') return (await import('./commands/avatar.js')).runAvatar(opts);
 
   const { collectAndReport } = await import('./commands/collect.js');
   const { data, failed } = await collectAndReport(opts);
