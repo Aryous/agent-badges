@@ -31,7 +31,7 @@ export function text(g, str, x, y, { font, color, align = 'left', track = 0, bas
   g.letterSpacing = '0px';
 }
 
-export function widthOf(g, str, font, track = 0) {
+function widthOf(g, str, font, track = 0) {
   g.font = font;
   g.letterSpacing = `${track}px`;
   const w = g.measureText(str).width - track;
@@ -58,7 +58,7 @@ function fillCircle(g, x, y, r, color) {
 }
 
 /** 四角星（页面上的 ✦ 标记）。 */
-export function star(g, x, y, R, color) {
+function star(g, x, y, R, color) {
   const r = R * 0.22;
   g.beginPath();
   for (let i = 0; i < 8; i++) {

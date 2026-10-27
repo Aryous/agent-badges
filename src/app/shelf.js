@@ -1,5 +1,5 @@
 import { renderShelves, shelfGroups } from '../viewer/shelf.js';
-import { downloadDataURL } from '../viewer/export.js';
+import { downloadURL } from '../viewer/export.js';
 import { t } from '../viewer/i18n.js';
 import { createModal } from './modal.js';
 
@@ -82,7 +82,7 @@ export function mount(ctx) {
     await busy;
   }
 
-  download.addEventListener('click', () => url && downloadDataURL(url, 'agent-badges-shelf.png'));
+  download.addEventListener('click', () => url && downloadURL(url, 'agent-badges-shelf.png'));
   ctx.on('shelf', open);
   return {
     open,

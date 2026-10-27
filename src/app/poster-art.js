@@ -54,20 +54,24 @@ export function createPosterArt(ctx, { thumbsDone }) {
   return {
     /**
      * @param {{ brand, kit, items: { config, state }[] }} tool
-     * @param {(n: number, total: number) => void} [onProgress]
+     * @param {((n: number, total: number) => void) | null} [onProgress]
      * @returns {Promise<{ coin: HTMLImageElement | null, items: { state, img }[] }>}
      */
-    get(tool, onProgress = () => {}) {
-      if (!cache.has(tool.brand.id)) {
-        cache.set(
-          tool.brand.id,
-          build(tool, onProgress).catch((e) => {
-            cache.delete(tool.brand.id); // 下次再试
-            throw e;
-          }),
-        );
+    get(tool, onProgress = null) {
+      const id = tool.brand.id;
+      let c = cache.get(id);
+      if (!c) {
+        // 同一个工具的图只画一次；画的过程中后来要它的人也能收到进度
+        c = { listeners: new Set(onProgress ? [onProgress] : []) };
+        cache.set(id, c);
+        c.job = build(tool, (n, total) => c.listeners.forEach((fn) => fn(n, total))).catch((e) => {
+          cache.delete(id); // 下次再试
+          throw e;
+        });
+      } else if (onProgress) {
+        c.listeners.add(onProgress);
       }
-      return cache.get(tool.brand.id);
+      return c.job;
     },
   };
 }

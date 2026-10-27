@@ -3,7 +3,7 @@ import { loadPosterFonts } from '../viewer/poster-draw.js';
 import { DUO, shareModes } from '../viewer/poster-layout.js';
 import { combineDaily } from '../viewer/heatmap.js';
 import { trackSegThumb } from '../viewer/seg.js';
-import { downloadDataURL } from '../viewer/export.js';
+import { downloadURL } from '../viewer/export.js';
 import { t } from '../viewer/i18n.js';
 import { today, yearCells } from '../data/calendar.js';
 import { dailyStats } from '../data/daily.js';
@@ -76,7 +76,9 @@ export function mount(ctx, { thumbsDone, heatmap, heatSeries, markers, tools }) 
   }
 
   const art = createPosterArt(ctx, { thumbsDone });
+  // 画好的海报按「形式 | 年份 | 语言」缓存，一直留着（最多几种形式乘几个年份），blob URL 不回收
   const cache = new Map();
+  const done = new Set();
   let current = null;
   let renders = 0;
   let seq = 0;
@@ -86,11 +88,13 @@ export function mount(ctx, { thumbsDone, heatmap, heatSeries, markers, tools }) 
     const picked = m === DUO ? list : list.filter((x) => x.brand.id === m);
     const year = heatmap.year;
     const series = heatSeries.filter((s) => picked.some((x) => x.brand.id === s.id));
-    const making = preview.querySelector('.poster-making');
+    // 进度写进当前显示的这一种的占位文字（每次现查：中途切走再切回来，占位是新建的）
+    const progress = (n, total) => {
+      const el = preview.querySelector(`.poster-making[data-mode="${m}"]`);
+      if (el) el.textContent = t('poster.progress', { n, total });
+    };
     const arts = [];
-    for (const x of picked) {
-      arts.push(await art.get(x, (n, total) => making?.isConnected && (making.textContent = t('poster.progress', { n, total }))));
-    }
+    for (const x of picked) arts.push(await art.get(x, progress));
     await loadPosterFonts();
     if (identity && avatar === undefined) avatar = await loadImage(identity.avatar);
     const canvas = renderPoster({
@@ -131,11 +135,15 @@ export function mount(ctx, { thumbsDone, heatmap, heatSeries, markers, tools }) 
     const job = ++seq;
     const key = `${m}|${heatmap.year}|${lang}`;
     download.disabled = true;
-    if (!cache.has(key)) {
+    // 还没画好的（包括正在画的）先放占位，不让上一张海报留在预览里
+    if (!done.has(key)) {
       const making = document.createElement('p');
       making.className = 'poster-making';
+      making.dataset.mode = m;
       making.textContent = t('poster.making');
       preview.replaceChildren(making);
+    }
+    if (!cache.has(key)) {
       cache.set(
         key,
         build(m).catch((e) => {
@@ -157,6 +165,7 @@ export function mount(ctx, { thumbsDone, heatmap, heatSeries, markers, tools }) 
       }
       return;
     }
+    done.add(key);
     if (job !== seq) return;
     current = entry;
     const img = new Image();
@@ -172,7 +181,7 @@ export function mount(ctx, { thumbsDone, heatmap, heatSeries, markers, tools }) 
   }
 
   download.addEventListener('click', () => {
-    if (current) downloadDataURL(current.url, current.file);
+    if (current) downloadURL(current.url, current.file);
   });
   ctx.on('poster', open);
   return {
@@ -193,7 +202,13 @@ export function mount(ctx, { thumbsDone, heatmap, heatSeries, markers, tools }) 
     get url() {
       const e = current;
       if (!e) return null;
-      e.pending ??= blobToDataURL(e.blob).then((u) => (e.dataURL = u));
+      e.pending ??= blobToDataURL(e.blob).then(
+        (u) => (e.dataURL = u),
+        (err) => {
+          e.pending = null; // 下次读时重试
+          console.error(err);
+        },
+      );
       return e.dataURL;
     },
   };

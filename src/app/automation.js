@@ -9,6 +9,7 @@ export function expose(ctx, { inspector, inspect, exportPanel, poster, shelf, wa
   const { items } = ctx;
   window.__badgeApp = {
     ready: false,
+    brand: ctx.brand.id,
     ids: items.map((it) => it.config.id),
     open: (id, opts) => inspect.open(id === COMPLETIONIST_ID && coinItem ? coinItem : items.find((it) => it.config.id === id), opts),
     close: inspect.close,

@@ -132,7 +132,6 @@ export function createProfile({ root, items, daily, onSelect, onCoin, onShare, o
     el,
     /** 全解锁徽章所在的 figure：单枚查看关上后焦点回到这里。 */
     coinEl: fig,
-    stats,
     unlocked: h.unlocked.length,
     total,
     setThumbnail(id, src) {

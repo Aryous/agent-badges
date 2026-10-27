@@ -49,7 +49,7 @@ async function main() {
   });
   const { profile, heatmap, coinItem } = overview.mount(ctx, { ...data, medals });
   const { grid, setFilter } = wall.mount(ctx);
-  const posterPanel = poster.mount(ctx, { thumbsDone, profile, heatmap, ...data });
+  const posterPanel = poster.mount(ctx, { thumbsDone, heatmap, ...data });
   const shelfPanel = shelf.mount(ctx);
   // 窗口 keydown 的注册顺序：海报、主页图、单枚查看
   const inspector = createInspector({ stage: ctx.stage });

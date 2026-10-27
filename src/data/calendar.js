@@ -67,6 +67,17 @@ export function dayParts(date, series, thresholds, enabled = null) {
 }
 
 /**
+ * 那天有没有解锁徽章（热力图的金边、海报的金边都按这条）：不是未来，且有开着的工具的解锁标记。
+ * @param {string} date
+ * @param {Record<string, { brandId: string }[]>} markers  markersFrom 的结果
+ * @param {Set<string> | null} enabled  开着的工具；不给表示全部
+ * @param {string} now
+ */
+export function dayUnlocked(date, markers, enabled, now) {
+  return date <= now && (markers[date] ?? []).some((m) => !enabled || enabled.has(m.brandId));
+}
+
+/**
  * 一年的点阵：每周一列（yearWeeks），每格 { date, future, parts, unlocked }，不属于这一年的格子是 null。
  * unlocked：不是未来，且那天有开着的工具的解锁标记（markersFrom 的结果）。
  * @param {object} o
@@ -79,7 +90,6 @@ export function dayParts(date, series, thresholds, enabled = null) {
  */
 export function yearCells({ year, weekStart, series, markers = {}, enabled = null, now = today() }) {
   const thresholds = Object.fromEntries(series.map((s) => [s.id, levelThresholds(s.daily)]));
-  const on = (id) => !enabled || enabled.has(id);
   const { weeks, monthStarts } = yearWeeks(year, weekStart);
   return {
     weekStart,
@@ -92,7 +102,7 @@ export function yearCells({ year, weekStart, series, markers = {}, enabled = nul
           date,
           future,
           parts: future ? [] : dayParts(date, series, thresholds, enabled),
-          unlocked: !future && (markers[date] ?? []).some((m) => on(m.brandId)),
+          unlocked: dayUnlocked(date, markers, enabled, now),
         };
       }),
     ),

@@ -1,4 +1,4 @@
-import { downloadDataURL } from '../viewer/export.js';
+import { downloadURL } from '../viewer/export.js';
 import { EXPORT_FILL, renderBadgePNG } from '../viewer/snapshot.js';
 import { t } from '../viewer/i18n.js';
 
@@ -76,7 +76,7 @@ export function mount(ctx, inspector) {
     });
     const tier = item.config.tiers && item.state.tier !== null ? `-${item.config.tiers[item.state.tier].metal}` : '';
     const filename = `${brand.id}-${item.config.id}${tier}-${inspector.face}.png`;
-    if (download) downloadDataURL(dataURL, filename);
+    if (download) downloadURL(dataURL, filename);
     return { dataURL, filename };
   }
 

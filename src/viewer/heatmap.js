@@ -2,7 +2,7 @@
 // 两个工具叠在一起看：只用了一个就填它的品牌色珐琅，同一天两个都用了就左右各半。
 // 那天解锁了徽章，圆点外加一圈细金边；悬停看详情，点金边圆点打开对应徽章。
 import { dailyStats, dailyYears } from '../data/daily.js';
-import { dayParts, levelThresholds, today, yearWeeks } from '../data/calendar.js';
+import { dayParts, dayUnlocked, levelThresholds, today, yearWeeks } from '../data/calendar.js';
 import { formatDay, lang, t } from './i18n.js';
 import { formatCount } from '../data/format.js';
 import { describeState } from './describe.js';
@@ -307,7 +307,7 @@ export function createHeatmap({ root, series, markers = {}, onMarker, reducedMot
       }
       if (cell.classList.contains('has-ring')) {
         // 开着的工具里有人那天解锁：金边亮起，可以点开那枚徽章（日期在今天之后的不算，例如时钟偏差）
-        const on = !cell.classList.contains('is-future') && markersOn(date).length > 0;
+        const on = dayUnlocked(date, markers, enabled, now);
         cell.classList.toggle('ring-on', on);
         cell.classList.toggle('is-unlock', on);
       }

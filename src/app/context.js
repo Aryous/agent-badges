@@ -34,7 +34,7 @@ export function createContext() {
     PUBLIC: window.__AGENT_BADGES_PUBLIC__ ?? null,
     // 用户同意后命令行注入的 GitHub 登录名和头像（data URL）；没同意、开发服务器、演示站都是 null
     identity: window.__AGENT_BADGES_IDENTITY__ ?? null,
-    // 页面带着本机数据（命令行打开的或开发服务器）：海报弹窗才提示可以加头像
+    // 页面带着本机数据：命令行打开的本机页、公开页和开发服务器都是。海报弹窗据此提示可以加头像（公开页另由 PUBLIC 挡掉）
     localData: Boolean(window.__AGENT_BADGES_DATA__) && params.get('source') !== 'mock',
     forceMock: params.get('source') === 'mock',
     ...selectBrand(params, window.__AGENT_BADGES_DATA__),

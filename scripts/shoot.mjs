@@ -3,7 +3,7 @@
 import { launchChrome } from './browser.mjs';
 // 软件渲染（CI）下页面的 load 事件可能超过 Playwright 默认的 30 秒，和后面的就绪等待一样放宽到 3 分钟
 const NAV_TIMEOUT = 180000;
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { SHELF } from '../src/data/shelf.js';
 
 // 固定使用示例数据，检查结果不随本机真实数据变化
@@ -752,8 +752,8 @@ async function proofCycle(page) {
   const buf = await posterPNG();
   writeFileSync(`${out}/poster.png`, buf);
   check('分享海报是 2160 像素宽的 PNG', buf.readUInt32BE(16) === 2160, `${buf.readUInt32BE(16)}×${buf.readUInt32BE(20)}`);
-  const pm = await page.evaluate(() => ({ modes: window.__badgeApp.posterModes, mode: window.__badgeApp.posterMode, buttons: document.querySelectorAll('[data-poster-modes] button').length }));
-  check('两个工具都有数据：弹窗里有三段切换，默认是当前工具', pm.modes.length === 3 && pm.buttons === 3 && pm.mode === pm.modes[0], JSON.stringify(pm));
+  const pm = await page.evaluate(() => ({ modes: window.__badgeApp.posterModes, mode: window.__badgeApp.posterMode, brand: window.__badgeApp.brand, buttons: document.querySelectorAll('[data-poster-modes] button').length }));
+  check('两个工具都有数据：弹窗里有三段切换，默认是当前工具', pm.modes.length === 3 && pm.buttons === 3 && pm.mode === pm.brand, JSON.stringify(pm));
   const previewW = await page.evaluate(() => document.querySelector('[data-poster-preview] img')?.naturalWidth);
   check('预览是缩小的图（720 宽），下载才用原尺寸', previewW === 720, String(previewW));
   await page.locator('[data-poster-modes] [data-mode="duo"]').click();
@@ -847,6 +847,31 @@ async function proofCycle(page) {
   check('手机 390：导出面板开着时退出单枚查看，说明文字不回闪', mLeave.peak <= mLeave.open + 0.005,
     `打开时 ${mLeave.open} · 峰值 ${mLeave.peak.toFixed(3)}（${mLeave.n} 帧）· ${mLeave.series}`);
   check('手机端控制台无报错', errors.length === 0, errors.join(' | '));
+  await page.close();
+}
+
+// ---------- 同意过头像的页面：海报带上头像和 @登录名（示例数据 + 注入的示例身份，用项目标志当头像） ----------
+{
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 });
+  const errors = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(e.message));
+  const avatar = `data:image/png;base64,${readFileSync(new URL('../assets/logo.png', import.meta.url)).toString('base64')}`;
+  await page.addInitScript((a) => (window.__AGENT_BADGES_IDENTITY__ = { login: 'sample-dev', avatar: a }), avatar);
+  await page.goto(url, { timeout: NAV_TIMEOUT });
+  await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 180000 });
+  await page.locator('[data-share]').click();
+  await page.waitForFunction(() => window.__badgeApp.posterReady && window.__badgeApp.posterURL, null, { timeout: 60000 });
+  const id = await page.evaluate(async (a) => {
+    const img = new Image();
+    img.src = a;
+    await img.decode().catch(() => {});
+    return { avatarLoads: img.naturalWidth > 0, hintHidden: document.querySelector('[data-poster-hint]').hidden, url: window.__badgeApp.posterURL };
+  }, avatar);
+  const png = Buffer.from(id.url.split(',')[1], 'base64');
+  writeFileSync(`${out}/poster-identity.png`, png);
+  check('同意过头像：海报照常生成（2160 宽），头像图能加载，不再提示加头像', png.readUInt32BE(16) === 2160 && id.avatarLoads && id.hintHidden, `${png.readUInt32BE(16)} · 头像 ${id.avatarLoads} · 提示隐藏 ${id.hintHidden}`);
+  check('同意过头像的页面控制台无报错', errors.length === 0, errors.join(' | '));
   await page.close();
 }
 
