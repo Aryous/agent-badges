@@ -127,8 +127,21 @@ if (want('shots')) {
   await page.waitForFunction(() => window.__badgeApp?.ready, null, { timeout: 90000 });
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${OUT}/screenshot-wall.png` });
+
+  // 年度铸币套装：拉开抽屉，等 12 枚 3D 月章换上、落定
+  await page.locator('.proof').scrollIntoViewIfNeeded();
+  await page.locator('.proof-pull').click();
+  await page.waitForFunction(() => document.querySelector('.proof-tray')?.classList.contains('has-art'), null, { timeout: 60000 });
+  await page.waitForTimeout(1500);
+  await page.locator('.proof').screenshot({ path: `${OUT}/screenshot-proof-set.png` });
+
+  // 点开 5 月的月章，截单枚查看（等飞出动画和超采样结束）
+  await page.locator('.proof-slot[data-m="4"]').click();
+  await page.waitForFunction(() => document.body.classList.contains('is-inspecting'), null, { timeout: 30000 });
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: `${OUT}/screenshot-medal.png` });
   await page.close();
-  for (const f of ['screenshot-wall.png']) {
+  for (const f of ['screenshot-wall.png', 'screenshot-proof-set.png', 'screenshot-medal.png']) {
     execFileSync('sips', ['-Z', '1600', `${OUT}/${f}`], { stdio: 'ignore' });
     console.log(`${OUT}/${f}`);
   }

@@ -33,12 +33,18 @@ One command opens your badge wall. Everything runs on your machine: it reads onl
 
 - **62 badges across two tools.** 32 for Claude Code, 30 for Codex: milestones, streaks and habits, features to discover, holidays, and a few hidden ones. Tiered badges level up through bronze, silver and gold (the Token badges add platinum), and the top tier unlocks one of three special designs at random.
 - **Real 3D.** Every badge is generated with three.js from a small config: enamel, polished and brushed metal, ceramic, holographic foil, crystal. Drag to spin it, flip it over to read the engraving on the back.
-- **A profile.** Unlock ring, total tokens, active days, longest streak, recently earned, and what you are closest to unlocking next.
-- **Your year as a heatmap.** Daily token usage on a calendar, both tools overlaid (a day you used both is split in two colors), with a dot on every day you unlocked a badge.
-- **Things to share.** Export any badge as a 2048 px PNG (transparent or ink background), generate a poster of your whole wall, or put an achievement card on your GitHub profile.
+- **A profile.** At the top left sits a completionist coin: the mosaic on its face fills in as you unlock more badges, and the rim turns from pewter to bronze, silver and gold as you pass a quarter, half and three quarters. Next to it: total tokens, active days, longest streak, recently earned, and what you are closest to unlocking next.
+- **Your year as a heatmap.** A midnight-enamel plate with one sunken dot per day, brighter the more you used. A day you used both tools is split down the middle, and days you unlocked a badge get a gold ring. Toggle each tool in the legend and step between years.
+- **A yearly proof set.** Pull a drawer out from under the heatmap to find twelve 3D month medals. The rim metal compares the month with your busiest month of the year: bronze from a quarter, silver from half, gold from three quarters, pewter below that. Every day is a fired-enamel bead set in a metal ring. Click a medal and it flies out of the tray; drag it, flip it over for the laurel and the month, and it flies back when you close it.
+- **Things to share.** Export any badge or month medal as a 2048 px PNG (transparent or ink background), generate a poster of your whole wall, or put an achievement card on your GitHub profile.
 - **English and Chinese.** The page follows your browser, with a switch in the top bar.
 
-![The badge wall: profile, annual heatmap and the first badges](assets/screenshot-wall.png)
+![The badge wall: completionist coin, profile and annual heatmap](assets/screenshot-wall.png)
+
+<p align="center">
+  <img src="assets/screenshot-proof-set.png" alt="The yearly proof set: twelve 3D month medals" width="49%" />
+  <img src="assets/screenshot-medal.png" alt="The May medal opened, with that month's tokens, active days and badges unlocked" width="49%" />
+</p>
 
 <details>
 <summary><b>All badges</b></summary>
