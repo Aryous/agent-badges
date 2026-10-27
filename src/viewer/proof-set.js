@@ -1,7 +1,7 @@
 // 年度铸币套装：藏在热力图珐琅板下面的一只礼盒。左边黄铜铭牌，右边丝绒托盘，每个月一枚「月章」。
 // 板子下沿正中一个皮质拉环：往上拖或点一下，板子先抬起，再滑进礼盒上沿；关上时原路返回。
 // 取色、当前年份、开着的工具、悬停浮层都用热力图的，不另做一份。
-import { enamelColor, escape, SUNK } from './heatmap.js';
+import { PLATE, enamelColor, escape, SUNK } from './heatmap.js';
 import { today } from '../data/calendar.js';
 import { formatCount } from '../data/format.js';
 import { STAGE_METALS } from '../brands/shared/completionist.js';
@@ -136,7 +136,7 @@ export function medalSvg({ year, month, rim, label, tokens, partsOf, markersOn, 
   }).join('');
   return `<svg viewBox="0 0 160 160" aria-hidden="true" focusable="false">
     <circle cx="80" cy="80" r="79" fill="${rim}"/>
-    <circle cx="80" cy="80" r="75.5" fill="#141f4d"/>
+    <circle cx="80" cy="80" r="75.5" fill="${PLATE.plate}"/>
     <circle cx="80" cy="80" r="73" fill="none" stroke="rgba(160,152,138,.35)" stroke-width=".8"/>
     <circle cx="80" cy="80" r="52" fill="#101a44" stroke="rgba(184,169,130,.38)" stroke-width="1"/>
     ${beads}

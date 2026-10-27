@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { SUNK, cellBackground, enamelColor, splitBackground } from '../src/viewer/heatmap.js';
+import { readFileSync } from 'node:fs';
+import { PLATE, SUNK, cellBackground, enamelColor, splitBackground } from '../src/viewer/heatmap.js';
 import { t } from '../src/viewer/i18n.js';
 
 const rgbOf = (s) => s.match(/\d+/g).map(Number);
@@ -42,5 +43,27 @@ describe('统计行', () => {
     const vars = { tokens: '10.5B', days: 194, streak: 20 };
     expect(t('heat.summary', vars, 'zh')).toBe('10.5B Token · 194 个活跃日 · 最长连续 20 天');
     expect(t('heat.summary', vars, 'en')).toBe('10.5B tokens · 194 active days · longest streak 20 days');
+  });
+});
+
+describe('珐琅板颜色：JS 和 CSS 同一份', () => {
+  const css = readFileSync(new URL('../src/styles/heatmap.css', import.meta.url), 'utf8');
+  const norm = (s) => s.replace(/\s+/g, '').toLowerCase();
+  const VARS = { '--plate': 'plate', '--plate-sunk': 'sunk', '--plate-frame': 'frame', '--plate-ink': 'ink', '--plate-sub': 'sub', '--plate-month': 'month', '--plate-dim': 'dim', '--plate-name': 'name', '--plate-ring': 'ring' };
+
+  it('heatmap.css 的 --plate-* 等于 PLATE', () => {
+    for (const [v, key] of Object.entries(VARS)) {
+      const m = css.match(new RegExp(`${v}:\\s*([^;]+);`));
+      expect(m, v).toBeTruthy();
+      expect(norm(m[1]), v).toBe(norm(PLATE[key]));
+    }
+  });
+
+  it('两个 @property 的初始值是凹点色；内框线和淡轮廓也是 PLATE 里的值', () => {
+    const inits = [...css.matchAll(/initial-value:\s*([^;]+);/g)].map((m) => norm(m[1]));
+    expect(inits).toEqual([norm(PLATE.sunk), norm(PLATE.sunk)]);
+    expect(norm(css)).toContain(norm(PLATE.frameInner));
+    expect(norm(css)).toContain(norm(PLATE.outline));
+    expect(SUNK).toBe(PLATE.sunk);
   });
 });

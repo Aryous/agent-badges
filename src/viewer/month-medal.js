@@ -6,6 +6,7 @@
 import { BEAD_R, HAIR_R, P, SMALL, STAGE_METALS, STAR, TEXT_R, laurel, pathItem } from '../brands/shared/completionist.js';
 import { RING_FONT, hasGlyph } from '../engine/text.js';
 import { formatCount } from '../data/format.js';
+import { PLATE } from './heatmap.js';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 export const MONTHS_LONG = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
@@ -44,7 +45,7 @@ export const gemKey = (series, level) => `medal:${series}:${level}`;
  * @param {{ color: string }[]} series  热力图的系列（顺序就是左右顺序）
  */
 export function medalPalette(series) {
-  const out = { 'medal:sunk': '#0d1538', 'medal:future': '#222c5c', 'medal:unlock': '#d9bf86', 'medal:label': '#d6c49a' };
+  const out = { 'medal:sunk': PLATE.sunk, 'medal:future': '#222c5c', 'medal:unlock': PLATE.ring, 'medal:label': '#d6c49a' };
   series.forEach((s, i) => {
     for (let l = 1; l <= 4; l++) out[gemKey(i, l)] = gemHex(s.color, l);
   });
