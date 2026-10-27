@@ -47,3 +47,54 @@ export function levelOf(entry, thresholds) {
 }
 
 export const today = () => localDate(Date.now());
+
+/**
+ * 某一天开着的工具里有活动的几个：{ id, color, level }，按工具顺序（左边是第一个）。
+ * 热力图、月章、分享海报都用这一条规则。
+ * @param {string} date
+ * @param {{ id: string, color: string, daily: object }[]} series
+ * @param {Record<string, number[]>} thresholds  每个工具的 levelThresholds
+ * @param {Set<string> | null} [enabled]  开着的工具；不给表示全部
+ */
+export function dayParts(date, series, thresholds, enabled = null) {
+  const parts = [];
+  for (const s of series) {
+    if (enabled && !enabled.has(s.id)) continue;
+    const level = levelOf(s.daily?.[date], thresholds[s.id]);
+    if (level) parts.push({ id: s.id, color: s.color, level });
+  }
+  return parts;
+}
+
+/**
+ * 一年的点阵：每周一列（yearWeeks），每格 { date, future, parts, unlocked }，不属于这一年的格子是 null。
+ * unlocked：不是未来，且那天有开着的工具的解锁标记（markersFrom 的结果）。
+ * @param {object} o
+ * @param {number} o.year
+ * @param {0 | 1} o.weekStart  0 周日 / 1 周一（页面按语言选：中文周一，英文周日）
+ * @param {{ id: string, color: string, daily: object }[]} o.series
+ * @param {Record<string, { brandId: string }[]>} [o.markers]
+ * @param {Set<string> | null} [o.enabled]
+ * @param {string} [o.now]
+ */
+export function yearCells({ year, weekStart, series, markers = {}, enabled = null, now = today() }) {
+  const thresholds = Object.fromEntries(series.map((s) => [s.id, levelThresholds(s.daily)]));
+  const on = (id) => !enabled || enabled.has(id);
+  const { weeks, monthStarts } = yearWeeks(year, weekStart);
+  return {
+    weekStart,
+    monthStarts,
+    weeks: weeks.map((col) =>
+      col.map((date) => {
+        if (!date) return null;
+        const future = date > now;
+        return {
+          date,
+          future,
+          parts: future ? [] : dayParts(date, series, thresholds, enabled),
+          unlocked: !future && (markers[date] ?? []).some((m) => on(m.brandId)),
+        };
+      }),
+    ),
+  };
+}

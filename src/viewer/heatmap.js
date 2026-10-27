@@ -2,7 +2,7 @@
 // 两个工具叠在一起看：只用了一个就填它的品牌色珐琅，同一天两个都用了就左右各半。
 // 那天解锁了徽章，圆点外加一圈细金边；悬停看详情，点金边圆点打开对应徽章。
 import { dailyStats, dailyYears } from '../data/daily.js';
-import { levelOf, levelThresholds, today, yearWeeks } from '../data/calendar.js';
+import { dayParts, levelThresholds, today, yearWeeks } from '../data/calendar.js';
 import { formatDay, lang, t } from './i18n.js';
 import { formatCount } from '../data/format.js';
 import { describeState } from './describe.js';
@@ -155,15 +155,7 @@ export function createHeatmap({ root, series, markers = {}, onMarker, reducedMot
   }).join('');
 
   /** 某一天开着的工具里有活动的几个：{ id, color, level }，按工具顺序（左边是第一个）。 */
-  function partsOf(date) {
-    const parts = [];
-    for (const s of series) {
-      if (!enabled.has(s.id)) continue;
-      const level = levelOf(s.daily?.[date], thresholds[s.id]);
-      if (level) parts.push({ id: s.id, color: s.color, level });
-    }
-    return parts;
-  }
+  const partsOf = (date) => dayParts(date, series, thresholds, enabled);
 
   const markersOn = (date) => (markers[date] ?? []).filter((m) => enabled.has(m.brandId));
 
