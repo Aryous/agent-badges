@@ -73,6 +73,7 @@ npx agent-badges export ./my-wall   # a static page you can open offline (contai
 npx agent-badges publish            # put your badges on your GitHub profile (asks first)
 npx agent-badges shelf              # your unlocked badges as a PNG for your GitHub profile
 npx agent-badges card               # an achievement card SVG for your GitHub profile
+npx agent-badges avatar             # show your GitHub avatar on the share poster (asks first)
 ```
 
 | Option | |
@@ -83,7 +84,8 @@ npx agent-badges card               # an achievement card SVG for your GitHub pr
 | `--json` | Print the summary as JSON (`collect`) |
 | `--lang en\|zh` | Language of the summary, the shelf and the card (the summary follows your system by default, the shelf and card default to English) |
 | `--out <file>` | Where `shelf` or `card` saves its file |
-| `--yes` | `publish`: go ahead without asking (only after you've seen the plan) |
+| `--yes` | `publish`: go ahead without asking (only after you've seen the plan). `avatar`: fetch without asking |
+| `--remove` | `avatar`: delete the saved avatar and stop showing it |
 | `--name <name>` | Name on the card and the public badge wall (defaults to your GitHub username) |
 | `--theme dark\|light` | Card colors |
 
@@ -248,7 +250,7 @@ This writes `agent-badges-card.svg`: unlock counts, totals, streaks and a grid o
 
 Agent Badges reads the logs Claude Code and Codex keep on your machine, so the rules are strict, and every one of them is covered by tests.
 
-- **Local only.** It reads `~/.claude` and `~/.codex` and writes to `~/.agent-badges`. The page is served on `127.0.0.1`, so nothing else on your network can reach it. There are no network calls and no analytics.
+- **Local only.** It reads `~/.claude` and `~/.codex` and writes to `~/.agent-badges`. The page is served on `127.0.0.1`, so nothing else on your network can reach it. The page makes no network calls and there are no analytics. The CLI goes online only for `publish` and, if you agree, to fetch your GitHub avatar for the share poster (`npx agent-badges avatar`).
 - **Metadata only.** Each log line is reduced to an allowlist of fields the moment it is parsed: timestamps, token counts, tool names, mode values. Prompts, code, tool inputs and outputs are dropped immediately and never stored. Names that could hint at what you work on (MCP server names, Codex model names) are hashed; Claude model names are reduced to the family (opus, sonnet, haiku, fable).
 - **Files it never opens.** Claude Code: `settings.json`, `.credentials.json`, MCP configs, `history.jsonl`, `shell-snapshots`, `session-env`, `paste-cache`, `file-history`. Codex: `auth.json`, `config.toml`, `*.env`, `history.jsonl`, `transcription-history.jsonl`, `thread_history*.sqlite`, `logs*.sqlite`, `memories*`, `shell_snapshots`, `chatgpt-meetings`.
 - **Codex thread index.** `state_*.sqlite` is opened read-only and only six columns are selected (created time, source, thread type, model, reasoning effort, approval mode). Titles, first messages, previews, paths, git info and account ids are never read.

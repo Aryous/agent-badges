@@ -10,5 +10,6 @@ copyFileSync('dist/index.html', `${SITE}/demo/index.html`);
 // 演示页里不能有任何本机数据
 const demo = readFileSync(`${SITE}/demo/index.html`, 'utf8');
 if (demo.includes('__AGENT_BADGES_DATA__ =')) throw new Error('演示页里混进了本机数据');
+if (demo.includes('__AGENT_BADGES_IDENTITY__ =')) throw new Error('演示页里混进了头像或用户名');
 writeFileSync(`${SITE}/.nojekyll`, '');
 console.log(`${SITE}/ ready: index.html (landing) + demo/index.html`);

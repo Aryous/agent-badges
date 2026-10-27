@@ -73,6 +73,7 @@ npx agent-badges export ./my-wall   # 导出一个能离线打开的网页（包
 npx agent-badges publish            # 把徽章放到 GitHub 个人主页（动手前会先问你）
 npx agent-badges shelf              # 把已解锁的徽章画成一张 PNG
 npx agent-badges card               # 生成一张成就卡片 SVG
+npx agent-badges avatar             # 在分享海报上显示你的 GitHub 头像（会先问你）
 ```
 
 | 选项 | |
@@ -83,7 +84,8 @@ npx agent-badges card               # 生成一张成就卡片 SVG
 | `--json` | `collect` 的汇总改为 JSON 输出 |
 | `--lang en\|zh` | 汇总、徽章图和卡片的语言（汇总默认跟随系统，徽章图和卡片默认英文） |
 | `--out <文件>` | `shelf` 或 `card` 的保存位置 |
-| `--yes` | `publish` 不再询问，直接执行（建议先看过一次计划再用） |
+| `--yes` | `publish` 不再询问，直接执行（建议先看过一次计划再用）；`avatar` 不再询问，直接取头像 |
+| `--remove` | `avatar`：删除已存的头像，不再显示 |
 | `--name <名字>` | 卡片和公开徽章墙上显示的名字（默认是你的 GitHub 用户名） |
 | `--theme dark\|light` | 卡片配色 |
 
@@ -248,7 +250,7 @@ npx agent-badges card --name "你的名字" --lang zh
 
 Agent Badges 读的是 Claude Code 和 Codex 在你电脑上留下的记录，所以规则定得很严，而且每一条都有测试保证。
 
-- **只在本机运行。** 读取 `~/.claude` 和 `~/.codex`，结果写进 `~/.agent-badges`。本地页面只监听 `127.0.0.1`，同一局域网里的其他设备也打不开。不发任何网络请求，也没有任何统计。
+- **只在本机运行。** 读取 `~/.claude` 和 `~/.codex`，结果写进 `~/.agent-badges`。本地页面只监听 `127.0.0.1`，同一局域网里的其他设备也打不开。页面本身不发任何网络请求，也没有任何统计；命令行只在 `publish`，以及你同意取 GitHub 头像时（`npx agent-badges avatar`）联网。
 - **只读元数据。** 每读一行记录，只留下白名单里的字段：时间戳、Token 数、工具名和几个模式取值。对话内容、代码、工具参数和返回结果当场丢弃，从不保存。可能透露你在做什么的名字（MCP 服务名、Codex 的模型名）会做哈希；Claude 的模型名只保留系列名（opus、sonnet、haiku、fable）。
 - **从不打开的文件。** Claude Code：`settings.json`、`.credentials.json`、MCP 配置、`history.jsonl`、`shell-snapshots`、`session-env`、`paste-cache`、`file-history`。Codex：`auth.json`、`config.toml`、`*.env`、`history.jsonl`、`transcription-history.jsonl`、`thread_history*.sqlite`、`logs*.sqlite`、`memories*`、`shell_snapshots`、`chatgpt-meetings`。
 - **Codex 会话索引库。** `state_*.sqlite` 以只读方式打开，只查六列：创建时间、来源、会话类型、模型、推理强度和审批策略。标题、首条消息、预览、路径、git 信息和账号 id 一概不读。
