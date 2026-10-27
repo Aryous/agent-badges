@@ -69,7 +69,7 @@ Requires **Node.js 22.15 or later** (it uses Node's built-in zstd and SQLite). D
 npx agent-badges                    # collect local stats and open your badge wall
 npx agent-badges collect            # collect only, print a summary in the terminal
 npx agent-badges collect --json     # the same summary as JSON
-npx agent-badges export ./my-wall   # a static page you can open offline (contains your stats)
+npx agent-badges export ./my-wall   # a static page you can open offline (contains your stats, and your avatar if you opted in)
 npx agent-badges publish            # put your badges on your GitHub profile (asks first)
 npx agent-badges shelf              # your unlocked badges as a PNG for your GitHub profile
 npx agent-badges card               # an achievement card SVG for your GitHub profile
@@ -200,7 +200,7 @@ Run it again whenever you want to refresh your badges. It keeps its own copy of 
 
 **Requires** the [GitHub CLI](https://cli.github.com), signed in with `gh auth login`. Pushes borrow gh's login; your git config is left alone.
 
-**What becomes public:** your unlocked badges and tiers, badge progress and unlock dates, and your daily token counts and turns (the heatmap). The page embeds only what it shows: locked hidden badges are left out, the update time is just a date, and the detailed ledger (hours of the day, tool calls, model names) never leaves your machine. Old versions stay in the repository's git history.
+**What becomes public:** your unlocked badges and tiers, badge progress and unlock dates, and your daily token counts and turns (the heatmap). If you agreed to show your avatar (`npx agent-badges avatar`) and it belongs to the same GitHub account, your username and avatar too, for the share poster. The page embeds only what it shows: locked hidden badges are left out, the update time is just a date, and the detailed ledger (hours of the day, tool calls, model names) never leaves your machine. Old versions stay in the repository's git history.
 
 It stops and tells you, without changing anything, if your profile repository is private, GitHub Pages already publishes from somewhere else, the repository root has an `index.html` it didn't write, or a tool's stats couldn't be collected this run (it says why; `card`, `shelf` and `profile` stop the same way, so a badge image missing a tool never replaces a complete one).
 

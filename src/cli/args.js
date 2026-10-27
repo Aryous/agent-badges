@@ -85,6 +85,7 @@ export function parseArgs(argv) {
   if (opts.brand && !BRAND_IDS.includes(opts.brand)) throw new Error(t(`不支持的工具：${opts.brand}`, `Unsupported tool: ${opts.brand}`));
   if (!THEMES.includes(opts.theme)) throw new Error(t(`不支持的配色：${opts.theme}`, `Unsupported theme: ${opts.theme}`));
   if (!LANGS.includes(opts.cardLang)) throw new Error(t(`不支持的语言：${opts.cardLang}`, `Unsupported language: ${opts.cardLang}`));
+  if (opts.remove && opts.command !== 'avatar') throw new Error(t('--remove 只能和 avatar 一起用', '--remove only works with avatar'));
   if (opts.command === 'export' && !opts.dir) throw new Error(t('export 需要一个目录', 'export needs a directory'));
   if (opts.command === 'profile' && !opts.dir) throw new Error(t('profile 需要主页仓库的目录', 'profile needs the directory of your profile repository'));
   return opts;

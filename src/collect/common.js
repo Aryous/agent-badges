@@ -18,7 +18,7 @@ export const hash = (s) => createHash('sha256').update(`agent-badges:${s}`).dige
 export const readJSON = (p) => (existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : null);
 
 /** 先写同目录的临时文件，再改名替换（同一磁盘上改名是原子的）。 */
-function replaceFile(path, write) {
+export function replaceFile(path, write) {
   mkdirSync(dirname(path), { recursive: true });
   const tmp = `${path}.${process.pid}.tmp`;
   try {

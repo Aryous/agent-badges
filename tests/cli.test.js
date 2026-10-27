@@ -121,6 +121,32 @@ describe('CLI', () => {
     for (const leak of [SECRET, TITLE, '/Users/me/secret']) expect(html).not.toContain(leak);
   });
 
+  it('export：同意过头像才内嵌身份；不同意、没有图片都不内嵌', () => {
+    if (!existsSync(new URL('../dist/index.html', import.meta.url))) return; // 未构建时跳过
+    const home = env.AGENT_BADGES_HOME;
+    const run = (name) => {
+      const out = join(root, name);
+      execFileSync(process.execPath, [new URL('../bin/agent-badges.mjs', import.meta.url).pathname, 'export', out], { env });
+      return readFileSync(join(out, 'index.html'), 'utf8');
+    };
+    const png = Buffer.from('89504e470d0a1a0a', 'hex');
+    try {
+      writeFileSync(join(home, 'avatar.png'), png);
+      writeFileSync(join(home, 'identity.json'), JSON.stringify({ consent: true, login: 'octo', file: 'avatar.png', fetchedAt: '2026-10-28' }));
+      const yes = run('export-avatar');
+      expect(yes).toContain('window.__AGENT_BADGES_IDENTITY__ = ');
+      expect(yes).toContain(`data:image/png;base64,${png.toString('base64')}`);
+      writeFileSync(join(home, 'identity.json'), JSON.stringify({ consent: false }));
+      expect(run('export-declined')).not.toContain('__AGENT_BADGES_IDENTITY__ =');
+      writeFileSync(join(home, 'identity.json'), JSON.stringify({ consent: true, login: 'octo', file: 'avatar.png' }));
+      rmSync(join(home, 'avatar.png'));
+      expect(run('export-missing')).not.toContain('__AGENT_BADGES_IDENTITY__ =');
+    } finally {
+      rmSync(join(home, 'identity.json'), { force: true });
+      rmSync(join(home, 'avatar.png'), { force: true });
+    }
+  });
+
   it('collect --json 输出结构化汇总', () => {
     const out = execFileSync(process.execPath, [new URL('../bin/agent-badges.mjs', import.meta.url).pathname, 'collect', '--json'], { env }).toString();
     const j = JSON.parse(out);

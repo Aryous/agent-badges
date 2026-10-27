@@ -32,12 +32,18 @@ export async function writePublish(data, opts) {
     console.log(t(`  仓库        ${plan.login}/${plan.login}${plan.createRepo ? '（新建，公开）' : ''}`, `  Repository  ${plan.login}/${plan.login}${plan.createRepo ? ' (new, public)' : ''}`));
     console.log(t(`  README      ${readme}`, `  README      ${readme}`));
     console.log(t(`  网页        ${plan.url}${plan.enablePages ? '（开启 GitHub Pages）' : ''}`, `  Page        ${plan.url}${plan.enablePages ? ' (turns on GitHub Pages)' : ''}`));
+    // 同意过头像、而且是同一个账号：公开页的海报带上 GitHub 用户名和头像，要写进「会公开」
+    const { publicIdentity } = await import('../../share/identity.js');
+    const { identity, skipped } = publicIdentity(dataHome(), plan.login);
     console.log(
       t(
-        '  会公开      已解锁的徽章和等级、徽章进度和解锁日期、每天的 Token 用量和对话轮数（热力图）。旧版本会留在 git 历史里。\n              不公开：对话内容、代码、路径、一天中几点在用、模型和工具的名字。',
-        '  Public      unlocked badges and tiers, badge progress and unlock dates, daily token counts and turns (the heatmap). Old versions stay in git history.\n              Not public: prompts, code, paths, what hours you work, model and tool names.',
+        `  会公开      已解锁的徽章和等级、徽章进度和解锁日期、每天的 Token 用量和对话轮数（热力图）${identity ? '、GitHub 用户名和头像（分享海报用）' : ''}。旧版本会留在 git 历史里。\n              不公开：对话内容、代码、路径、一天中几点在用、模型和工具的名字。`,
+        `  Public      unlocked badges and tiers, badge progress and unlock dates, daily token counts and turns (the heatmap)${identity ? ', your GitHub username and avatar (for the share poster)' : ''}. Old versions stay in git history.\n              Not public: prompts, code, paths, what hours you work, model and tool names.`,
       ),
     );
+    if (skipped) {
+      console.log(t(`  头像        属于 @${skipped}，和 ${plan.login} 不是同一个账号，公开页不带头像。`, `  Avatar      belongs to @${skipped}, not ${plan.login}, so the public page leaves it out.`));
+    }
 
     if (!opts.yes) {
       if (!process.stdin.isTTY) {
@@ -60,7 +66,7 @@ export async function writePublish(data, opts) {
     };
     const { live } = await executePublish(plan, {
       gh,
-      pageHtml: await publicPage(data, opts.name || plan.login, (await import('../../share/identity.js')).pageIdentity(dataHome())),
+      pageHtml: await publicPage(data, opts.name || plan.login, identity),
       renderShelf: (file) => writeShelf(data, { ...opts, out: file }, { snippet: false }),
       log: (step) => console.log(steps[step] ?? step),
     });

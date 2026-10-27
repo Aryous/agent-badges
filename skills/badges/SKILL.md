@@ -44,7 +44,7 @@ Then offer one of these, without running them unasked:
 
 - **Open the 3D badge wall:** `npx -y agent-badges@latest`. It starts a local server on 127.0.0.1 and keeps running until stopped, so run it in the background and give the user the URL it prints.
 - **GitHub profile:** see below.
-- **Offline copy:** `npx -y agent-badges@latest export ./my-wall`. Mention that this file contains the user's stats.
+- **Offline copy:** `npx -y agent-badges@latest export ./my-wall`. Mention that this file contains the user's stats (and their GitHub username and avatar if they opted in with `avatar`).
 
 ## GitHub profile
 
@@ -56,7 +56,7 @@ When the user wants their badges on their GitHub profile ("put my badges on my G
    npx -y agent-badges@latest publish
    ```
 
-   It prints a plan: account, repository (new or existing), what happens to the README, the page URL, and what becomes public. Relay the plan to the user in a few lines, including what becomes public: unlocked badges and tiers, badge progress and unlock dates, and daily token counts and turns (the heatmap). Old versions stay in git history. Prompts, code, paths, hours of the day and model or tool names are never published.
+   It prints a plan: account, repository (new or existing), what happens to the README, the page URL, and what becomes public. Relay the plan to the user in a few lines, including what becomes public: unlocked badges and tiers, badge progress and unlock dates, and daily token counts and turns (the heatmap), plus their GitHub username and avatar when the plan lists them. Old versions stay in git history. Prompts, code, paths, hours of the day and model or tool names are never published.
 2. Only if the user agrees, run it for real. Mention that a browser tab will open to render the badges:
 
    ```bash

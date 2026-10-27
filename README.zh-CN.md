@@ -69,7 +69,7 @@ npx agent-badges
 npx agent-badges                    # 采集本机数据，打开徽章墙
 npx agent-badges collect            # 只采集，在终端里打印汇总
 npx agent-badges collect --json     # 同上，输出 JSON
-npx agent-badges export ./my-wall   # 导出一个能离线打开的网页（包含你的统计数字）
+npx agent-badges export ./my-wall   # 导出一个能离线打开的网页（包含你的统计数字；同意过头像的话还有头像）
 npx agent-badges publish            # 把徽章放到 GitHub 个人主页（动手前会先问你）
 npx agent-badges shelf              # 把已解锁的徽章画成一张 PNG
 npx agent-badges card               # 生成一张成就卡片 SVG
@@ -200,7 +200,7 @@ npx agent-badges publish --lang zh
 
 **前提：** 装好 [GitHub CLI（gh）](https://cli.github.com)，并用 `gh auth login` 登录。推送时只借用 gh 的登录状态，不会改你的 git 配置。
 
-**会公开哪些内容：** 已解锁的徽章和等级、解锁进度和日期，以及每天的 Token 用量和对话轮数（用来画热力图）。页面上看不到的东西不会放进去：没解锁的隐藏徽章不放，更新时间只精确到日期，详细账本（几点在用、调用了哪些工具、用了哪些模型）不会离开你的电脑。注意，旧版本会一直留在仓库的 git 历史里。
+**会公开哪些内容：** 已解锁的徽章和等级、解锁进度和日期，以及每天的 Token 用量和对话轮数（用来画热力图）。如果你同意过显示头像（`npx agent-badges avatar`），而且是同一个 GitHub 账号，还有你的用户名和头像（分享海报用）。页面上看不到的东西不会放进去：没解锁的隐藏徽章不放，更新时间只精确到日期，详细账本（几点在用、调用了哪些工具、用了哪些模型）不会离开你的电脑。注意，旧版本会一直留在仓库的 git 历史里。
 
 遇到这几种情况，它会停下来提醒你，不做任何改动：主页仓库是私有的；GitHub Pages 已经设成从别处发布；仓库根目录里已经有一个不是由它生成的 `index.html`；这次有工具的数据没有采集成功（会说明原因。`card`、`shelf`、`profile` 也一样会停下，缺了一个工具的徽章图不会替换掉完整的）。
 

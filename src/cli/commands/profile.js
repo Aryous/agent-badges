@@ -3,7 +3,7 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { SHELF_FILE, SHELF_LIGHT_FILE } from '../../share/publish.js';
 import { dataHome } from '../../collect/common.js';
-import { pageIdentity } from '../../share/identity.js';
+import { publicIdentity } from '../../share/identity.js';
 import { t } from '../i18n.js';
 import { publicPage } from '../page.js';
 import { shelfPicture, writeShelf } from './shelf.js';
@@ -20,7 +20,11 @@ export async function writeProfile(data, opts) {
   if (!existsSync(dir)) throw new Error(t(`目录不存在：${dir}`, `No such directory: ${dir}`));
   const pages = pagesForDir(dir);
   const page = join(dir, 'index.html');
-  writeFileSync(page, await publicPage(data, opts.name || pages?.owner || '', pageIdentity(dataHome())));
+  const { identity, skipped } = publicIdentity(dataHome(), pages?.owner);
+  writeFileSync(page, await publicPage(data, opts.name || pages?.owner || '', identity));
+  if (skipped) {
+    console.log(t(`\n头像属于 @${skipped}，和这个仓库的主人不同（或看不出主人是谁），公开页不带头像。`, `\nThe avatar belongs to @${skipped}, not this repository's owner (or the owner is unknown), so the public page leaves it out.`));
+  }
   console.log(t(`\n公开版徽章墙：${page}`, `\nPublic badge wall: ${page}`));
   await writeShelf(data, { ...opts, out: join(dir, SHELF_FILE) }, { snippet: false });
 

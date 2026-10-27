@@ -1,6 +1,6 @@
 # AGENTS.md
 
-agent-badges turns local Claude Code and Codex usage metadata into Apple-Watch-style 3D achievement badges (three.js). It ships as an npm CLI (`npx agent-badges`, zero runtime dependencies) plus a Claude Code / Codex plugin. Offline; nothing is uploaded unless the user runs `publish`, and the only other network use is the opt-in avatar download (`avatar`, asks first, never in non-TTY runs).
+agent-badges turns local Claude Code and Codex usage metadata into Apple-Watch-style 3D achievement badges (three.js). It ships as an npm CLI (`npx agent-badges`, zero runtime dependencies) plus a Claude Code / Codex plugin. Offline; nothing is uploaded unless the user runs `publish`, and the only other network use is the opt-in avatar download (`avatar`: asks first and never asks in non-TTY runs; `avatar --yes` fetches).
 
 Docs and code are one thing: every contract below is enforced by a test. If you change a contract, change the test and this file in the same commit. Human-facing details live in [CONTRIBUTING.md](CONTRIBUTING.md); [README.md](README.md) is for users only.
 
@@ -89,7 +89,7 @@ Which checks to run:
 - Conversation text, command arguments and output, file paths and file contents are dropped at parse time and never stored, logged or printed. MCP server names and Codex model names are hashed; Claude model names keep only the family.
 - Never opens (also when debugging on a real machine). Claude Code, under `~/.claude`: `settings.json`, `.credentials.json`, MCP configs, `history.jsonl`, `shell-snapshots`, `session-env`, `paste-cache`, `file-history`. Codex, under `~/.codex`: `auth.json`, `config.toml`, `*.env`, `history.jsonl`, `transcription-history.jsonl`, `thread_history*.sqlite`, `logs*.sqlite`, `memories*`, `shell_snapshots`, `chatgpt-meetings`. Also the CC Switch database. (`src/collect/claude-code.js` and `codex.js` header comments list the same `~/.claude` / `~/.codex` files, not the CC Switch database; keep README Privacy in sync.)
 - Codex `state_*.sqlite` is opened read-only and only six columns are selected (created time, source, thread type, model, reasoning effort, approval mode).
-- Writes only to `~/.agent-badges` (or `AGENT_BADGES_HOME`), plus the output of `export`, `card`, `shelf` and `profile`. Files are written to a temp file and renamed into place; ledgers keep the previous version as `<tool>.ledger.json.bak`, and a corrupt ledger is never overwritten. If any tool fails to collect, `card`, `shelf`, `profile` and `publish` stop instead of sharing a result without it (`tests/storage.test.js`). A new ledger field needs a privacy review and a leak-test case.
+- Writes only to `~/.agent-badges` (or `AGENT_BADGES_HOME`; the opt-in avatar adds `identity.json` and `avatar.png` / `avatar.jpg` there), plus the output of `export`, `card`, `shelf` and `profile`. Files are written to a temp file and renamed into place; ledgers keep the previous version as `<tool>.ledger.json.bak`, and a corrupt ledger is never overwritten. If any tool fails to collect, `card`, `shelf`, `profile` and `publish` stop instead of sharing a result without it (`tests/storage.test.js`). A new ledger field needs a privacy review and a leak-test case.
 
 ## House rules
 
