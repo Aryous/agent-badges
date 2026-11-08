@@ -23,7 +23,15 @@ npx agent-badges
 
 运行上面的命令即可在浏览器中打开个人徽章墙。徽章进度在本机计算，采集器仅保留统计所需的元数据，对话正文和代码不会写入统计结果。[了解数据处理方式](#隐私)
 
-也可以在 Claude Code 或 Codex 中询问「我最近解锁了哪些徽章？」。[查看技能安装说明](#在-claude-code-和-codex-里用)
+**让 Agent 帮你安装。** 把下面这段话复制给 Claude Code、Codex 或其他支持 Agent Skills 的编程助手。
+
+```text
+请按 https://github.com/Aryous/agent-badges 的中文 README，选择适合当前环境的方式安装 skills/badges 技能。
+安装后请用这个技能查询我的本地徽章，告诉我已经解锁了多少枚，以及哪一枚最接近解锁。
+如果需要新开会话才能加载技能，请告诉我在新会话中输入什么。
+```
+
+安装后，可以用自然语言调用 `badges` 技能。例如，问「我最近解锁了什么？下一枚徽章还差多少？」可查看收藏进度。说「打开我的 3D 徽章墙」可浏览收藏，说「导出离线徽章墙」可保存本地副本。要在 GitHub 个人主页展示收藏，可以说「把我的徽章放到 GitHub 主页」，Agent 会列出发布计划和公开的数据，等你确认后再发布。[查看各平台的安装命令](#在-claude-code-和-codex-里用)
 
 <p align="center">
   <img src="assets/spin.gif" alt="三枚旋转的徽章：Claude Code 初次相遇、Agent Badges 标志、Codex 初次启动" width="720" />
@@ -282,6 +290,8 @@ Agent Badges 在本机解析会话记录并计算徽章进度。采集器按字�
 ## 参与贡献
 
 欢迎通过 Issue 反馈问题，或提交 Pull Request 参与开发。开发环境、目录结构以及新增徽章和工具的步骤见英文[贡献指南](CONTRIBUTING.md)。
+
+在本仓库中新增或重新设计徽章时，可以让编程助手使用贡献者技能 [`add-badge`](.agents/skills/add-badge/SKILL.md)。例如，「为 Codex 新增一枚节日徽章」。技能涵盖徽章设计、解锁规则、示例数据和测试。
 
 ## 致谢
 

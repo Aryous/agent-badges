@@ -23,7 +23,15 @@ npx agent-badges
 
 One command opens your badge wall. Everything runs on your machine: it reads only timestamps and usage counts from your logs, never your conversations, and uploads nothing ([privacy details](#privacy)).
 
-**Or ask your agent.** [Install the skill](#use-it-in-claude-code-and-codex) in Claude Code or Codex, then say *"check my badges"*.
+**Have your agent install the skill.** Copy this prompt into Claude Code, Codex, or another coding agent that supports Agent Skills.
+
+```text
+Follow the README at https://github.com/Aryous/agent-badges to install the skills/badges skill for my current environment.
+Then use the skill to check my local badges. Tell me how many I've unlocked and which badge I'm closest to earning.
+If I need to start a new session to load the skill, tell me what to ask in that session.
+```
+
+Once the skill is available, ask “What did I unlock recently?” or “How close am I to the next badge?” You can also say “Open my 3D badge wall” or “Export an offline copy of my badge wall.” To share your collection, ask “Put my badges on my GitHub profile.” Your agent will show you the publishing plan and the data it would make public, then wait for your confirmation. [Installation commands by platform](#use-it-in-claude-code-and-codex)
 
 <p align="center">
   <img src="assets/spin.gif" alt="Three badges spinning: Claude Code First Session, the Agent Badges logo, Codex First Thread" width="720" />
@@ -282,6 +290,8 @@ Badge definitions live in [`src/brands`](src/brands). Each tool's metrics are in
 ## Contributing
 
 Issues and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers the dev setup, the project layout, and how to add a badge or a tool.
+
+When working in this repository, you can ask your coding agent to use the [`add-badge` contributor skill](.agents/skills/add-badge/SKILL.md) to create or redesign a badge. For example, “Add a holiday badge for Codex.” The skill covers the design, unlock rule, sample data, and tests.
 
 ## Credits
 
