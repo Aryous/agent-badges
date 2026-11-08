@@ -13,6 +13,27 @@ const OUT = 'assets';
 mkdirSync(OUT, { recursive: true });
 const want = (k) => what === 'all' || what === k;
 
+// ---------- 成就卡片示例（示例数据） ----------
+if (want('card')) {
+  const { renderCard } = await import('../src/share/card.js');
+  const { summarize, BRAND_INFO } = await import('../src/cli/summary.js');
+  const { loadDaily, DATA_SOURCES } = await import('../src/data/progress.js');
+  const { BRAND_IDS } = await import('../src/brands/index.js');
+  const brands = [];
+  for (const id of BRAND_IDS) {
+    const { unlocked, total } = summarize(id, await DATA_SOURCES[id].mock());
+    const { brand } = BRAND_INFO[id];
+    brands.push({ id, name: brand.name, accent: brand.ui.accent, unlocked, total, daily: await loadDaily(id, { forceMock: true }) });
+  }
+  for (const theme of ['dark', 'light']) {
+    writeFileSync(`${OUT}/card-${theme}.svg`, renderCard({ brands, theme, today: '2026-10-15' }));
+    console.log(`${OUT}/card-${theme}.svg`);
+  }
+}
+
+// 纯 SVG 卡片不需要打开素材工作台。
+if (what === 'card') process.exit(0);
+
 const browser = await launchChrome();
 const studio = await browser.newPage({ viewport: { width: 640, height: 640 } });
 studio.on('pageerror', (e) => console.error(e.message));
@@ -144,24 +165,6 @@ if (want('shots')) {
   for (const f of ['screenshot-wall.png', 'screenshot-proof-set.png', 'screenshot-medal.png']) {
     execFileSync('sips', ['-Z', '1600', `${OUT}/${f}`], { stdio: 'ignore' });
     console.log(`${OUT}/${f}`);
-  }
-}
-
-// ---------- 成就卡片示例（示例数据） ----------
-if (want('card')) {
-  const { renderCard } = await import('../src/share/card.js');
-  const { summarize, BRAND_INFO } = await import('../src/cli/summary.js');
-  const { loadDaily, DATA_SOURCES } = await import('../src/data/progress.js');
-  const { BRAND_IDS } = await import('../src/brands/index.js');
-  const brands = [];
-  for (const id of BRAND_IDS) {
-    const { unlocked, total } = summarize(id, await DATA_SOURCES[id].mock());
-    const { brand } = BRAND_INFO[id];
-    brands.push({ id, name: brand.name, accent: brand.ui.accent, unlocked, total, daily: await loadDaily(id, { forceMock: true }) });
-  }
-  for (const theme of ['dark', 'light']) {
-    writeFileSync(`${OUT}/card-${theme}.svg`, renderCard({ brands, theme, today: '2026-10-15' }));
-    console.log(`${OUT}/card-${theme}.svg`);
   }
 }
 

@@ -241,7 +241,7 @@ npx agent-badges shelf --out ./agent-badges-shelf.png --lang zh
 npx agent-badges card --name "你的名字" --lang zh
 ```
 
-`card` 在本地生成 `agent-badges-card.svg`，其中包含徽章解锁数、累计 Token 用量、活跃天数、最长连续活跃天数和近期活动分布。该命令无需浏览器，也可在远程服务器上运行。
+`card` 在本地生成 `agent-badges-card.svg`。每个工具的铸币按徽章解锁比例点亮，旁边列出解锁数、累计 Token 用量、活跃天数和最长连续活跃天数。下方的午夜蓝珐琅圆点记录最近 34 周的活动，同一天使用两个工具时左右分色。卡片支持深色和浅色主题，无需浏览器即可生成。
 
 ```markdown
 ![Agent Badges](./agent-badges-card.svg)

@@ -241,7 +241,7 @@ Reference it like this so visitors see the version that matches their theme:
 npx agent-badges card --name "Your Name"
 ```
 
-This writes `agent-badges-card.svg`: unlock counts, totals, streaks and a grid of recent activity. The card contains numbers only, and it needs no browser, so it also works on a remote machine.
+This writes `agent-badges-card.svg`. Each tool's coin fills in as you unlock badges. Alongside it are your unlock count, total tokens, active days, and longest streak. The midnight-blue enamel grid shows the last 34 weeks of activity. Days when you used both tools have a dot split between their colors. The card supports light and dark themes and needs no browser to generate.
 
 ```markdown
 ![Agent Badges](./agent-badges-card.svg)
